@@ -6,9 +6,13 @@ import {
   SCORING_CONFIG,
   calculateFlagPoints,
   calculateLeftoverBonus,
+  calculateXpEarned,
+  calculateCoinsEarned,
+  calculateLevel,
   type StartRunResponse,
   type AnswerRunResponse,
   type FinishRunResponse,
+  type PlayerProfile,
 } from '@flagora/shared';
 import { selectRunFlags, generateChoices } from './flagSelection.js';
 import {
@@ -57,6 +61,7 @@ export async function createRun(
     runningTotal: 0,
     startedAt: now,
     status: 'active',
+    profileCredited: false,
     runDurationMs: SCORING_CONFIG.runDurationMs,
     createdAt: now,
     updatedAt: now,
@@ -181,7 +186,7 @@ export async function finishRun(
     throw new UnauthorizedRunAccessError();
   }
 
-  if (run.status === 'finished' && run.finalScore) {
+  if (run.status === 'finished' && run.profileCredited && run.finalScore) {
     return run.finalScore;
   }
 
@@ -193,20 +198,94 @@ export async function finishRun(
   const correctCount = run.flags.filter((f) => f.correct).length;
   const totalScore = run.runningTotal + leftoverBonus;
 
+  const xpEarned = calculateXpEarned(totalScore);
+  const coinsEarned = calculateCoinsEarned(correctCount);
+
+  const claimResult = await collection.findOneAndUpdate(
+    { runId, telegramUserId, profileCredited: { $ne: true } },
+    {
+      $set: {
+        status: 'finished',
+        profileCredited: true,
+        finishedAt: new Date(now),
+        updatedAt: new Date(now),
+      },
+    },
+    { returnDocument: 'after' },
+  );
+
+  if (!claimResult) {
+    const refreshed = await collection.findOne({ runId });
+    if (refreshed?.finalScore) {
+      return refreshed.finalScore;
+    }
+  }
+
+  const profilesCollection = db.collection<PlayerProfile>('profiles');
+  const profileUpdate = await profilesCollection.findOneAndUpdate(
+    { telegramUserId },
+    {
+      $inc: {
+        xp: xpEarned,
+        coins: coinsEarned,
+        gamesPlayed: 1,
+      },
+      $max: {
+        bestScore: totalScore,
+      },
+      $set: {
+        updatedAt: new Date(now),
+      },
+    },
+    { returnDocument: 'after' },
+  );
+
+  let newXp = xpEarned;
+  let newCoins = coinsEarned;
+  let newLevel = calculateLevel(xpEarned);
+  let leveledUp = false;
+  let bestScore = totalScore;
+
+  if (profileUpdate) {
+    newXp = profileUpdate.xp;
+    newCoins = profileUpdate.coins;
+    bestScore = profileUpdate.bestScore;
+    newLevel = calculateLevel(newXp);
+    const previousLevel = profileUpdate.level;
+    leveledUp = newLevel > previousLevel;
+
+    if (leveledUp) {
+      await profilesCollection.updateOne(
+        { telegramUserId },
+        {
+          $set: {
+            level: newLevel,
+            updatedAt: new Date(now),
+          },
+        },
+      );
+    }
+  }
+
   const finalScore: FinishRunResponse = {
     correctCount,
     timeUsedMs,
     maxCombo: run.maxCombo,
     leftoverBonus,
     totalScore,
+    xpEarned,
+    coinsEarned,
+    newXp,
+    newCoins,
+    newLevel,
+    leveledUp,
+    bestScore,
   };
 
   await collection.updateOne(
     { runId },
     {
       $set: {
-        status: 'finished',
-        finishedAt: new Date(now),
         finalScore,
         updatedAt: new Date(now),
       },

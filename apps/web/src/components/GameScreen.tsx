@@ -55,6 +55,13 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
         maxCombo: comboCount,
         leftoverBonus: 0,
         totalScore: runningScore,
+        xpEarned: 0,
+        coinsEarned: 0,
+        newXp: 0,
+        newCoins: 0,
+        newLevel: 1,
+        leveledUp: false,
+        bestScore: runningScore,
       };
       onFinish(fallbackResult);
     }

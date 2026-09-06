@@ -299,6 +299,12 @@ describe('run HTTP endpoints', () => {
     assert.equal(finishRes.status, 200);
     const finishBody = await finishRes.json();
     assert.equal(typeof finishBody.totalScore, 'number');
+    assert.equal(typeof finishBody.xpEarned, 'number');
+    assert.equal(typeof finishBody.coinsEarned, 'number');
+    assert.equal(typeof finishBody.newXp, 'number');
+    assert.equal(typeof finishBody.newCoins, 'number');
+    assert.equal(typeof finishBody.newLevel, 'number');
+    assert.equal(typeof finishBody.bestScore, 'number');
 
     const subsequentAnswer = await fetch(`${baseUrl}/api/runs/${runId}/answer`, {
       method: 'POST',

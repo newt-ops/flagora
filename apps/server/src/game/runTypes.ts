@@ -24,6 +24,7 @@ export interface GameRun {
   startedAt: Date;
   finishedAt?: Date;
   status: 'active' | 'finished' | 'expired';
+  profileCredited: boolean;
   runDurationMs: number;
   finalScore?: FinishRunResponse;
   createdAt: Date;

@@ -12,6 +12,7 @@ export const playerProfileSchema = z.object({
   currentStreak: z.number().int().default(0),
   longestStreak: z.number().int().default(0),
   gamesPlayed: z.number().int().default(0),
+  bestScore: z.number().int().default(0),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

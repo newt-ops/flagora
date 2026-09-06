@@ -66,4 +66,11 @@ export interface FinishRunResponse {
   maxCombo: number;
   leftoverBonus: number;
   totalScore: number;
+  xpEarned: number;
+  coinsEarned: number;
+  newXp: number;
+  newCoins: number;
+  newLevel: number;
+  leveledUp: boolean;
+  bestScore: number;
 }
