@@ -53,6 +53,8 @@ export interface StartRunResponse {
   runDurationMs: number;
 }
 
+import type { StreakChange } from './streak.js';
+
 export interface AnswerRunResponse {
   correct: boolean;
   comboCount: number;
@@ -74,4 +76,7 @@ export interface FinishRunResponse {
   leveledUp: boolean;
   bestScore: number;
   isNewBest: boolean;
+  currentStreak: number;
+  longestStreak: number;
+  streakChange: StreakChange;
 }

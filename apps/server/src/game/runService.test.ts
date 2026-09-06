@@ -9,6 +9,7 @@ import {
   calculateXpEarned,
   calculateCoinsEarned,
   calculateLevel,
+  getUtcDateString,
   SCORING_CONFIG,
   PROGRESSION_CONFIG,
   type PlayerProfile,
@@ -338,6 +339,7 @@ describe('runService and Variant C scoring with profile progression', () => {
       longestStreak: 7,
       gamesPlayed: 3,
       bestScore: 200,
+      lastPlayedDate: getUtcDateString(),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -397,6 +399,7 @@ describe('runService and Variant C scoring with profile progression', () => {
       longestStreak: 0,
       gamesPlayed: 0,
       bestScore: 500,
+      lastPlayedDate: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -456,6 +459,7 @@ describe('runService and Variant C scoring with profile progression', () => {
       longestStreak: 1,
       gamesPlayed: 5,
       bestScore: 400,
+      lastPlayedDate: getUtcDateString(),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -494,6 +498,7 @@ describe('runService and Variant C scoring with profile progression', () => {
       longestStreak: 4,
       gamesPlayed: 1,
       bestScore: 250,
+      lastPlayedDate: getUtcDateString(),
       createdAt: new Date(),
       updatedAt: new Date(),
     };

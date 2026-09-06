@@ -63,6 +63,9 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
         leveledUp: false,
         bestScore: runningScore,
         isNewBest: false,
+        currentStreak: 1,
+        longestStreak: 1,
+        streakChange: 'unchanged',
       };
       onFinish(fallbackResult);
     }

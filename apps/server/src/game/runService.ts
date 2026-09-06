@@ -9,6 +9,8 @@ import {
   calculateXpEarned,
   calculateCoinsEarned,
   calculateLevel,
+  getUtcDateString,
+  calculateStreak,
   type StartRunResponse,
   type AnswerRunResponse,
   type FinishRunResponse,
@@ -226,6 +228,14 @@ export async function finishRun(
   const previousBest = existingProfile?.bestScore ?? 0;
   const isNewBest = totalScore > previousBest;
 
+  const todayStr = getUtcDateString(new Date(now));
+  const streakResult = calculateStreak(
+    existingProfile?.lastPlayedDate ?? null,
+    existingProfile?.currentStreak ?? 0,
+    existingProfile?.longestStreak ?? 0,
+    todayStr,
+  );
+
   const profileUpdate = await profilesCollection.findOneAndUpdate(
     { telegramUserId },
     {
@@ -238,6 +248,9 @@ export async function finishRun(
         bestScore: totalScore,
       },
       $set: {
+        currentStreak: streakResult.currentStreak,
+        longestStreak: streakResult.longestStreak,
+        lastPlayedDate: todayStr,
         updatedAt: new Date(now),
       },
     },
@@ -285,6 +298,9 @@ export async function finishRun(
     leveledUp,
     bestScore,
     isNewBest,
+    currentStreak: streakResult.currentStreak,
+    longestStreak: streakResult.longestStreak,
+    streakChange: streakResult.streakChange,
   };
 
   await collection.updateOne(

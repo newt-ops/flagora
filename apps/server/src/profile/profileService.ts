@@ -66,6 +66,7 @@ export async function findOrCreatePlayerProfile(
     longestStreak: 0,
     gamesPlayed: 0,
     bestScore: 0,
+    lastPlayedDate: null,
     createdAt: now,
     updatedAt: now,
   };

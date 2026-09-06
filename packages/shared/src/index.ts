@@ -11,6 +11,7 @@ export interface PlayerProfile {
   longestStreak: number;
   gamesPlayed: number;
   bestScore: number;
+  lastPlayedDate: string | null;
   createdAt: Date | string;
   updatedAt: Date | string;
 }
@@ -27,4 +28,5 @@ export interface ProfileResponse {
 export * from './flags.js';
 export * from './scoring.js';
 export * from './progression.js';
+export * from './streak.js';
 
