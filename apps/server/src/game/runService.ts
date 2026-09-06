@@ -222,6 +222,10 @@ export async function finishRun(
   }
 
   const profilesCollection = db.collection<PlayerProfile>('profiles');
+  const existingProfile = await profilesCollection.findOne({ telegramUserId });
+  const previousBest = existingProfile?.bestScore ?? 0;
+  const isNewBest = totalScore > previousBest;
+
   const profileUpdate = await profilesCollection.findOneAndUpdate(
     { telegramUserId },
     {
@@ -280,6 +284,7 @@ export async function finishRun(
     newLevel,
     leveledUp,
     bestScore,
+    isNewBest,
   };
 
   await collection.updateOne(

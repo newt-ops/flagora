@@ -54,18 +54,13 @@ export function ProfileCard({ profile, onPlay, isStarting = false }: ProfileCard
           <p className="mt-1 text-lg font-bold text-tg-text">{profile.xp}</p>
         </div>
         <div className="rounded-xl bg-tg-bg p-3 text-center">
-          <p className="text-xs text-tg-hint">Current Streak</p>
-          <p className="mt-1 text-lg font-bold text-tg-text">{profile.currentStreak}</p>
+          <p className="text-xs text-tg-hint">Best Score</p>
+          <p className="mt-1 text-lg font-bold text-tg-text">{profile.bestScore}</p>
         </div>
         <div className="rounded-xl bg-tg-bg p-3 text-center">
-          <p className="text-xs text-tg-hint">Longest Streak</p>
-          <p className="mt-1 text-lg font-bold text-tg-text">{profile.longestStreak}</p>
+          <p className="text-xs text-tg-hint">Games Played</p>
+          <p className="mt-1 text-lg font-bold text-tg-text">{profile.gamesPlayed}</p>
         </div>
-      </div>
-
-      <div className="mt-3 rounded-xl bg-tg-bg p-3 text-center">
-        <p className="text-xs text-tg-hint">Games Played</p>
-        <p className="mt-1 text-lg font-bold text-tg-text">{profile.gamesPlayed}</p>
       </div>
 
       {onPlay && (

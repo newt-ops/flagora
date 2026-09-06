@@ -410,6 +410,7 @@ describe('runService and Variant C scoring with profile progression', () => {
     const finishLow = await finishRun(run1.runId, userId, db);
     assert.equal(finishLow.totalScore, 300);
     assert.equal(finishLow.bestScore, 500);
+    assert.equal(finishLow.isNewBest, false);
 
     const profileAfterLow = await profilesCollection.findOne({ telegramUserId: userId });
     assert.equal(profileAfterLow?.bestScore, 500);
@@ -422,6 +423,7 @@ describe('runService and Variant C scoring with profile progression', () => {
     const finishHigh = await finishRun(run2.runId, userId, db);
     assert.equal(finishHigh.totalScore, 800);
     assert.equal(finishHigh.bestScore, 800);
+    assert.equal(finishHigh.isNewBest, true);
 
     const profileAfterHigh = await profilesCollection.findOne({ telegramUserId: userId });
     assert.equal(profileAfterHigh?.bestScore, 800);
@@ -434,6 +436,7 @@ describe('runService and Variant C scoring with profile progression', () => {
     const finishMedium = await finishRun(run3.runId, userId, db);
     assert.equal(finishMedium.totalScore, 650);
     assert.equal(finishMedium.bestScore, 800);
+    assert.equal(finishMedium.isNewBest, false);
 
     const profileAfterMedium = await profilesCollection.findOne({ telegramUserId: userId });
     assert.equal(profileAfterMedium?.bestScore, 800);

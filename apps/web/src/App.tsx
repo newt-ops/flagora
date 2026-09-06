@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { StartRunResponse, FinishRunResponse } from '@flagora/shared';
 import { useProfile } from './hooks/useProfile.js';
 import { useStore } from './store/useStore.js';
@@ -9,6 +10,7 @@ import { ResultsScreen } from './components/ResultsScreen.js';
 import { ErrorState } from './components/ErrorState.js';
 
 export function App() {
+  const queryClient = useQueryClient();
   const { profile, isLoading, error, refetch } = useProfile();
   const { sessionToken } = useStore();
   const { startRun, isStarting } = useGameRun();
@@ -36,6 +38,7 @@ export function App() {
   const handleFinishGame = (result: FinishRunResponse) => {
     setLastResult(result);
     setScreen('results');
+    void queryClient.invalidateQueries({ queryKey: ['profile'] });
   };
 
   const handleBackToProfile = () => {

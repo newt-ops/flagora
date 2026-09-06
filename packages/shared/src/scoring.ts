@@ -73,4 +73,5 @@ export interface FinishRunResponse {
   newLevel: number;
   leveledUp: boolean;
   bestScore: number;
+  isNewBest: boolean;
 }

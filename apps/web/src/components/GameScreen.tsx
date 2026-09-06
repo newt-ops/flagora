@@ -62,6 +62,7 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
         newLevel: 1,
         leveledUp: false,
         bestScore: runningScore,
+        isNewBest: false,
       };
       onFinish(fallbackResult);
     }
