@@ -2,17 +2,28 @@ import { MongoClient, type Db } from 'mongodb';
 
 let client: MongoClient | null = null;
 let database: Db | null = null;
+let memoryServerInstance: { stop: () => Promise<boolean> } | null = null;
 
 export async function initDatabase(uri: string): Promise<Db> {
   if (database) {
     return database;
   }
 
-  client = new MongoClient(uri);
+  let connectionUri = uri;
+  if (uri === 'memory') {
+    const { MongoMemoryServer } = await import('mongodb-memory-server');
+    const mongod = await MongoMemoryServer.create();
+    memoryServerInstance = mongod;
+    connectionUri = mongod.getUri();
+  }
+
+  client = new MongoClient(connectionUri);
   await client.connect();
   database = client.db();
 
-  await database.collection('profiles').createIndex({ telegramUserId: 1 }, { unique: true });
+  await database
+    .collection('profiles')
+    .createIndex({ telegramUserId: 1 }, { unique: true });
 
   return database;
 }
@@ -29,5 +40,9 @@ export async function closeDatabase(): Promise<void> {
     await client.close();
     client = null;
     database = null;
+  }
+  if (memoryServerInstance) {
+    await memoryServerInstance.stop();
+    memoryServerInstance = null;
   }
 }
