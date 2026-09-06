@@ -8,8 +8,10 @@ import {
   User,
   Sparkles,
   Coins,
+  Flame,
 } from 'lucide-react';
 import type { FinishRunResponse } from '@flagora/shared';
+import { getStreakBadgeText } from './streakDisplayHelpers.js';
 
 interface ResultsScreenProps {
   result: FinishRunResponse;
@@ -25,6 +27,7 @@ export function ResultsScreen({
   isStartingAgain = false,
 }: ResultsScreenProps) {
   const timeSeconds = (result.timeUsedMs / 1000).toFixed(1);
+  const streakBadgeText = getStreakBadgeText(result.streakChange, result.currentStreak);
 
   return (
     <div className="flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
@@ -51,12 +54,21 @@ export function ResultsScreen({
           <span className="text-sm font-semibold text-tg-hint">pts</span>
         </div>
 
-        {result.isNewBest && (
-          <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-3 py-0.5 text-xs font-bold text-emerald-400 ring-1 ring-emerald-500/30">
-            <Sparkles className="h-3 w-3" />
-            <span>New Best!</span>
-          </div>
-        )}
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
+          {result.isNewBest && (
+            <div className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-3 py-0.5 text-xs font-bold text-emerald-400 ring-1 ring-emerald-500/30">
+              <Sparkles className="h-3 w-3" />
+              <span>New Best!</span>
+            </div>
+          )}
+
+          {streakBadgeText && (
+            <div className="inline-flex items-center gap-1 rounded-full bg-orange-500/20 px-3 py-0.5 text-xs font-bold text-orange-400 ring-1 ring-orange-500/30">
+              <Flame className="h-3 w-3 fill-current" />
+              <span>{streakBadgeText}</span>
+            </div>
+          )}
+        </div>
 
         <div className="mt-6 grid w-full grid-cols-2 gap-2.5">
           <div className="flex flex-col items-center rounded-xl bg-tg-bg p-3">

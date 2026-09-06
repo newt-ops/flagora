@@ -1,5 +1,6 @@
-import { Play } from 'lucide-react';
+import { Play, Flame } from 'lucide-react';
 import type { PlayerProfile } from '@flagora/shared';
+import { getProfileStreakDisplay } from './streakDisplayHelpers.js';
 
 export function getDisplayName(profile: {
   username?: string | null;
@@ -24,6 +25,7 @@ interface ProfileCardProps {
 export function ProfileCard({ profile, onPlay, isStarting = false }: ProfileCardProps) {
   const displayName = getDisplayName(profile);
   const initial = profile.firstName ? profile.firstName.charAt(0).toUpperCase() : 'P';
+  const streakInfo = getProfileStreakDisplay(profile.currentStreak, profile.longestStreak);
 
   return (
     <div className="w-full max-w-sm rounded-2xl bg-tg-secondary-bg p-6 text-tg-text">
@@ -44,7 +46,24 @@ export function ProfileCard({ profile, onPlay, isStarting = false }: ProfileCard
         <p className="mt-0.5 text-xs text-tg-hint">Level {profile.level} Player</p>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-3">
+      <div className="mt-5 flex items-center justify-between rounded-xl bg-tg-bg px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20">
+            <Flame className="h-5 w-5 fill-current text-orange-400" />
+          </div>
+          <div className="text-left">
+            <p className="text-sm font-bold text-tg-text">{streakInfo.title}</p>
+            <p className="text-xs text-tg-hint">{streakInfo.subtitle}</p>
+          </div>
+        </div>
+        {streakInfo.isActive && (
+          <span className="rounded-full bg-orange-500/20 px-2.5 py-0.5 text-xs font-semibold text-orange-400 ring-1 ring-orange-500/30">
+            Active
+          </span>
+        )}
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3">
         <div className="rounded-xl bg-tg-bg p-3 text-center">
           <p className="text-xs text-tg-hint">Coins</p>
           <p className="mt-1 text-lg font-bold text-tg-text">{profile.coins}</p>
