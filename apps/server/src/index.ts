@@ -9,6 +9,15 @@ import {
   type AuthenticatedSessionRequest,
 } from './session/requireSession.js';
 import { createSessionToken } from './session/tokens.js';
+import { createRun, submitAnswer, finishRun } from './game/runService.js';
+import {
+  RunNotFoundError,
+  UnauthorizedRunAccessError,
+  RunAlreadyFinishedError,
+  FlagAlreadyAnsweredError,
+  TimeExpiredError,
+  InvalidFlagIndexError,
+} from './game/runTypes.js';
 
 dotenv.config();
 
@@ -92,6 +101,96 @@ async function bootstrap() {
       res.status(200).json({ profile });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch profile';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.post('/api/runs/start', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const run = await createRun(telegramUserId, db);
+      res.status(200).json(run);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to start run';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.post('/api/runs/:id/answer', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const id = String(req.params.id);
+      const { flagIndex, selectedIsoCode } = req.body;
+
+      if (typeof flagIndex !== 'number' || typeof selectedIsoCode !== 'string') {
+        res.status(400).json({
+          error: 'Bad request',
+          message: 'flagIndex (number) and selectedIsoCode (string) are required',
+        });
+        return;
+      }
+
+      const result = await submitAnswer(id, telegramUserId, flagIndex, selectedIsoCode, db);
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof RunNotFoundError) {
+        res.status(404).json({ error: 'Not found', message: error.message });
+        return;
+      }
+      if (error instanceof UnauthorizedRunAccessError) {
+        res.status(403).json({ error: 'Forbidden', message: error.message });
+        return;
+      }
+      if (error instanceof TimeExpiredError) {
+        res.status(400).json({ error: 'Time expired', message: error.message, timeExpired: true });
+        return;
+      }
+      if (
+        error instanceof RunAlreadyFinishedError ||
+        error instanceof FlagAlreadyAnsweredError ||
+        error instanceof InvalidFlagIndexError
+      ) {
+        res.status(400).json({ error: 'Bad request', message: error.message });
+        return;
+      }
+
+      const message = error instanceof Error ? error.message : 'Answer submission failed';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.post('/api/runs/:id/finish', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const id = String(req.params.id);
+      const result = await finishRun(id, telegramUserId, db);
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof RunNotFoundError) {
+        res.status(404).json({ error: 'Not found', message: error.message });
+        return;
+      }
+      if (error instanceof UnauthorizedRunAccessError) {
+        res.status(403).json({ error: 'Forbidden', message: error.message });
+        return;
+      }
+
+      const message = error instanceof Error ? error.message : 'Failed to finish run';
       res.status(500).json({ error: 'Internal server error', message });
     }
   });

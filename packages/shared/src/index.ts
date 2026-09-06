@@ -24,3 +24,5 @@ export interface ProfileResponse {
 }
 
 export * from './flags.js';
+export * from './scoring.js';
+
