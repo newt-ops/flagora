@@ -1,3 +1,4 @@
+import { Play } from 'lucide-react';
 import type { PlayerProfile } from '@flagora/shared';
 
 export function getDisplayName(profile: {
@@ -16,9 +17,11 @@ export function getDisplayName(profile: {
 
 interface ProfileCardProps {
   profile: PlayerProfile;
+  onPlay?: () => void;
+  isStarting?: boolean;
 }
 
-export function ProfileCard({ profile }: ProfileCardProps) {
+export function ProfileCard({ profile, onPlay, isStarting = false }: ProfileCardProps) {
   const displayName = getDisplayName(profile);
   const initial = profile.firstName ? profile.firstName.charAt(0).toUpperCase() : 'P';
 
@@ -64,6 +67,18 @@ export function ProfileCard({ profile }: ProfileCardProps) {
         <p className="text-xs text-tg-hint">Games Played</p>
         <p className="mt-1 text-lg font-bold text-tg-text">{profile.gamesPlayed}</p>
       </div>
+
+      {onPlay && (
+        <button
+          type="button"
+          onClick={onPlay}
+          disabled={isStarting}
+          className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-md transition-transform hover:opacity-90 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+        >
+          <Play className={`h-4 w-4 fill-current ${isStarting ? 'animate-spin' : ''}`} />
+          <span>{isStarting ? 'Starting Run...' : 'Play Flagora'}</span>
+        </button>
+      )}
     </div>
   );
 }

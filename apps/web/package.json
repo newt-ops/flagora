@@ -16,6 +16,7 @@
     "@telegram-apps/sdk": "^3.11.8",
     "@telegram-apps/sdk-react": "^3.3.9",
     "flag-icons": "^7.3.2",
+    "lucide-react": "^1.41.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zustand": "^5.0.3"

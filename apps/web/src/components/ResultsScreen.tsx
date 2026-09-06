@@ -1,0 +1,91 @@
+import { Trophy, CheckCircle2, Clock, Zap, Plus, RotateCcw, User } from 'lucide-react';
+import type { FinishRunResponse } from '@flagora/shared';
+
+interface ResultsScreenProps {
+  result: FinishRunResponse;
+  onPlayAgain: () => void;
+  onBackToProfile: () => void;
+  isStartingAgain?: boolean;
+}
+
+export function ResultsScreen({
+  result,
+  onPlayAgain,
+  onBackToProfile,
+  isStartingAgain = false,
+}: ResultsScreenProps) {
+  const timeSeconds = (result.timeUsedMs / 1000).toFixed(1);
+
+  return (
+    <div className="flex w-full max-w-sm flex-col items-center gap-5 text-tg-text">
+      <div className="flex w-full flex-col items-center rounded-2xl bg-tg-secondary-bg p-6 text-center shadow-md ring-1 ring-slate-800">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20">
+          <Trophy className="h-8 w-8" />
+        </div>
+
+        <h2 className="mt-4 text-xs font-semibold uppercase tracking-wider text-tg-hint">
+          Run Completed
+        </h2>
+        <div className="mt-1 text-4xl font-extrabold tracking-tight text-tg-text">
+          {result.totalScore.toLocaleString()}
+          <span className="ml-1 text-sm font-semibold text-tg-hint">pts</span>
+        </div>
+
+        <div className="mt-6 grid w-full grid-cols-2 gap-2.5">
+          <div className="flex flex-col items-center rounded-xl bg-tg-bg p-3">
+            <div className="flex items-center gap-1 text-xs text-tg-hint">
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Correct</span>
+            </div>
+            <p className="mt-1 text-lg font-bold text-tg-text">{result.correctCount} / 10</p>
+          </div>
+
+          <div className="flex flex-col items-center rounded-xl bg-tg-bg p-3">
+            <div className="flex items-center gap-1 text-xs text-tg-hint">
+              <Clock className="h-3.5 w-3.5 text-sky-400" />
+              <span>Time Used</span>
+            </div>
+            <p className="mt-1 text-lg font-bold text-tg-text">{timeSeconds}s</p>
+          </div>
+
+          <div className="flex flex-col items-center rounded-xl bg-tg-bg p-3">
+            <div className="flex items-center gap-1 text-xs text-tg-hint">
+              <Zap className="h-3.5 w-3.5 text-amber-400" />
+              <span>Max Combo</span>
+            </div>
+            <p className="mt-1 text-lg font-bold text-tg-text">{result.maxCombo}</p>
+          </div>
+
+          <div className="flex flex-col items-center rounded-xl bg-tg-bg p-3">
+            <div className="flex items-center gap-1 text-xs text-tg-hint">
+              <Plus className="h-3.5 w-3.5 text-indigo-400" />
+              <span>Time Bonus</span>
+            </div>
+            <p className="mt-1 text-lg font-bold text-tg-text">+{result.leftoverBonus}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex w-full flex-col gap-2.5">
+        <button
+          type="button"
+          onClick={onPlayAgain}
+          disabled={isStartingAgain}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow transition-transform hover:opacity-90 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+        >
+          <RotateCcw className={`h-4 w-4 ${isStartingAgain ? 'animate-spin' : ''}`} />
+          <span>{isStartingAgain ? 'Loading Next Run...' : 'Play Again'}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={onBackToProfile}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg font-semibold text-tg-hint transition-colors hover:text-tg-text active:scale-95"
+        >
+          <User className="h-4 w-4" />
+          <span>Back to Profile</span>
+        </button>
+      </div>
+    </div>
+  );
+}
