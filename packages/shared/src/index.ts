@@ -22,3 +22,5 @@ export interface SessionResponse {
 export interface ProfileResponse {
   profile: PlayerProfile;
 }
+
+export * from './flags.js';

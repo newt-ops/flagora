@@ -15,6 +15,7 @@
     "@tanstack/react-query": "^5.66.9",
     "@telegram-apps/sdk": "^3.11.8",
     "@telegram-apps/sdk-react": "^3.3.9",
+    "flag-icons": "^7.3.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "zustand": "^5.0.3"

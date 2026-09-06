@@ -21,9 +21,7 @@ export async function initDatabase(uri: string): Promise<Db> {
   await client.connect();
   database = client.db();
 
-  await database
-    .collection('profiles')
-    .createIndex({ telegramUserId: 1 }, { unique: true });
+  await database.collection('profiles').createIndex({ telegramUserId: 1 }, { unique: true });
 
   return database;
 }
