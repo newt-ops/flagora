@@ -12,10 +12,15 @@ import {
 } from 'lucide-react';
 import type { FinishRunResponse } from '@flagora/shared';
 import { getStreakBadgeText } from './streakDisplayHelpers.js';
+import {
+  shouldShowPlayAgain,
+  shouldShowDailyLeaderboardButton,
+} from './dailyChallengeHelpers.js';
 
 interface ResultsScreenProps {
   result: FinishRunResponse;
-  onPlayAgain: () => void;
+  mode?: 'practice' | 'daily';
+  onPlayAgain?: () => void;
   onBackToProfile: () => void;
   onViewLeaderboard?: () => void;
   isStartingAgain?: boolean;
@@ -23,6 +28,7 @@ interface ResultsScreenProps {
 
 export function ResultsScreen({
   result,
+  mode = 'practice',
   onPlayAgain,
   onBackToProfile,
   onViewLeaderboard,
@@ -30,6 +36,9 @@ export function ResultsScreen({
 }: ResultsScreenProps) {
   const timeSeconds = (result.timeUsedMs / 1000).toFixed(1);
   const streakBadgeText = getStreakBadgeText(result.streakChange, result.currentStreak);
+  const isDaily = mode === 'daily';
+  const showPlayAgain = shouldShowPlayAgain(mode);
+  const showDailyLb = shouldShowDailyLeaderboardButton(mode);
 
   return (
     <div className="flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
@@ -46,7 +55,7 @@ export function ResultsScreen({
         </div>
 
         <h2 className="mt-4 text-xs font-semibold uppercase tracking-wider text-tg-hint">
-          Run Completed
+          {isDaily ? 'Daily Challenge Completed' : 'Run Completed'}
         </h2>
 
         <div className="mt-1 flex items-baseline justify-center gap-1">
@@ -57,7 +66,7 @@ export function ResultsScreen({
         </div>
 
         <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
-          {result.isNewBest && (
+          {!isDaily && result.isNewBest && (
             <div className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-3 py-0.5 text-xs font-bold text-emerald-400 ring-1 ring-emerald-500/30">
               <Sparkles className="h-3 w-3" />
               <span>New Best!</span>
@@ -124,7 +133,18 @@ export function ResultsScreen({
       </div>
 
       <div className="flex w-full flex-col gap-2.5">
-        {result.isNewBest && onViewLeaderboard && (
+        {showDailyLb && onViewLeaderboard && (
+          <button
+            type="button"
+            onClick={onViewLeaderboard}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-500/15 font-bold text-amber-300 ring-1 ring-amber-500/30 transition-transform hover:opacity-90 active:scale-95"
+          >
+            <Trophy className="h-4 w-4 text-amber-400" />
+            <span>View Daily Leaderboard</span>
+          </button>
+        )}
+
+        {!isDaily && result.isNewBest && onViewLeaderboard && (
           <button
             type="button"
             onClick={onViewLeaderboard}
@@ -135,15 +155,17 @@ export function ResultsScreen({
           </button>
         )}
 
-        <button
-          type="button"
-          onClick={onPlayAgain}
-          disabled={isStartingAgain}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow transition-transform hover:opacity-90 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
-        >
-          <RotateCcw className={`h-4 w-4 ${isStartingAgain ? 'animate-spin' : ''}`} />
-          <span>{isStartingAgain ? 'Loading Next Run...' : 'Play Again'}</span>
-        </button>
+        {showPlayAgain && onPlayAgain && (
+          <button
+            type="button"
+            onClick={onPlayAgain}
+            disabled={isStartingAgain}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow transition-transform hover:opacity-90 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+          >
+            <RotateCcw className={`h-4 w-4 ${isStartingAgain ? 'animate-spin' : ''}`} />
+            <span>{isStartingAgain ? 'Loading Next Run...' : 'Play Again'}</span>
+          </button>
+        )}
 
         <button
           type="button"

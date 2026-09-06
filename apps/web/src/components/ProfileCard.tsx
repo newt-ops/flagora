@@ -1,25 +1,35 @@
-import { Play, Flame, Trophy } from 'lucide-react';
-import { type PlayerProfile, getDisplayName } from '@flagora/shared';
+import { Play, Flame, Trophy, Calendar, CheckCircle2 } from 'lucide-react';
+import { type PlayerProfile, type DailyChallengeStatusResponse, getDisplayName } from '@flagora/shared';
 import { getProfileStreakDisplay } from './streakDisplayHelpers.js';
+import { getDailyResultSummary } from './dailyChallengeHelpers.js';
 
 export { getDisplayName };
 
 interface ProfileCardProps {
   profile: PlayerProfile;
+  dailyStatus?: DailyChallengeStatusResponse | null;
   onPlay?: () => void;
+  onStartDaily?: () => void;
   onViewLeaderboard?: () => void;
+  onViewDailyLeaderboard?: () => void;
   isStarting?: boolean;
+  isStartingDaily?: boolean;
 }
 
 export function ProfileCard({
   profile,
+  dailyStatus,
   onPlay,
+  onStartDaily,
   onViewLeaderboard,
+  onViewDailyLeaderboard,
   isStarting = false,
+  isStartingDaily = false,
 }: ProfileCardProps) {
   const displayName = getDisplayName(profile);
   const initial = profile.firstName ? profile.firstName.charAt(0).toUpperCase() : 'P';
   const streakInfo = getProfileStreakDisplay(profile.currentStreak, profile.longestStreak);
+  const dailySummary = getDailyResultSummary(dailyStatus?.result ?? null);
 
   return (
     <div className="w-full max-w-sm rounded-2xl bg-tg-secondary-bg p-6 text-tg-text">
@@ -76,15 +86,80 @@ export function ProfileCard({
         </div>
       </div>
 
+      <div className="mt-4 rounded-xl bg-tg-bg p-4 ring-1 ring-slate-800">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20">
+              <Calendar className="h-4 w-4" />
+            </div>
+            <div className="text-left">
+              <p className="text-sm font-bold text-tg-text">Daily Challenge</p>
+              <p className="text-[11px] text-tg-hint">Same 10 flags for all players</p>
+            </div>
+          </div>
+          {dailyStatus?.attempted ? (
+            <span className="flex items-center gap-1 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400">
+              <CheckCircle2 className="h-3 w-3" />
+              Completed
+            </span>
+          ) : (
+            <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-[11px] font-bold text-amber-400">
+              Available
+            </span>
+          )}
+        </div>
+
+        {dailyStatus?.attempted ? (
+          <div className="mt-3 flex flex-col gap-2.5">
+            {dailySummary ? (
+              <div className="flex items-center justify-between rounded-lg bg-tg-secondary-bg px-3 py-2 text-xs">
+                <div>
+                  <span className="font-extrabold text-tg-text">{dailySummary.scoreText}</span>
+                  <span className="ml-2 text-tg-hint">{dailySummary.correctText}</span>
+                </div>
+                <span className="text-tg-hint">{dailySummary.timeText}</span>
+              </div>
+            ) : (
+              <p className="text-xs text-tg-hint">Completed today</p>
+            )}
+
+            {onViewDailyLeaderboard && (
+              <button
+                type="button"
+                onClick={onViewDailyLeaderboard}
+                className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-amber-500/15 font-bold text-amber-300 ring-1 ring-amber-500/30 transition-transform hover:opacity-90 active:scale-95"
+              >
+                <Trophy className="h-4 w-4 text-amber-400" />
+                <span>View Daily Leaderboard</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="mt-3">
+            {onStartDaily && (
+              <button
+                type="button"
+                onClick={onStartDaily}
+                disabled={isStartingDaily}
+                className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-amber-500 font-bold text-slate-950 shadow transition-transform hover:bg-amber-400 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+              >
+                <Play className={`h-3.5 w-3.5 fill-current ${isStartingDaily ? 'animate-spin' : ''}`} />
+                <span>{isStartingDaily ? 'Starting Challenge...' : 'Play Daily Challenge'}</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {onPlay && (
         <button
           type="button"
           onClick={onPlay}
           disabled={isStarting}
-          className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-md transition-transform hover:opacity-90 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+          className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-md transition-transform hover:opacity-90 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
         >
           <Play className={`h-4 w-4 fill-current ${isStarting ? 'animate-spin' : ''}`} />
-          <span>{isStarting ? 'Starting Run...' : 'Play Flagora'}</span>
+          <span>{isStarting ? 'Starting Run...' : 'Play Practice'}</span>
         </button>
       )}
 
@@ -95,7 +170,7 @@ export function ProfileCard({
           className="mt-2.5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-tg-bg font-semibold text-tg-hint transition-colors hover:text-tg-text active:scale-95"
         >
           <Trophy className="h-4 w-4 text-amber-400" />
-          <span>View Leaderboard</span>
+          <span>Global Leaderboard</span>
         </button>
       )}
     </div>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Trophy, ArrowLeft, Play, Sparkles } from 'lucide-react';
 import { useLeaderboard } from '../hooks/useLeaderboard.js';
 import {
@@ -5,23 +6,34 @@ import {
   isUnrankedPlayer,
   getRankBadgeClass,
 } from './leaderboardHelpers.js';
+import {
+  getLeaderboardTitle,
+  getLeaderboardSubtitle,
+} from './dailyChallengeHelpers.js';
 
 interface LeaderboardScreenProps {
   sessionToken: string;
   currentUserId: number;
+  initialMode?: 'global' | 'daily';
   onBack: () => void;
   onPlay?: () => void;
+  onPlayDaily?: () => void;
   isStarting?: boolean;
+  dailyAttempted?: boolean;
 }
 
 export function LeaderboardScreen({
   sessionToken,
   currentUserId,
+  initialMode = 'global',
   onBack,
   onPlay,
+  onPlayDaily,
   isStarting = false,
+  dailyAttempted = false,
 }: LeaderboardScreenProps) {
-  const { topEntries, myRank, isLoading, error, refetch } = useLeaderboard(sessionToken);
+  const [mode, setMode] = useState<'global' | 'daily'>(initialMode);
+  const { topEntries, myRank, isLoading, error, refetch } = useLeaderboard(sessionToken, mode);
 
   const showPinnedRow = shouldShowPinnedMyRank(myRank, topEntries, currentUserId);
   const isUnranked = isUnrankedPlayer(myRank);
@@ -40,14 +52,39 @@ export function LeaderboardScreen({
 
         <div className="flex items-center gap-2">
           <Trophy className="h-5 w-5 text-amber-400" />
-          <h1 className="text-lg font-bold text-tg-text">Global Leaderboard</h1>
+          <h1 className="text-lg font-bold text-tg-text">{getLeaderboardTitle(mode)}</h1>
         </div>
 
         <div className="h-10 w-10" />
       </div>
 
+      <div className="flex rounded-xl bg-tg-secondary-bg p-1">
+        <button
+          type="button"
+          onClick={() => setMode('global')}
+          className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${
+            mode === 'global'
+              ? 'bg-tg-bg text-tg-text shadow-sm ring-1 ring-slate-800'
+              : 'text-tg-hint hover:text-tg-text'
+          }`}
+        >
+          Global
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('daily')}
+          className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${
+            mode === 'daily'
+              ? 'bg-tg-bg text-tg-text shadow-sm ring-1 ring-slate-800'
+              : 'text-tg-hint hover:text-tg-text'
+          }`}
+        >
+          Daily Challenge
+        </button>
+      </div>
+
       <p className="text-center text-xs text-tg-hint">
-        Ranked by all-time best score
+        {getLeaderboardSubtitle(mode)}
       </p>
 
       {isLoading && (
@@ -77,7 +114,11 @@ export function LeaderboardScreen({
               <div className="flex flex-col items-center gap-2 p-6 text-center">
                 <Trophy className="h-8 w-8 text-tg-hint" />
                 <p className="text-sm font-semibold text-tg-text">No scores recorded yet</p>
-                <p className="text-xs text-tg-hint">Be the first player to rank on Flagora!</p>
+                <p className="text-xs text-tg-hint">
+                  {mode === 'daily'
+                    ? 'Be the first player to complete today’s challenge!'
+                    : 'Be the first player to rank on Flagora!'}
+                </p>
               </div>
             ) : (
               topEntries.map((entry) => {
@@ -170,12 +211,27 @@ export function LeaderboardScreen({
             <div className="flex flex-col items-center gap-2 rounded-2xl bg-tg-secondary-bg p-4 text-center ring-1 ring-slate-800">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-300">
                 <Sparkles className="h-4 w-4 text-amber-400" />
-                <span>Not Ranked Yet</span>
+                <span>{mode === 'daily' ? 'Not Ranked Today' : 'Not Ranked Yet'}</span>
               </div>
               <p className="text-xs text-tg-hint">
-                Play a run to record your score and claim your position on the leaderboard!
+                {mode === 'daily'
+                  ? dailyAttempted
+                    ? 'You have already completed today’s challenge.'
+                    : 'Complete today’s daily challenge to record your score on the daily leaderboard!'
+                  : 'Play a run to record your score and claim your position on the leaderboard!'}
               </p>
-              {onPlay && (
+              {mode === 'daily' && !dailyAttempted && onPlayDaily && (
+                <button
+                  type="button"
+                  onClick={onPlayDaily}
+                  disabled={isStarting}
+                  className="mt-1 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text transition-transform hover:opacity-90 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+                >
+                  <Play className={`h-4 w-4 fill-current ${isStarting ? 'animate-spin' : ''}`} />
+                  <span>{isStarting ? 'Starting Challenge...' : 'Play Daily Challenge'}</span>
+                </button>
+              )}
+              {mode === 'global' && onPlay && (
                 <button
                   type="button"
                   onClick={onPlay}

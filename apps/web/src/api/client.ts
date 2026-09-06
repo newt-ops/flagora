@@ -7,6 +7,8 @@ import type {
   FinishRunResponse,
   LeaderboardEntry,
   LeaderboardMeResponse,
+  DailyChallengeStatusResponse,
+  DailyLeaderboardResponse,
 } from '@flagora/shared';
 
 const API_URL =
@@ -200,6 +202,85 @@ export async function getLeaderboardMe(
 
   if (!response.ok) {
     let message = `Failed to fetch player rank: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function startDailyRun(
+  sessionToken: string,
+): Promise<StartRunResponse> {
+  const response = await fetch(`${API_URL}/api/daily/start`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to start daily challenge: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function getDailyStatus(
+  sessionToken: string,
+): Promise<DailyChallengeStatusResponse> {
+  const response = await fetch(`${API_URL}/api/daily/status`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to fetch daily challenge status: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function getDailyLeaderboard(
+  sessionToken: string,
+  limit = 50,
+): Promise<DailyLeaderboardResponse> {
+  const response = await fetch(`${API_URL}/api/daily/leaderboard?limit=${limit}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to fetch daily leaderboard: status ${response.status}`;
     try {
       const data = await response.json();
       if (data?.message) {

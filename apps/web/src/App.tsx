@@ -4,6 +4,7 @@ import type { StartRunResponse, FinishRunResponse } from '@flagora/shared';
 import { useProfile } from './hooks/useProfile.js';
 import { useStore } from './store/useStore.js';
 import { useGameRun } from './hooks/useGameRun.js';
+import { useDailyChallenge } from './hooks/useDailyChallenge.js';
 import { ProfileCard } from './components/ProfileCard.js';
 import { GameScreen } from './components/GameScreen.js';
 import { ResultsScreen } from './components/ResultsScreen.js';
@@ -15,23 +16,43 @@ export function App() {
   const { profile, isLoading, error, refetch } = useProfile();
   const { sessionToken } = useStore();
   const { startRun, isStarting } = useGameRun();
+  const { dailyStatus, startDaily, isStartingDaily } = useDailyChallenge(sessionToken);
 
   const [screen, setScreen] = useState<'profile' | 'playing' | 'results' | 'leaderboard'>('profile');
+  const [runMode, setRunMode] = useState<'practice' | 'daily'>('practice');
+  const [leaderboardMode, setLeaderboardMode] = useState<'global' | 'daily'>('global');
   const [currentRun, setCurrentRun] = useState<StartRunResponse | null>(null);
   const [lastResult, setLastResult] = useState<FinishRunResponse | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
 
-  const handleStartGame = async () => {
+  const handleStartPractice = async () => {
     if (!sessionToken) {
       return;
     }
     setStartError(null);
     try {
       const run = await startRun(sessionToken);
+      setRunMode('practice');
       setCurrentRun(run);
       setScreen('playing');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to start game';
+      const message = err instanceof Error ? err.message : 'Failed to start practice run';
+      setStartError(message);
+    }
+  };
+
+  const handleStartDaily = async () => {
+    if (!sessionToken) {
+      return;
+    }
+    setStartError(null);
+    try {
+      const run = await startDaily();
+      setRunMode('daily');
+      setCurrentRun(run);
+      setScreen('playing');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to start daily challenge';
       setStartError(message);
     }
   };
@@ -41,6 +62,7 @@ export function App() {
     setScreen('results');
     void queryClient.invalidateQueries({ queryKey: ['profile'] });
     void queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
+    void queryClient.invalidateQueries({ queryKey: ['daily', 'status'] });
   };
 
   const handleBackToProfile = () => {
@@ -48,6 +70,16 @@ export function App() {
     setCurrentRun(null);
     setLastResult(null);
     setStartError(null);
+  };
+
+  const handleOpenGlobalLeaderboard = () => {
+    setLeaderboardMode('global');
+    setScreen('leaderboard');
+  };
+
+  const handleOpenDailyLeaderboard = () => {
+    setLeaderboardMode('daily');
+    setScreen('leaderboard');
   };
 
   return (
@@ -63,16 +95,23 @@ export function App() {
 
       {!isLoading && !error && startError && (
         <div className="mb-4">
-          <ErrorState message={startError} onRetry={handleStartGame} />
+          <ErrorState
+            message={startError}
+            onRetry={runMode === 'daily' ? handleStartDaily : handleStartPractice}
+          />
         </div>
       )}
 
       {!isLoading && !error && screen === 'profile' && profile && (
         <ProfileCard
           profile={profile}
-          onPlay={handleStartGame}
-          onViewLeaderboard={() => setScreen('leaderboard')}
+          dailyStatus={dailyStatus}
+          onPlay={handleStartPractice}
+          onStartDaily={handleStartDaily}
+          onViewLeaderboard={handleOpenGlobalLeaderboard}
+          onViewDailyLeaderboard={handleOpenDailyLeaderboard}
           isStarting={isStarting}
+          isStartingDaily={isStartingDaily}
         />
       )}
 
@@ -87,9 +126,12 @@ export function App() {
       {!isLoading && !error && screen === 'results' && lastResult && (
         <ResultsScreen
           result={lastResult}
-          onPlayAgain={handleStartGame}
+          mode={runMode}
+          onPlayAgain={handleStartPractice}
           onBackToProfile={handleBackToProfile}
-          onViewLeaderboard={() => setScreen('leaderboard')}
+          onViewLeaderboard={
+            runMode === 'daily' ? handleOpenDailyLeaderboard : handleOpenGlobalLeaderboard
+          }
           isStartingAgain={isStarting}
         />
       )}
@@ -98,9 +140,12 @@ export function App() {
         <LeaderboardScreen
           sessionToken={sessionToken}
           currentUserId={profile.telegramUserId}
+          initialMode={leaderboardMode}
           onBack={() => setScreen('profile')}
-          onPlay={handleStartGame}
-          isStarting={isStarting}
+          onPlay={handleStartPractice}
+          onPlayDaily={handleStartDaily}
+          isStarting={isStarting || isStartingDaily}
+          dailyAttempted={Boolean(dailyStatus?.attempted)}
         />
       )}
     </main>
