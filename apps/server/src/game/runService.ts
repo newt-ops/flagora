@@ -1,5 +1,7 @@
 import crypto from 'node:crypto';
 import type { Db } from 'mongodb';
+import type { Redis as RedisClient } from 'ioredis';
+import { updateLeaderboardScore } from '../leaderboard/leaderboardService.js';
 import {
   COUNTRIES,
   DEFAULT_RUN_TIER_MIX,
@@ -176,6 +178,7 @@ export async function finishRun(
   runId: string,
   telegramUserId: number,
   db: Db,
+  redis?: RedisClient,
 ): Promise<FinishRunResponse> {
   const collection = db.collection<GameRun>('runs');
   const run = await collection.findOne({ runId });
@@ -281,6 +284,14 @@ export async function finishRun(
           },
         },
       );
+    }
+  }
+
+  if (redis && isNewBest) {
+    try {
+      await updateLeaderboardScore(telegramUserId, bestScore, redis);
+    } catch (err) {
+      process.stderr.write(`Warning: Failed to update Redis leaderboard for user ${telegramUserId}: ${err}\n`);
     }
   }
 

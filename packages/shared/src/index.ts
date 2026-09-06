@@ -29,4 +29,6 @@ export * from './flags.js';
 export * from './scoring.js';
 export * from './progression.js';
 export * from './streak.js';
+export * from './leaderboard.js';
+export * from './profile.js';
 

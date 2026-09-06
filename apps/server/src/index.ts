@@ -3,6 +3,7 @@ import express from 'express';
 import { createTelegramAuthMiddleware } from './auth/middleware.js';
 import type { AuthenticatedRequest } from './auth/types.js';
 import { initDatabase } from './db/mongo.js';
+import { initRedis } from './db/redis.js';
 import { findOrCreatePlayerProfile, getPlayerProfileByUserId } from './profile/profileService.js';
 import {
   createRequireSessionMiddleware,
@@ -10,6 +11,10 @@ import {
 } from './session/requireSession.js';
 import { createSessionToken } from './session/tokens.js';
 import { createRun, submitAnswer, finishRun } from './game/runService.js';
+import {
+  getTopLeaderboard,
+  getPlayerLeaderboardRank,
+} from './leaderboard/leaderboardService.js';
 import {
   RunNotFoundError,
   UnauthorizedRunAccessError,
@@ -24,10 +29,11 @@ dotenv.config();
 const botToken = process.env.TELEGRAM_BOT_TOKEN;
 const mongoUri = process.env.MONGODB_URI;
 const sessionSecret = process.env.SESSION_SECRET;
+const redisUrl = process.env.REDIS_URL;
 
-if (!botToken || !mongoUri || !sessionSecret) {
+if (!botToken || !mongoUri || !sessionSecret || !redisUrl) {
   process.stderr.write(
-    'Fatal: TELEGRAM_BOT_TOKEN, MONGODB_URI, and SESSION_SECRET environment variables are required.\n',
+    'Fatal: TELEGRAM_BOT_TOKEN, MONGODB_URI, SESSION_SECRET, and REDIS_URL environment variables are required.\n',
   );
   process.exit(1);
 }
@@ -60,6 +66,16 @@ async function bootstrap() {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown database error';
     process.stderr.write(`Fatal: Failed to connect to MongoDB: ${message}\n`);
+    process.exit(1);
+  }
+
+  let redis;
+  try {
+    redis = await initRedis(redisUrl!);
+    process.stdout.write('Connected to Redis successfully\n');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown Redis error';
+    process.stderr.write(`Fatal: Failed to connect to Redis: ${message}\n`);
     process.exit(1);
   }
 
@@ -178,7 +194,7 @@ async function bootstrap() {
       }
 
       const id = String(req.params.id);
-      const result = await finishRun(id, telegramUserId, db);
+      const result = await finishRun(id, telegramUserId, db, redis);
       res.status(200).json(result);
     } catch (error) {
       if (error instanceof RunNotFoundError) {
@@ -191,6 +207,34 @@ async function bootstrap() {
       }
 
       const message = error instanceof Error ? error.message : 'Failed to finish run';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.get('/api/leaderboard/top', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const rawLimit = Number(req.query.limit);
+      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 50;
+      const entries = await getTopLeaderboard(limit, db, redis);
+      res.status(200).json(entries);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch leaderboard';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.get('/api/leaderboard/me', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const rankInfo = await getPlayerLeaderboardRank(telegramUserId, redis);
+      res.status(200).json(rankInfo);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch player rank';
       res.status(500).json({ error: 'Internal server error', message });
     }
   });
