@@ -5,6 +5,8 @@ import type {
   StartRunResponse,
   AnswerRunResponse,
   FinishRunResponse,
+  LeaderboardEntry,
+  LeaderboardMeResponse,
 } from '@flagora/shared';
 
 const API_URL =
@@ -145,6 +147,59 @@ export async function finishRun(
 
   if (!response.ok) {
     let message = `Finish run failed with status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function getLeaderboardTop(
+  sessionToken: string,
+  limit = 50,
+): Promise<LeaderboardEntry[]> {
+  const response = await fetch(`${API_URL}/api/leaderboard/top?limit=${limit}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to fetch leaderboard: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function getLeaderboardMe(
+  sessionToken: string,
+): Promise<LeaderboardMeResponse> {
+  const response = await fetch(`${API_URL}/api/leaderboard/me`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to fetch player rank: status ${response.status}`;
     try {
       const data = await response.json();
       if (data?.message) {

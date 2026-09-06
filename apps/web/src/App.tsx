@@ -7,6 +7,7 @@ import { useGameRun } from './hooks/useGameRun.js';
 import { ProfileCard } from './components/ProfileCard.js';
 import { GameScreen } from './components/GameScreen.js';
 import { ResultsScreen } from './components/ResultsScreen.js';
+import { LeaderboardScreen } from './components/LeaderboardScreen.js';
 import { ErrorState } from './components/ErrorState.js';
 
 export function App() {
@@ -15,7 +16,7 @@ export function App() {
   const { sessionToken } = useStore();
   const { startRun, isStarting } = useGameRun();
 
-  const [screen, setScreen] = useState<'profile' | 'playing' | 'results'>('profile');
+  const [screen, setScreen] = useState<'profile' | 'playing' | 'results' | 'leaderboard'>('profile');
   const [currentRun, setCurrentRun] = useState<StartRunResponse | null>(null);
   const [lastResult, setLastResult] = useState<FinishRunResponse | null>(null);
   const [startError, setStartError] = useState<string | null>(null);
@@ -39,6 +40,7 @@ export function App() {
     setLastResult(result);
     setScreen('results');
     void queryClient.invalidateQueries({ queryKey: ['profile'] });
+    void queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
   };
 
   const handleBackToProfile = () => {
@@ -69,6 +71,7 @@ export function App() {
         <ProfileCard
           profile={profile}
           onPlay={handleStartGame}
+          onViewLeaderboard={() => setScreen('leaderboard')}
           isStarting={isStarting}
         />
       )}
@@ -86,7 +89,18 @@ export function App() {
           result={lastResult}
           onPlayAgain={handleStartGame}
           onBackToProfile={handleBackToProfile}
+          onViewLeaderboard={() => setScreen('leaderboard')}
           isStartingAgain={isStarting}
+        />
+      )}
+
+      {!isLoading && !error && screen === 'leaderboard' && profile && sessionToken && (
+        <LeaderboardScreen
+          sessionToken={sessionToken}
+          currentUserId={profile.telegramUserId}
+          onBack={() => setScreen('profile')}
+          onPlay={handleStartGame}
+          isStarting={isStarting}
         />
       )}
     </main>

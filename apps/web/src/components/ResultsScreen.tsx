@@ -17,6 +17,7 @@ interface ResultsScreenProps {
   result: FinishRunResponse;
   onPlayAgain: () => void;
   onBackToProfile: () => void;
+  onViewLeaderboard?: () => void;
   isStartingAgain?: boolean;
 }
 
@@ -24,6 +25,7 @@ export function ResultsScreen({
   result,
   onPlayAgain,
   onBackToProfile,
+  onViewLeaderboard,
   isStartingAgain = false,
 }: ResultsScreenProps) {
   const timeSeconds = (result.timeUsedMs / 1000).toFixed(1);
@@ -122,6 +124,17 @@ export function ResultsScreen({
       </div>
 
       <div className="flex w-full flex-col gap-2.5">
+        {result.isNewBest && onViewLeaderboard && (
+          <button
+            type="button"
+            onClick={onViewLeaderboard}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-500/15 font-bold text-amber-300 ring-1 ring-amber-500/30 transition-transform hover:opacity-90 active:scale-95"
+          >
+            <Trophy className="h-4 w-4 text-amber-400" />
+            <span>Check Your New Rank</span>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={onPlayAgain}

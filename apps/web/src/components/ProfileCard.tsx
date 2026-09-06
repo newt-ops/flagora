@@ -1,4 +1,4 @@
-import { Play, Flame } from 'lucide-react';
+import { Play, Flame, Trophy } from 'lucide-react';
 import { type PlayerProfile, getDisplayName } from '@flagora/shared';
 import { getProfileStreakDisplay } from './streakDisplayHelpers.js';
 
@@ -7,10 +7,16 @@ export { getDisplayName };
 interface ProfileCardProps {
   profile: PlayerProfile;
   onPlay?: () => void;
+  onViewLeaderboard?: () => void;
   isStarting?: boolean;
 }
 
-export function ProfileCard({ profile, onPlay, isStarting = false }: ProfileCardProps) {
+export function ProfileCard({
+  profile,
+  onPlay,
+  onViewLeaderboard,
+  isStarting = false,
+}: ProfileCardProps) {
   const displayName = getDisplayName(profile);
   const initial = profile.firstName ? profile.firstName.charAt(0).toUpperCase() : 'P';
   const streakInfo = getProfileStreakDisplay(profile.currentStreak, profile.longestStreak);
@@ -79,6 +85,17 @@ export function ProfileCard({ profile, onPlay, isStarting = false }: ProfileCard
         >
           <Play className={`h-4 w-4 fill-current ${isStarting ? 'animate-spin' : ''}`} />
           <span>{isStarting ? 'Starting Run...' : 'Play Flagora'}</span>
+        </button>
+      )}
+
+      {onViewLeaderboard && (
+        <button
+          type="button"
+          onClick={onViewLeaderboard}
+          className="mt-2.5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-tg-bg font-semibold text-tg-hint transition-colors hover:text-tg-text active:scale-95"
+        >
+          <Trophy className="h-4 w-4 text-amber-400" />
+          <span>View Leaderboard</span>
         </button>
       )}
     </div>
