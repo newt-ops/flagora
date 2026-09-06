@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import type { Db } from 'mongodb';
 import type { Redis as RedisClient } from 'ioredis';
-import { updateLeaderboardScore } from '../leaderboard/leaderboardService.js';
+import { updateLeaderboardScore, getDailyLeaderboardKey } from '../leaderboard/leaderboardService.js';
 import {
   COUNTRIES,
   DEFAULT_RUN_TIER_MIX,
@@ -30,31 +30,41 @@ import {
   InvalidFlagIndexError,
 } from './runTypes.js';
 
+export interface CreateRunOptions {
+  runId?: string;
+  mode?: 'practice' | 'daily';
+  dailyDate?: string;
+  flags?: RunFlagItem[];
+}
+
 export async function createRun(
   telegramUserId: number,
   db: Db,
+  options?: CreateRunOptions,
 ): Promise<StartRunResponse> {
   const collection = db.collection<GameRun>('runs');
   await collection.createIndex({ runId: 1 }, { unique: true });
   await collection.createIndex({ telegramUserId: 1 });
 
-  const selectedFlags = selectRunFlags(DEFAULT_RUN_TIER_MIX, [], COUNTRIES);
+  const mode = options?.mode ?? 'practice';
 
-  const flags: RunFlagItem[] = selectedFlags.map((flag, index) => {
-    const tierPeers = COUNTRIES.filter((f) => f.tier === flag.tier);
-    const choices = generateChoices(flag, tierPeers);
-    return {
-      flagIndex: index,
-      isoCode: flag.isoCode,
-      name: flag.name,
-      tier: flag.tier,
-      choices,
-      answered: false,
-    };
-  });
+  const flags: RunFlagItem[] =
+    options?.flags ??
+    selectRunFlags(DEFAULT_RUN_TIER_MIX, [], COUNTRIES).map((flag, index) => {
+      const tierPeers = COUNTRIES.filter((f) => f.tier === flag.tier);
+      const choices = generateChoices(flag, tierPeers);
+      return {
+        flagIndex: index,
+        isoCode: flag.isoCode,
+        name: flag.name,
+        tier: flag.tier,
+        choices,
+        answered: false,
+      };
+    });
 
   const now = new Date();
-  const runId = crypto.randomUUID();
+  const runId = options?.runId ?? crypto.randomUUID();
 
   const runDocument: GameRun = {
     runId,
@@ -65,6 +75,8 @@ export async function createRun(
     runningTotal: 0,
     startedAt: now,
     status: 'active',
+    mode,
+    dailyDate: options?.dailyDate,
     profileCredited: false,
     runDurationMs: SCORING_CONFIG.runDurationMs,
     createdAt: now,
@@ -226,10 +238,11 @@ export async function finishRun(
     }
   }
 
+  const isDaily = run.mode === 'daily';
   const profilesCollection = db.collection<PlayerProfile>('profiles');
   const existingProfile = await profilesCollection.findOne({ telegramUserId });
   const previousBest = existingProfile?.bestScore ?? 0;
-  const isNewBest = totalScore > previousBest;
+  const isNewBest = isDaily ? false : totalScore > previousBest;
 
   const todayStr = getUtcDateString(new Date(now));
   const streakResult = calculateStreak(
@@ -239,24 +252,29 @@ export async function finishRun(
     todayStr,
   );
 
+  const updateFields: Record<string, unknown> = {
+    $inc: {
+      xp: xpEarned,
+      coins: coinsEarned,
+      gamesPlayed: 1,
+    },
+    $set: {
+      currentStreak: streakResult.currentStreak,
+      longestStreak: streakResult.longestStreak,
+      lastPlayedDate: todayStr,
+      updatedAt: new Date(now),
+    },
+  };
+
+  if (!isDaily) {
+    updateFields.$max = {
+      bestScore: totalScore,
+    };
+  }
+
   const profileUpdate = await profilesCollection.findOneAndUpdate(
     { telegramUserId },
-    {
-      $inc: {
-        xp: xpEarned,
-        coins: coinsEarned,
-        gamesPlayed: 1,
-      },
-      $max: {
-        bestScore: totalScore,
-      },
-      $set: {
-        currentStreak: streakResult.currentStreak,
-        longestStreak: streakResult.longestStreak,
-        lastPlayedDate: todayStr,
-        updatedAt: new Date(now),
-      },
-    },
+    updateFields,
     { returnDocument: 'after' },
   );
 
@@ -264,7 +282,7 @@ export async function finishRun(
   let newCoins = coinsEarned;
   let newLevel = calculateLevel(xpEarned);
   let leveledUp = false;
-  let bestScore = totalScore;
+  let bestScore = isDaily ? previousBest : totalScore;
 
   if (profileUpdate) {
     newXp = profileUpdate.xp;
@@ -287,9 +305,15 @@ export async function finishRun(
     }
   }
 
-  if (redis && isNewBest) {
+  if (redis) {
     try {
-      await updateLeaderboardScore(telegramUserId, bestScore, redis);
+      if (isDaily) {
+        const targetDate = run.dailyDate ?? todayStr;
+        const dailyKey = getDailyLeaderboardKey(targetDate);
+        await updateLeaderboardScore(telegramUserId, totalScore, redis, dailyKey);
+      } else if (isNewBest) {
+        await updateLeaderboardScore(telegramUserId, bestScore, redis);
+      }
     } catch (err) {
       process.stderr.write(`Warning: Failed to update Redis leaderboard for user ${telegramUserId}: ${err}\n`);
     }

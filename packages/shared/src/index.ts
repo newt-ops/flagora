@@ -31,4 +31,5 @@ export * from './progression.js';
 export * from './streak.js';
 export * from './leaderboard.js';
 export * from './profile.js';
+export * from './daily.js';
 

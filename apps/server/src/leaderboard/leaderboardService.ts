@@ -9,21 +9,27 @@ import {
 
 const LEADERBOARD_KEY = 'leaderboard:global';
 
+export function getDailyLeaderboardKey(date: string): string {
+  return `leaderboard:daily:${date}`;
+}
+
 export async function updateLeaderboardScore(
   telegramUserId: number,
   bestScore: number,
   redis: RedisClient,
+  key = LEADERBOARD_KEY,
 ): Promise<void> {
-  await redis.zadd(LEADERBOARD_KEY, bestScore, String(telegramUserId));
+  await redis.zadd(key, bestScore, String(telegramUserId));
 }
 
 export async function getTopLeaderboard(
   limit: number,
   db: Db,
   redis: RedisClient,
+  key = LEADERBOARD_KEY,
 ): Promise<LeaderboardEntry[]> {
   const clampedLimit = Math.min(Math.max(1, limit), 100);
-  const rawResults = await redis.zrevrange(LEADERBOARD_KEY, 0, clampedLimit - 1, 'WITHSCORES');
+  const rawResults = await redis.zrevrange(key, 0, clampedLimit - 1, 'WITHSCORES');
 
   const parsed: { telegramUserId: number; score: number }[] = [];
   for (let i = 0; i < rawResults.length; i += 2) {
@@ -65,10 +71,11 @@ export async function getTopLeaderboard(
 export async function getPlayerLeaderboardRank(
   telegramUserId: number,
   redis: RedisClient,
+  key = LEADERBOARD_KEY,
 ): Promise<LeaderboardMeResponse> {
   const member = String(telegramUserId);
-  const rank = await redis.zrevrank(LEADERBOARD_KEY, member);
-  const scoreStr = await redis.zscore(LEADERBOARD_KEY, member);
+  const rank = await redis.zrevrank(key, member);
+  const scoreStr = await redis.zscore(key, member);
 
   if (rank === null || scoreStr === null) {
     return {

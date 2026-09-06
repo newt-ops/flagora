@@ -23,6 +23,12 @@ import {
   TimeExpiredError,
   InvalidFlagIndexError,
 } from './game/runTypes.js';
+import {
+  startDailyChallenge,
+  getDailyChallengeStatus,
+  getDailyLeaderboard,
+} from './daily/dailyService.js';
+import { DailyChallengeAlreadyAttemptedError } from './daily/dailyTypes.js';
 
 dotenv.config();
 
@@ -235,6 +241,60 @@ async function bootstrap() {
       res.status(200).json(rankInfo);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch player rank';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.post('/api/daily/start', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const run = await startDailyChallenge(telegramUserId, db);
+      res.status(200).json(run);
+    } catch (error) {
+      if (error instanceof DailyChallengeAlreadyAttemptedError) {
+        res.status(400).json({ error: 'Already attempted', message: error.message });
+        return;
+      }
+      const message = error instanceof Error ? error.message : 'Failed to start daily challenge';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.get('/api/daily/status', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const status = await getDailyChallengeStatus(telegramUserId, db);
+      res.status(200).json(status);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to get daily challenge status';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.get('/api/daily/leaderboard', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const rawLimit = Number(req.query.limit);
+      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 50;
+      const result = await getDailyLeaderboard(telegramUserId, db, redis, undefined, limit);
+      res.status(200).json(result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch daily leaderboard';
       res.status(500).json({ error: 'Internal server error', message });
     }
   });
