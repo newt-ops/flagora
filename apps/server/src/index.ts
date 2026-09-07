@@ -58,6 +58,7 @@ import {
   SelfBattleNotAllowedError,
   BattleAlreadyJoinedError,
 } from './battle/battleTypes.js';
+import { sendTelegramMessage } from './telegram/telegramService.js';
 
 dotenv.config();
 
@@ -91,6 +92,35 @@ app.use((req, res, next) => {
 
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+
+app.post('/api/telegram/webhook', async (req, res) => {
+  res.status(200).json({ ok: true });
+  try {
+    const update = req.body;
+    const message = update?.message;
+    if (message?.text && typeof message.text === 'string' && message.text.startsWith('/start')) {
+      const chatId = Number(message.chat.id);
+      const text = message.text.trim();
+      const parts = text.split(/\s+/);
+      const startParam = parts[1];
+      const rawUsername = process.env.TELEGRAM_BOT_USERNAME || process.env.BOT_USERNAME || 'flagora_bot';
+      const cleanUsername = rawUsername.replace(/^@/, '');
+      const buttonUrl = startParam
+        ? `https://t.me/${cleanUsername}?startapp=${encodeURIComponent(startParam)}`
+        : `https://t.me/${cleanUsername}`;
+
+      await sendTelegramMessage({
+        chatId,
+        text: 'Welcome to Flagora! Guess flags, climb the leaderboard, and challenge friends in live battles.',
+        buttonText: 'Play Flagora',
+        buttonUrl,
+        botToken: botToken!,
+      });
+    }
+  } catch {
+    void 0;
+  }
 });
 
 async function bootstrap() {
