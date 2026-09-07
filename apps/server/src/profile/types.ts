@@ -14,6 +14,8 @@ export const playerProfileSchema = z.object({
   gamesPlayed: z.number().int().default(0),
   bestScore: z.number().int().default(0),
   lastPlayedDate: z.string().nullable().default(null),
+  referredBy: z.number().nullable().optional(),
+  referralCount: z.number().int().default(0),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

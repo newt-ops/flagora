@@ -16,6 +16,8 @@ import {
   type PlayerProfile,
   type Challenge,
   type ChallengeWinner,
+  type Continent,
+  getCountriesByContinent,
 } from '@flagora/shared';
 import { selectRunFlags, generateChoices } from './flagSelection.js';
 import { scoreAnswer, finalizeRun } from './runScoringService.js';
@@ -33,12 +35,15 @@ import {
 
 export interface CreateRunOptions {
   runId?: string;
-  mode?: 'practice' | 'daily' | 'challenge' | 'live-battle';
+  mode?: 'practice' | 'daily' | 'challenge' | 'live-battle' | 'custom';
   challengeId?: string;
   battleId?: string;
   dailyDate?: string;
   flags?: RunFlagItem[];
   startedAt?: Date;
+  continent?: Continent;
+  flagCount?: number;
+  durationSeconds?: number;
 }
 
 export async function createRun(
@@ -51,12 +56,14 @@ export async function createRun(
   await collection.createIndex({ telegramUserId: 1 });
 
   const mode = options?.mode ?? 'practice';
+  const countryPool = getCountriesByContinent(options?.continent);
+  const targetCount = options?.flagCount ?? 10;
+  const flagsPool = countryPool.length >= targetCount ? countryPool : COUNTRIES;
 
   const flags: RunFlagItem[] =
     options?.flags ??
-    selectRunFlags(DEFAULT_RUN_TIER_MIX, [], COUNTRIES).map((flag, index) => {
-      const tierPeers = COUNTRIES.filter((f) => f.tier === flag.tier);
-      const choices = generateChoices(flag, tierPeers);
+    selectRunFlags(DEFAULT_RUN_TIER_MIX, [], flagsPool, targetCount).map((flag, index) => {
+      const choices = generateChoices(flag, flagsPool.length >= 4 ? flagsPool : COUNTRIES);
       return {
         flagIndex: index,
         isoCode: flag.isoCode,
@@ -69,6 +76,9 @@ export async function createRun(
 
   const now = options?.startedAt ?? new Date();
   const runId = options?.runId ?? crypto.randomUUID();
+  const runDurationMs = options?.durationSeconds
+    ? options.durationSeconds * 1000
+    : SCORING_CONFIG.runDurationMs;
 
   const runDocument: GameRun = {
     runId,
@@ -84,7 +94,7 @@ export async function createRun(
     battleId: options?.battleId,
     dailyDate: options?.dailyDate,
     profileCredited: false,
-    runDurationMs: SCORING_CONFIG.runDurationMs,
+    runDurationMs,
     createdAt: now,
     updatedAt: now,
   };

@@ -40,6 +40,7 @@ import {
   TimeExpiredError,
 } from '../game/runTypes.js';
 import { scoreAnswer } from '../game/runScoringService.js';
+import { notifyBattleCompletion } from '../telegram/telegramService.js';
 
 export async function createBattle(
   challengerUserId: number,
@@ -192,6 +193,8 @@ export async function checkAndFinalizeBattle(
         io.to(`battle:${battleId}`).emit('battleFinished', payload);
       }
 
+      void notifyBattleCompletion(battleId, db);
+
       return updateResult;
     }
   }
@@ -311,6 +314,8 @@ export async function getBattleInfo(
     completedAt: battle.completedAt ?? null,
     challengerResult,
     opponentResult,
+    totalFlags: 10,
+    durationSeconds: 60,
   };
 }
 
@@ -469,6 +474,15 @@ export async function startBattleSession(
 
   io.to(`battle:${battleId}`).emit('battleStart', startPayload);
 
+  const autoFinalizeTimer = setTimeout(async () => {
+    try {
+      await checkAndFinalizeBattle(battleId, db, undefined, io);
+    } catch {
+      // ignore
+    }
+  }, challengerRun.runDurationMs + 1000);
+  autoFinalizeTimer.unref?.();
+
   return startPayload;
 }
 
@@ -484,6 +498,8 @@ export async function submitBattleAnswer(
   selectedIsoCode: string,
   db: Db,
   nowMs: number = Date.now(),
+  redis?: RedisClient,
+  io?: TypedSocketServer,
 ): Promise<SubmitBattleAnswerResult> {
   const battle = await db.collection<BattleSession>('battles').findOne({ battleId });
   if (!battle) {
@@ -531,8 +547,8 @@ export async function submitBattleAnswer(
           },
         },
       );
-      await finishRun(runId, userId, db);
-      await checkAndFinalizeBattle(battleId, db);
+      await finishRun(runId, userId, db, redis, io);
+      await checkAndFinalizeBattle(battleId, db, redis, io);
     }
     throw error;
   }
@@ -563,8 +579,8 @@ export async function submitBattleAnswer(
   );
 
   if (updatedFlags.every((f) => f.answered)) {
-    await finishRun(runId, userId, db);
-    await checkAndFinalizeBattle(battleId, db);
+    await finishRun(runId, userId, db, redis, io);
+    await checkAndFinalizeBattle(battleId, db, redis, io);
   }
 
   const answerResult: AnswerResultPayload = {

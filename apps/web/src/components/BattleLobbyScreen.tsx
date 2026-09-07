@@ -10,6 +10,7 @@ interface BattleLobbyScreenProps {
   bothPlayersPresent: boolean;
   opponentJoinedPayload: OpponentJoinedPayload | null;
   isReady: boolean;
+  opponentReady?: boolean;
   countdown: number | null;
   onReady: () => void;
   onBack: () => void;
@@ -24,6 +25,7 @@ export function BattleLobbyScreen({
   bothPlayersPresent,
   opponentJoinedPayload,
   isReady,
+  opponentReady = false,
   countdown,
   onReady,
   onBack,
@@ -62,6 +64,17 @@ export function BattleLobbyScreen({
   const challengerPhoto = battleInfo?.challengerPhotoUrl || null;
   const challengerInitial = getInitials(challengerName);
   const opponentInitial = getInitials(opponentDisplayName);
+
+  const totalFlags = battleInfo?.totalFlags ?? 10;
+  const durationSeconds = battleInfo?.durationSeconds ?? 60;
+
+  const challengerIsReady = isChallenger
+    ? isReady
+    : Boolean(opponentReady || battleInfo?.challengerReady);
+
+  const opponentIsReady = isChallenger
+    ? Boolean(opponentReady || battleInfo?.opponentReady)
+    : isReady;
 
   return (
     <div className="relative flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
@@ -103,6 +116,15 @@ export function BattleLobbyScreen({
         </div>
       )}
 
+      {/* Match Details Banner */}
+      <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg border border-tg-separator px-4 py-2.5 text-xs text-tg-hint">
+        <span className="font-semibold text-tg-text">{totalFlags} Flags</span>
+        <span>•</span>
+        <span className="font-semibold text-tg-text">{durationSeconds}s Time Limit</span>
+        <span>•</span>
+        <span className="font-semibold text-tg-button">1v1 Real-Time</span>
+      </div>
+
       <div className="flex w-full flex-col items-center rounded-2xl bg-tg-section border border-tg-separator p-5 text-center shadow-sm">
         <div className="grid w-full grid-cols-2 gap-3">
           <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg border border-tg-separator p-4">
@@ -124,6 +146,15 @@ export function BattleLobbyScreen({
             </p>
             <span className="mt-1 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-semibold text-tg-button ring-1 ring-tg-button/30">
               {isChallenger ? 'You (Host)' : 'Host'}
+            </span>
+            <span
+              className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                challengerIsReady
+                  ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30'
+                  : 'bg-tg-hint/15 text-tg-hint ring-1 ring-tg-separator'
+              }`}
+            >
+              {challengerIsReady ? 'Ready ✓' : 'Waiting...'}
             </span>
           </div>
 
@@ -148,6 +179,15 @@ export function BattleLobbyScreen({
                 </p>
                 <span className="mt-1 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-semibold text-tg-button ring-1 ring-tg-button/30">
                   {!isChallenger ? 'You' : 'Opponent'}
+                </span>
+                <span
+                  className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                    opponentIsReady
+                      ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30'
+                      : 'bg-tg-hint/15 text-tg-hint ring-1 ring-tg-separator'
+                  }`}
+                >
+                  {opponentIsReady ? 'Ready ✓' : 'Waiting...'}
                 </span>
               </>
             ) : (
@@ -217,24 +257,36 @@ export function BattleLobbyScreen({
               <p className="text-xs font-semibold text-emerald-400">
                 Both players connected!
               </p>
-              <button
-                type="button"
-                onClick={onReady}
-                disabled={isReady}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-75"
-              >
-                {isReady ? (
-                  <>
-                    <Check className="h-4 w-4" />
-                    <span>Ready! Waiting for start...</span>
-                  </>
-                ) : (
-                  <>
+              {isReady ? (
+                <button
+                  type="button"
+                  disabled
+                  className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-button/80 font-bold text-tg-button-text opacity-90 cursor-not-allowed"
+                >
+                  <Check className="h-4 w-4" />
+                  <span>
+                    {(isChallenger ? opponentIsReady : challengerIsReady)
+                      ? 'Both Ready! Starting...'
+                      : 'You Are Ready (Waiting for Opponent)'}
+                  </span>
+                </button>
+              ) : (
+                <>
+                  {(isChallenger ? opponentIsReady : challengerIsReady) && (
+                    <p className="text-xs font-medium text-emerald-400 animate-pulse">
+                      Opponent is ready! Press below to start.
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={onReady}
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75"
+                  >
                     <Zap className="h-4 w-4" />
                     <span>I Am Ready</span>
-                  </>
-                )}
-              </button>
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>

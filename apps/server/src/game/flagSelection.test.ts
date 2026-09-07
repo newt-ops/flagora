@@ -55,6 +55,7 @@ describe('generateChoices', () => {
       isoCode: 'jp',
       name: 'Japan',
       tier: 1,
+      continent: 'asia',
     };
     const tier1Peers = COUNTRIES.filter((f) => f.tier === 1);
 
@@ -72,6 +73,7 @@ describe('generateChoices', () => {
       isoCode: 'br',
       name: 'Brazil',
       tier: 1,
+      continent: 'americas',
     };
     const tier1Peers = COUNTRIES.filter((f) => f.tier === 1);
 
@@ -86,6 +88,7 @@ describe('generateChoices', () => {
       isoCode: 'ca',
       name: 'Canada',
       tier: 1,
+      continent: 'americas',
     };
     const tier1Peers = COUNTRIES.filter((f) => f.tier === 1);
     const peerNames = new Set(tier1Peers.map((f) => f.name));

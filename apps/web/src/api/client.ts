@@ -76,13 +76,23 @@ export async function fetchProfile(sessionToken: string): Promise<PlayerProfile>
   return data.profile;
 }
 
-export async function startRun(sessionToken: string): Promise<StartRunResponse> {
+export interface StartRunOptions {
+  continent?: string;
+  flagCount?: number;
+  durationSeconds?: number;
+}
+
+export async function startRun(
+  sessionToken: string,
+  options?: StartRunOptions,
+): Promise<StartRunResponse> {
   const response = await fetch(`${API_URL}/api/runs/start`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${sessionToken}`,
     },
+    body: options ? JSON.stringify(options) : undefined,
   });
 
   if (!response.ok) {

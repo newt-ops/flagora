@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type {
   StartRunResponse,
@@ -61,7 +61,7 @@ export function App() {
     | 'battle_live'
     | 'battle_result'
   >('profile');
-  const [runMode, setRunMode] = useState<'practice' | 'daily' | 'challenge'>('practice');
+  const [runMode, setRunMode] = useState<'practice' | 'daily' | 'challenge' | 'custom'>('practice');
   const [activeTab, setActiveTab] = useState<NavTab>('play');
   const [activeRole, setActiveRole] = useState<'challenger' | 'opponent' | null>(null);
   const [leaderboardMode, setLeaderboardMode] = useState<'global' | 'daily'>('global');
@@ -88,6 +88,7 @@ export function App() {
     bothPlayersPresent: isBattleBothPresent,
     opponentJoined: battleOpponentJoined,
     isReady: isBattleReady,
+    opponentReady: isBattleOpponentReady,
     countdown: battleCountdown,
     startPayload: battleStartPayload,
     opponentProgress: battleOpponentProgress,
@@ -108,6 +109,46 @@ export function App() {
       void queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
+
+  const checkBattleFinishedFallback = useCallback(async () => {
+    if (!sessionToken || !activeBattleId) return;
+    try {
+      const info = await getBattleInfo(sessionToken, activeBattleId);
+      if (info.status === 'completed' && info.challengerResult && info.opponentResult) {
+        setActiveBattleInfo(info);
+        setActiveBattleFinished({
+          battleId: info.battleId,
+          winner: info.winner || 'tie',
+          challengerScore: info.challengerScore ?? 0,
+          opponentScore: info.opponentScore ?? 0,
+          completedAt: String(info.completedAt || new Date().toISOString()),
+          challengerResult: info.challengerResult,
+          opponentResult: info.opponentResult,
+        });
+        setScreen('battle_result');
+        void queryClient.invalidateQueries({ queryKey: ['profile'] });
+      }
+    } catch {
+      // ignore
+    }
+  }, [sessionToken, activeBattleId, queryClient]);
+
+  useEffect(() => {
+    if (screen !== 'battle_live' || !activeBattleId || !sessionToken) return;
+
+    const fallbackTimer = setTimeout(() => {
+      void checkBattleFinishedFallback();
+    }, 62000);
+
+    const interval = setInterval(() => {
+      void checkBattleFinishedFallback();
+    }, 3000);
+
+    return () => {
+      clearTimeout(fallbackTimer);
+      clearInterval(interval);
+    };
+  }, [screen, activeBattleId, sessionToken, checkBattleFinishedFallback]);
 
   useEffect(() => {
     if (!sessionToken || !profile) {
@@ -198,18 +239,24 @@ export function App() {
     };
   }, [sessionToken, profile]);
 
-  const handleStartPractice = async () => {
+  const handleStartPractice = async (options?: {
+    continent?: string;
+    flagCount?: number;
+    durationSeconds?: number;
+  }) => {
     if (!sessionToken) {
       return;
     }
     setStartError(null);
     try {
-      const run = await startRun(sessionToken);
-      setRunMode('practice');
+      const run = await startRun(sessionToken, options);
+      setRunMode(
+        options?.continent || options?.flagCount || options?.durationSeconds ? 'custom' : 'practice',
+      );
       setCurrentRun(run);
       setScreen('playing');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to start practice run';
+      const message = err instanceof Error ? err.message : 'Failed to start run';
       setStartError(message);
     }
   };
@@ -428,6 +475,7 @@ export function App() {
               profile={profile}
               dailyStatus={dailyStatus}
               onPlayPractice={handleStartPractice}
+              onStartCustomGame={handleStartPractice}
               onStartDaily={handleStartDaily}
               onChallengeFriend={handleStartChallenge}
               onBattleFriend={handleStartBattle}
@@ -501,6 +549,14 @@ export function App() {
           }
           opponentJoinedPayload={battleOpponentJoined}
           isReady={isBattleReady}
+          opponentReady={
+            isBattleOpponentReady ||
+            Boolean(
+              activeBattleInfo?.challengerUserId === profile.telegramUserId
+                ? activeBattleInfo?.opponentReady
+                : activeBattleInfo?.challengerReady
+            )
+          }
           countdown={battleCountdown}
           onReady={sendBattleReady}
           onBack={handleBackToProfile}
@@ -520,6 +576,7 @@ export function App() {
           opponentProgress={battleOpponentProgress}
           isReconnecting={isBattleSocketReconnecting}
           onSubmitAnswer={submitBattleAnswer}
+          onCheckFinished={checkBattleFinishedFallback}
         />
       )}
 

@@ -12,6 +12,8 @@ export interface PlayerProfile {
   gamesPlayed: number;
   bestScore: number;
   lastPlayedDate: string | null;
+  referredBy?: number | null;
+  referralCount?: number;
   createdAt: Date | string;
   updatedAt: Date | string;
 }

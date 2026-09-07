@@ -15,7 +15,7 @@ const config: Config = {
         'tg-header-bg': 'var(--header-bg-color, var(--tg-theme-header-bg-color, #ffffff))',
         'tg-accent': 'var(--accent-text-color, var(--tg-theme-accent-text-color, #2481cc))',
         'tg-section': 'var(--section-bg-color, var(--tg-theme-section-bg-color, #ffffff))',
-        'tg-separator': 'var(--section-separator-color, var(--tg-theme-section-separator-color, #e0e0e0))',
+        'tg-separator': 'var(--section-separator-color, var(--tg-theme-section-separator-color, rgba(128, 128, 128, 0.16)))',
       },
     },
   },

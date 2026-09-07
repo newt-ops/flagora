@@ -58,6 +58,10 @@ export interface BattleInfoResponse {
   completedAt?: Date | string | null;
   challengerResult?: BattleParticipantResult | null;
   opponentResult?: BattleParticipantResult | null;
+  totalFlags?: number;
+  durationSeconds?: number;
+  challengerReady?: boolean;
+  opponentReady?: boolean;
 }
 
 export interface JoinBattleResponse {
@@ -128,6 +132,14 @@ export interface PlayerReadyResponse {
   battleId: string;
   readyCount: number;
   error?: string;
+}
+
+export interface PlayerReadyBroadcastPayload {
+  battleId: string;
+  userId: number;
+  readyCount: number;
+  challengerReady?: boolean;
+  opponentReady?: boolean;
 }
 
 export interface BattleCountdownPayload {
@@ -214,6 +226,7 @@ export interface BattleServerToClientEvents {
   pong: (response: PingResponse) => void;
   opponentJoined: (payload: OpponentJoinedPayload) => void;
   bothPlayersPresent: (payload: BothPlayersPresentPayload) => void;
+  battlePlayerReady: (payload: PlayerReadyBroadcastPayload) => void;
   battleCountdown: (payload: BattleCountdownPayload) => void;
   battleStart: (payload: BattleStartPayload) => void;
   battleError: (payload: BattleErrorPayload) => void;

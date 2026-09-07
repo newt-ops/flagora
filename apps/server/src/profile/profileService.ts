@@ -67,6 +67,8 @@ export async function findOrCreatePlayerProfile(
     gamesPlayed: 0,
     bestScore: 0,
     lastPlayedDate: null,
+    referredBy: null,
+    referralCount: 0,
     createdAt: now,
     updatedAt: now,
   };

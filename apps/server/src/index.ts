@@ -59,7 +59,14 @@ import {
   SelfBattleNotAllowedError,
   BattleAlreadyJoinedError,
 } from './battle/battleTypes.js';
-import { sendTelegramMessage } from './telegram/telegramService.js';
+import {
+  sendTelegramMessage,
+  editTelegramMessage,
+  answerCallbackQuery,
+  notifyReferralReward,
+  type InlineKeyboardButton,
+} from './telegram/telegramService.js';
+import { getDisplayName, type PlayerProfile } from '@flagora/shared';
 
 dotenv.config();
 
@@ -93,40 +100,6 @@ app.use((req, res, next) => {
 
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
-});
-
-app.post('/api/telegram/webhook', async (req, res) => {
-  res.status(200).json({ ok: true });
-  try {
-    const update = req.body;
-    const message = update?.message;
-    if (message?.text && typeof message.text === 'string' && message.text.startsWith('/start')) {
-      const chatId = Number(message.chat.id);
-      const text = message.text.trim();
-      const parts = text.split(/\s+/);
-      const startParam = parts[1];
-      const rawUsername = process.env.TELEGRAM_BOT_USERNAME || process.env.BOT_USERNAME || 'flagora_bot';
-      const cleanUsername = rawUsername.replace(/^@/, '');
-      const frontendUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://flagora-delta.vercel.app';
-      const webAppUrl = startParam
-        ? `${frontendUrl}?startapp=${encodeURIComponent(startParam)}`
-        : frontendUrl;
-      const buttonUrl = startParam
-        ? `https://t.me/${cleanUsername}?startapp=${encodeURIComponent(startParam)}`
-        : `https://t.me/${cleanUsername}`;
-
-      await sendTelegramMessage({
-        chatId,
-        text: 'Welcome to Flagora! Guess flags, climb the leaderboard, and challenge friends in live battles.',
-        buttonText: 'Play Flagora',
-        webAppUrl,
-        buttonUrl,
-        botToken: botToken!,
-      });
-    }
-  } catch {
-    void 0;
-  }
 });
 
 async function bootstrap() {
@@ -210,7 +183,15 @@ async function bootstrap() {
         return;
       }
 
-      const run = await createRun(telegramUserId, db);
+      const { continent, flagCount, durationSeconds } = req.body ?? {};
+      const parsedFlagCount = typeof flagCount === 'number' && flagCount > 0 ? flagCount : undefined;
+      const parsedDuration = typeof durationSeconds === 'number' && durationSeconds > 0 ? durationSeconds : undefined;
+      const run = await createRun(telegramUserId, db, {
+        continent,
+        flagCount: parsedFlagCount,
+        durationSeconds: parsedDuration,
+        mode: continent || parsedFlagCount || parsedDuration ? 'custom' : 'practice',
+      });
       res.status(200).json(run);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to start run';
@@ -544,6 +525,224 @@ async function bootstrap() {
       }
       const message = error instanceof Error ? error.message : 'Failed to join battle';
       res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.post('/api/telegram/webhook', async (req, res) => {
+    res.status(200).json({ ok: true });
+    try {
+      const update = req.body;
+      const rawUsername =
+        process.env.TELEGRAM_BOT_USERNAME || process.env.BOT_USERNAME || 'flagora_bot';
+      const cleanUsername = rawUsername.replace(/^@/, '');
+      const frontendUrl =
+        process.env.CLIENT_URL ||
+        process.env.FRONTEND_URL ||
+        'https://flagora-delta.vercel.app';
+
+      // 1. Handle Callback Query (Inline Keyboard Clicks) -> Edit Message In-Place
+      if (update?.callback_query) {
+        const callbackQuery = update.callback_query;
+        const data = callbackQuery.data;
+        const msg = callbackQuery.message;
+        const fromUser = callbackQuery.from;
+        const chatId = msg?.chat?.id;
+        const messageId = msg?.message_id;
+
+        if (callbackQuery.id) {
+          void answerCallbackQuery(callbackQuery.id);
+        }
+
+        if (!chatId || !messageId) {
+          return;
+        }
+
+        const mainMenuKeyboard: InlineKeyboardButton[][] = [
+          [{ text: '🚀 Launch Flagora', web_app: { url: frontendUrl } }],
+          [
+            { text: '🎮 Game Modes', callback_data: 'menu_play' },
+            { text: '📊 My Stats', callback_data: 'menu_stats' },
+          ],
+          [
+            { text: '🏆 Leaderboard', callback_data: 'menu_leaderboard' },
+            { text: '🎁 Invite (+100 🪙)', callback_data: 'menu_invite' },
+          ],
+          [{ text: '❓ How to Play', callback_data: 'menu_help' }],
+        ];
+
+        if (data === 'menu_main') {
+          const welcomeText = `🌍 <b>Welcome to Flagora!</b> 🚩\n\nTest your geography knowledge across 194 flags! Guess countries, beat streaks, and battle live opponents.\n\nChoose an option below:`;
+          await editTelegramMessage({
+            chatId,
+            messageId,
+            text: welcomeText,
+            parseMode: 'HTML',
+            inlineKeyboard: mainMenuKeyboard,
+          });
+        } else if (data === 'menu_play') {
+          const playText = `🎮 <b>Flagora Game Modes:</b>\n\n• <b>Solo Run:</b> 10 flags, 60s timer, combo multipliers\n• <b>Daily Challenge:</b> Same flag set for all players daily\n• <b>Live Battle:</b> Real-time 1v1 flag duel with live score syncing\n• <b>Custom Mode:</b> Pick your continent, flag count & custom time!\n\nTap below to play:`;
+          await editTelegramMessage({
+            chatId,
+            messageId,
+            text: playText,
+            parseMode: 'HTML',
+            inlineKeyboard: [
+              [{ text: '🚀 Play Now', web_app: { url: frontendUrl } }],
+              [{ text: '« Back to Menu', callback_data: 'menu_main' }],
+            ],
+          });
+        } else if (data === 'menu_stats') {
+          const profile = await db
+            .collection<PlayerProfile>('profiles')
+            .findOne({ telegramUserId: Number(fromUser.id) });
+          const statsText = profile
+            ? `📊 <b>Your Flagora Stats:</b>\n\n👤 <b>Name:</b> ${getDisplayName(profile)}\n⭐ <b>Level:</b> ${profile.level}\n✨ <b>XP:</b> ${profile.xp}\n🪙 <b>Coins:</b> ${profile.coins}\n🔥 <b>Current Streak:</b> ${profile.currentStreak} days\n🏆 <b>Best Score:</b> ${profile.bestScore}\n🎮 <b>Games Played:</b> ${profile.gamesPlayed}\n👥 <b>Friends Invited:</b> ${profile.referralCount ?? 0}`
+            : `📊 <b>Your Flagora Stats:</b>\n\nYou haven't played yet! Tap Launch Flagora to start your journey.`;
+          await editTelegramMessage({
+            chatId,
+            messageId,
+            text: statsText,
+            parseMode: 'HTML',
+            inlineKeyboard: [
+              [{ text: '🚀 Open Flagora', web_app: { url: frontendUrl } }],
+              [{ text: '« Back to Menu', callback_data: 'menu_main' }],
+            ],
+          });
+        } else if (data === 'menu_leaderboard') {
+          const topPlayers = await db
+            .collection<PlayerProfile>('profiles')
+            .find()
+            .sort({ bestScore: -1 })
+            .limit(5)
+            .toArray();
+          let lbText = `🏆 <b>Flagora Top Players:</b>\n\n`;
+          if (topPlayers.length === 0) {
+            lbText += `No records yet. Be the first to reach the top!\n`;
+          } else {
+            topPlayers.forEach((p, i) => {
+              const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+              lbText += `${medal} <b>${getDisplayName(p)}</b> — ${p.bestScore} pts (Lvl ${p.level})\n`;
+            });
+          }
+          lbText += `\nClimb the ranks in Daily Challenges and Solo Runs!`;
+          await editTelegramMessage({
+            chatId,
+            messageId,
+            text: lbText,
+            parseMode: 'HTML',
+            inlineKeyboard: [
+              [
+                {
+                  text: '🚀 View Full Leaderboard',
+                  web_app: { url: `${frontendUrl}#leaderboard` },
+                },
+              ],
+              [{ text: '« Back to Menu', callback_data: 'menu_main' }],
+            ],
+          });
+        } else if (data === 'menu_invite') {
+          const inviteLink = `https://t.me/${cleanUsername}?start=ref_${fromUser.id}`;
+          const shareText = encodeURIComponent(
+            'Join me on Flagora and test your flag knowledge in live battles! 🚩🌍',
+          );
+          const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${shareText}`;
+          const inviteText = `🎁 <b>Invite Friends & Earn Rewards!</b>\n\nInvite your friends to Flagora and earn <b>+100 Coins</b> 🪙 for each friend who joins!\nYour friend also gets a <b>+50 Coin</b> welcome bonus.\n\n🔗 <b>Your Personal Invite Link:</b>\n<code>${inviteLink}</code>`;
+          await editTelegramMessage({
+            chatId,
+            messageId,
+            text: inviteText,
+            parseMode: 'HTML',
+            inlineKeyboard: [
+              [{ text: '📤 Share to Telegram', url: shareUrl }],
+              [{ text: '« Back to Menu', callback_data: 'menu_main' }],
+            ],
+          });
+        } else if (data === 'menu_help') {
+          const helpText = `❓ <b>How to Play Flagora:</b>\n\n1. <b>Identify the Flag:</b> Look at the country flag shown.\n2. <b>Select Country:</b> Pick the correct name among 4 options.\n3. <b>Build Combos:</b> Fast consecutive correct answers earn multiplier points!\n4. <b>Live Battles:</b> 1v1 real-time flag duel against friends or random opponents.\n\nHave fun and explore the world! 🚩`;
+          await editTelegramMessage({
+            chatId,
+            messageId,
+            text: helpText,
+            parseMode: 'HTML',
+            inlineKeyboard: [
+              [{ text: '🚀 Start Playing', web_app: { url: frontendUrl } }],
+              [{ text: '« Back to Menu', callback_data: 'menu_main' }],
+            ],
+          });
+        }
+        return;
+      }
+
+      // 2. Handle Text Messages (/start, /help)
+      const message = update?.message;
+      if (message?.text && typeof message.text === 'string') {
+        const chatId = Number(message.chat.id);
+        const text = message.text.trim();
+        const parts = text.split(/\s+/);
+        const command = parts[0];
+        const startParam = parts[1];
+
+        if (command === '/start') {
+          // Check for referral
+          if (startParam && startParam.startsWith('ref_')) {
+            const refUserId = Number(startParam.replace(/^ref_/, ''));
+            if (refUserId && refUserId !== chatId) {
+              const existingProfile = await db
+                .collection<PlayerProfile>('profiles')
+                .findOne({ telegramUserId: chatId });
+              if (!existingProfile || !existingProfile.referredBy) {
+                await db
+                  .collection<PlayerProfile>('profiles')
+                  .updateOne(
+                    { telegramUserId: refUserId },
+                    { $inc: { coins: 100, referralCount: 1 } },
+                  );
+                void notifyReferralReward(
+                  refUserId,
+                  message.from?.first_name || 'A friend',
+                  db,
+                );
+                if (existingProfile) {
+                  await db
+                    .collection<PlayerProfile>('profiles')
+                    .updateOne(
+                      { telegramUserId: chatId },
+                      { $set: { referredBy: refUserId }, $inc: { coins: 50 } },
+                    );
+                }
+              }
+            }
+          }
+
+          const webAppUrl = startParam
+            ? `${frontendUrl}?startapp=${encodeURIComponent(startParam)}`
+            : frontendUrl;
+
+          const welcomeText = `🌍 <b>Welcome to Flagora!</b> 🚩\n\nTest your geography knowledge across 194 flags! Guess countries, beat streaks, and battle live opponents.\n\nChoose an option below:`;
+
+          const startKeyboard: InlineKeyboardButton[][] = [
+            [{ text: '🚀 Launch Flagora', web_app: { url: webAppUrl } }],
+            [
+              { text: '🎮 Game Modes', callback_data: 'menu_play' },
+              { text: '📊 My Stats', callback_data: 'menu_stats' },
+            ],
+            [
+              { text: '🏆 Leaderboard', callback_data: 'menu_leaderboard' },
+              { text: '🎁 Invite (+100 🪙)', callback_data: 'menu_invite' },
+            ],
+            [{ text: '❓ How to Play', callback_data: 'menu_help' }],
+          ];
+
+          await sendTelegramMessage({
+            chatId,
+            text: welcomeText,
+            parseMode: 'HTML',
+            inlineKeyboard: startKeyboard,
+          });
+        }
+      }
+    } catch {
+      void 0;
     }
   });
 

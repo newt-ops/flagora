@@ -1,10 +1,13 @@
 import { useMutation } from '@tanstack/react-query';
-import { startRun, answerRun, finishRun } from '../api/client.js';
+import { startRun, answerRun, finishRun, type StartRunOptions } from '../api/client.js';
 
 export function useGameRun() {
   const startMutation = useMutation({
-    mutationFn: async (sessionToken: string) => {
-      return startRun(sessionToken);
+    mutationFn: async (args: string | { sessionToken: string; options?: StartRunOptions }) => {
+      if (typeof args === 'string') {
+        return startRun(args);
+      }
+      return startRun(args.sessionToken, args.options);
     },
   });
 
@@ -30,8 +33,15 @@ export function useGameRun() {
     },
   });
 
+  const triggerStartRun = async (
+    sessionToken: string,
+    options?: StartRunOptions,
+  ) => {
+    return startMutation.mutateAsync({ sessionToken, options });
+  };
+
   return {
-    startRun: startMutation.mutateAsync,
+    startRun: triggerStartRun,
     isStarting: startMutation.isPending,
     answerRun: answerMutation.mutateAsync,
     isAnswering: answerMutation.isPending,

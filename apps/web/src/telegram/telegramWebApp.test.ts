@@ -17,9 +17,10 @@ describe('telegramWebApp', () => {
     }
   });
 
-  it('calls ready and expand on initialization', () => {
+  it('calls ready, expand, and requestFullscreen on initialization', () => {
     let readyCalled = false;
     let expandCalled = false;
+    let fullscreenCalled = false;
 
     (globalThis as unknown as { Telegram?: unknown }).Telegram = {
       WebApp: {
@@ -29,6 +30,9 @@ describe('telegramWebApp', () => {
         expand: () => {
           expandCalled = true;
         },
+        requestFullscreen: () => {
+          fullscreenCalled = true;
+        },
       },
     };
 
@@ -36,6 +40,26 @@ describe('telegramWebApp', () => {
       initTelegramWebApp();
       assert.equal(readyCalled, true);
       assert.equal(expandCalled, true);
+      assert.equal(fullscreenCalled, true);
+    } finally {
+      delete (globalThis as unknown as { Telegram?: unknown }).Telegram;
+    }
+  });
+
+  it('safely handles older clients without requestFullscreen', () => {
+    let readyCalled = false;
+
+    (globalThis as unknown as { Telegram?: unknown }).Telegram = {
+      WebApp: {
+        ready: () => {
+          readyCalled = true;
+        },
+      },
+    };
+
+    try {
+      initTelegramWebApp();
+      assert.equal(readyCalled, true);
     } finally {
       delete (globalThis as unknown as { Telegram?: unknown }).Telegram;
     }

@@ -14,6 +14,7 @@ import {
   startBattleSession,
   submitBattleAnswer,
 } from '../battle/battleService.js';
+import { notifyOpponentReady } from '../telegram/telegramService.js';
 import {
   BattleNotFoundError,
   UnauthorizedBattleAccessError,
@@ -175,17 +176,44 @@ export function initSocketServer(
 
       callback?.({ success: true, battleId, readyCount });
 
+      const roomName = `battle:${battleId}`;
+      const challengerReady = readySet.has(battle.challengerUserId);
+      const opponentReady =
+        battle.opponentUserId !== null && readySet.has(battle.opponentUserId);
+
+      io.to(roomName).emit('battlePlayerReady', {
+        battleId,
+        userId,
+        readyCount,
+        challengerReady,
+        opponentReady,
+      });
+
+      // Notify opponent via bot if they haven't marked ready yet
+      void notifyOpponentReady(battleId, userId, db);
+
       if (
         battle.opponentUserId !== null &&
         readySet.has(battle.challengerUserId) &&
         readySet.has(battle.opponentUserId)
       ) {
         readyPlayersByBattle.delete(battleId);
-        const roomName = `battle:${battleId}`;
         io.to(roomName).emit('battleCountdown', { battleId, countdownSeconds: 3 });
 
+        let tick = 2;
+        const intervalId = setInterval(() => {
+          if (tick > 0) {
+            io.to(roomName).emit('battleCountdown', { battleId, countdownSeconds: tick });
+            tick--;
+          } else {
+            clearInterval(intervalId);
+          }
+        }, 1000);
+        intervalId.unref?.();
+
         const delay = options?.countdownDelayMs ?? 3000;
-        setTimeout(async () => {
+        const timerId = setTimeout(async () => {
+          clearInterval(intervalId);
           try {
             await startBattleSession(battleId, db, io);
           } catch (error) {
@@ -193,6 +221,7 @@ export function initSocketServer(
             io.to(roomName).emit('battleError', { message: errorMsg, battleId });
           }
         }, delay);
+        timerId.unref?.();
       }
     });
 
@@ -224,6 +253,9 @@ export function initSocketServer(
           flagIndex,
           selectedIsoCode,
           db,
+          Date.now(),
+          undefined,
+          io,
         );
 
         socket.emit('answerResult', result.answerResult);

@@ -1,4 +1,20 @@
-import { Play, Flame, Trophy, Calendar, CheckCircle2, Swords, Zap, Coins, Gamepad2 } from 'lucide-react';
+import { useState } from 'react';
+import {
+  Play,
+  Flame,
+  Trophy,
+  Calendar,
+  CheckCircle2,
+  Swords,
+  Zap,
+  Coins,
+  Gamepad2,
+  Users,
+  Gift,
+  Share2,
+  Copy,
+  Check,
+} from 'lucide-react';
 import { type PlayerProfile, type DailyChallengeStatusResponse, getDisplayName } from '@flagora/shared';
 import { getProfileStreakDisplay } from './streakDisplayHelpers.js';
 import { getDailyResultSummary } from './dailyChallengeHelpers.js';
@@ -36,10 +52,49 @@ export function ProfileCard({
   isStartingBattle = false,
   showGameActions = true,
 }: ProfileCardProps) {
+  const [referralCopied, setReferralCopied] = useState(false);
   const displayName = getDisplayName(profile);
   const initial = profile.firstName ? profile.firstName.charAt(0).toUpperCase() : 'P';
   const streakInfo = getProfileStreakDisplay(profile.currentStreak, profile.longestStreak);
   const dailySummary = getDailyResultSummary(dailyStatus?.result ?? null);
+
+  const botUsername =
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BOT_USERNAME) || 'FlagoraBot';
+  const cleanBotUsername = botUsername.replace(/^@/, '');
+  const referralLink = `https://t.me/${cleanBotUsername}?start=ref_${profile.telegramUserId}`;
+
+  const handleCopyReferral = async () => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(referralLink);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = referralLink;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setReferralCopied(true);
+      setTimeout(() => setReferralCopied(false), 2000);
+    } catch {
+      // fallback
+    }
+  };
+
+  const handleShareReferral = () => {
+    const text = 'Join me on Flagora! Test your flag knowledge, battle real players in real-time, and get +50 coins!';
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(text)}`;
+    if (typeof window !== 'undefined') {
+      const tg = (window as unknown as { Telegram?: { WebApp?: { openTelegramLink?: (url: string) => void } } })
+        .Telegram?.WebApp;
+      if (tg?.openTelegramLink) {
+        tg.openTelegramLink(shareUrl);
+      } else {
+        window.open(shareUrl, '_blank');
+      }
+    }
+  };
 
   return (
     <div className="w-full max-w-sm rounded-2xl bg-tg-section border border-tg-separator p-6 text-tg-text shadow-sm">
@@ -115,6 +170,53 @@ export function ProfileCard({
             <span className="text-xs font-medium">Games Played</span>
           </div>
           <p className="mt-1.5 text-lg font-bold text-tg-text">{profile.gamesPlayed.toLocaleString()}</p>
+        </div>
+      </div>
+
+      {/* Referral & Invite Section */}
+      <div className="mt-4 flex w-full flex-col rounded-xl bg-tg-secondary-bg border border-tg-separator p-4 text-left">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20">
+              <Gift className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-tg-text">Invite & Earn</p>
+              <p className="text-[11px] text-tg-hint">+100 coins for you, +50 for friends</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-bold text-tg-button">
+            <Users className="h-3.5 w-3.5" />
+            <span>{profile.referralCount ?? 0}</span>
+          </div>
+        </div>
+
+        <div className="mt-3.5 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={handleCopyReferral}
+            className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-tg-section border border-tg-separator px-3 text-xs font-bold text-tg-text transition-opacity hover:opacity-90 active:opacity-75"
+          >
+            {referralCopied ? (
+              <>
+                <Check className="h-3.5 w-3.5 text-emerald-400" />
+                <span className="text-emerald-400">Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5 text-tg-hint" />
+                <span>Copy Link</span>
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={handleShareReferral}
+            className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-tg-button px-3 text-xs font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            <span>Share Link</span>
+          </button>
         </div>
       </div>
 

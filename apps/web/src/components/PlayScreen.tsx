@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Play,
   Flame,
@@ -7,10 +8,13 @@ import {
   Swords,
   Zap,
   Coins,
+  Globe,
+  Sliders,
 } from 'lucide-react';
 import type { PlayerProfile, DailyChallengeStatusResponse } from '@flagora/shared';
 import { getDisplayName } from '@flagora/shared';
 import { getDailyResultSummary } from './dailyChallengeHelpers.js';
+import { CustomGameModal, type CustomGameConfig } from './CustomGameModal.js';
 
 interface PlayScreenProps {
   profile: PlayerProfile;
@@ -19,6 +23,7 @@ interface PlayScreenProps {
   onStartDaily: () => void;
   onChallengeFriend: () => void;
   onBattleFriend: () => void;
+  onStartCustomGame?: (config: CustomGameConfig) => void;
   onViewDailyLeaderboard: () => void;
   onNavigateToProfile: () => void;
   isStarting?: boolean;
@@ -34,6 +39,7 @@ export function PlayScreen({
   onStartDaily,
   onChallengeFriend,
   onBattleFriend,
+  onStartCustomGame,
   onViewDailyLeaderboard,
   onNavigateToProfile,
   isStarting = false,
@@ -41,6 +47,7 @@ export function PlayScreen({
   isStartingChallenge = false,
   isStartingBattle = false,
 }: PlayScreenProps) {
+  const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const displayName = getDisplayName(profile);
   const firstName = profile.firstName || displayName;
   const initial = profile.firstName ? profile.firstName.charAt(0).toUpperCase() : 'P';
@@ -98,7 +105,7 @@ export function PlayScreen({
       <div className="rounded-2xl bg-tg-section border border-tg-separator p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button border border-tg-button/20">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
               <Calendar className="h-4 w-4" />
             </div>
             <div className="text-left">
@@ -113,7 +120,7 @@ export function PlayScreen({
               Completed
             </span>
           ) : (
-            <span className="rounded-full bg-tg-button/15 border border-tg-button/30 px-2.5 py-0.5 text-[11px] font-bold text-tg-button">
+            <span className="rounded-full bg-tg-button/15 px-2.5 py-0.5 text-[11px] font-bold text-tg-button">
               Available
             </span>
           )}
@@ -183,6 +190,29 @@ export function PlayScreen({
           </button>
         </div>
 
+        {/* Custom Game Mode */}
+        <div className="rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
+                <Globe className="h-5 w-5" />
+              </div>
+              <div className="text-left">
+                <h3 className="text-sm font-bold text-tg-text">Custom Mode</h3>
+                <p className="text-xs text-tg-hint">Choose continents, flag count & timer</p>
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsCustomModalOpen(true)}
+            className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg border border-tg-separator font-bold text-tg-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75"
+          >
+            <Sliders className="h-3.5 w-3.5 text-tg-button" />
+            <span>Customize & Play</span>
+          </button>
+        </div>
+
         <div className="rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -229,6 +259,16 @@ export function PlayScreen({
           </button>
         </div>
       </div>
+
+      <CustomGameModal
+        isOpen={isCustomModalOpen}
+        onClose={() => setIsCustomModalOpen(false)}
+        onStart={(config) => {
+          setIsCustomModalOpen(false);
+          onStartCustomGame?.(config);
+        }}
+        loading={isStarting}
+      />
     </div>
   );
 }

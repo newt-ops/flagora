@@ -14,6 +14,7 @@ interface LiveBattleScreenProps {
   opponentProgress: OpponentProgressPayload | null;
   isReconnecting: boolean;
   onSubmitAnswer: (flagIndex: number, selectedIsoCode: string) => Promise<SubmitAnswerResponse>;
+  onCheckFinished?: () => void;
 }
 
 export function LiveBattleScreen({
@@ -22,6 +23,7 @@ export function LiveBattleScreen({
   opponentProgress,
   isReconnecting,
   onSubmitAnswer,
+  onCheckFinished,
 }: LiveBattleScreenProps) {
   const [currentFlagIndex, setCurrentFlagIndex] = useState(0);
   const [runningScore, setRunningScore] = useState(0);
@@ -195,16 +197,34 @@ export function LiveBattleScreen({
       </div>
 
       {timeExpired ? (
-        <div className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
+        <div className="flex w-full flex-col items-center justify-center gap-3 rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
           <Loader2 className="h-6 w-6 animate-spin text-tg-button" />
           <p className="text-sm font-bold text-tg-text">Time is up!</p>
-          <p className="text-xs text-tg-hint">Waiting for final battle tally...</p>
+          <p className="text-xs text-tg-hint">Tallying final battle results...</p>
+          {onCheckFinished && (
+            <button
+              type="button"
+              onClick={onCheckFinished}
+              className="mt-1 rounded-xl bg-tg-button px-4 py-2 text-xs font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75"
+            >
+              Check Final Results
+            </button>
+          )}
         </div>
       ) : currentFlagIndex >= battleStart.flags.length ? (
-        <div className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
+        <div className="flex w-full flex-col items-center justify-center gap-3 rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
           <Check className="h-8 w-8 text-emerald-400" />
           <p className="text-sm font-bold text-tg-text">All flags completed!</p>
-          <p className="text-xs text-tg-hint">Waiting for opponent or timer to conclude...</p>
+          <p className="text-xs text-tg-hint">Waiting for opponent or battle tally...</p>
+          {onCheckFinished && (
+            <button
+              type="button"
+              onClick={onCheckFinished}
+              className="mt-1 rounded-xl bg-tg-button px-4 py-2 text-xs font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75"
+            >
+              Check Final Results
+            </button>
+          )}
         </div>
       ) : (
         currentFlag && (

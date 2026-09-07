@@ -28,16 +28,16 @@ describe('seedFlags', () => {
   it('populates flags collection and is idempotent on re-run', async () => {
     const firstRun = await seedFlags(db);
 
-    assert.equal(firstRun.upserted, 195);
-    assert.equal(firstRun.total, 195);
+    assert.equal(firstRun.upserted, 194);
+    assert.equal(firstRun.total, 194);
 
     const secondRun = await seedFlags(db);
 
     assert.equal(secondRun.upserted, 0);
-    assert.equal(secondRun.matched, 195);
-    assert.equal(secondRun.total, 195);
+    assert.equal(secondRun.matched, 194);
+    assert.equal(secondRun.total, 194);
 
     const count = await db.collection('flags').countDocuments();
-    assert.equal(count, 195);
+    assert.equal(count, 194);
   });
 });

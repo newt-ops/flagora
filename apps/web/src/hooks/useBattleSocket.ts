@@ -12,6 +12,7 @@ import type {
   OpponentProgressPayload,
   BattleFinishedPayload,
   SubmitAnswerResponse,
+  PlayerReadyBroadcastPayload,
 } from '@flagora/shared';
 
 const API_URL =
@@ -33,6 +34,7 @@ export interface UseBattleSocketReturn {
   bothPlayersPresent: boolean;
   opponentJoined: OpponentJoinedPayload | null;
   isReady: boolean;
+  opponentReady: boolean;
   countdown: number | null;
   startPayload: BattleStartPayload | null;
   opponentProgress: OpponentProgressPayload | null;
@@ -54,6 +56,7 @@ export function useBattleSocket({
   const [bothPlayersPresent, setBothPlayersPresent] = useState(false);
   const [opponentJoined, setOpponentJoined] = useState<OpponentJoinedPayload | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [opponentReady, setOpponentReady] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [startPayload, setStartPayload] = useState<BattleStartPayload | null>(null);
   const [opponentProgress, setOpponentProgress] = useState<OpponentProgressPayload | null>(null);
@@ -120,6 +123,10 @@ export function useBattleSocket({
       setBothPlayersPresent(true);
     });
 
+    socket.on('battlePlayerReady', (_payload: PlayerReadyBroadcastPayload) => {
+      setOpponentReady(true);
+    });
+
     socket.on('battleCountdown', (payload: BattleCountdownPayload) => {
       setCountdown(payload.countdownSeconds);
     });
@@ -155,6 +162,21 @@ export function useBattleSocket({
       setIsReconnecting(false);
     };
   }, [sessionToken, battleId]);
+
+  // Active client-side 1s countdown decrement
+  useEffect(() => {
+    if (countdown === null || countdown <= 0) return;
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [countdown]);
 
   const sendReady = useCallback(async (): Promise<boolean> => {
     if (!socketRef.current || !battleId) {
@@ -198,6 +220,7 @@ export function useBattleSocket({
     bothPlayersPresent,
     opponentJoined,
     isReady,
+    opponentReady,
     countdown,
     startPayload,
     opponentProgress,

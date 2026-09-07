@@ -8,6 +8,7 @@ interface TelegramBackButton {
 export interface TelegramWebAppInstance {
   ready?: () => void;
   expand?: () => void;
+  requestFullscreen?: () => void;
   BackButton?: TelegramBackButton;
 }
 
@@ -30,6 +31,11 @@ export function initTelegramWebApp(): void {
   if (tg) {
     tg.ready?.();
     tg.expand?.();
+    try {
+      tg.requestFullscreen?.();
+    } catch {
+      // requestFullscreen not supported on older Telegram clients
+    }
   }
 }
 

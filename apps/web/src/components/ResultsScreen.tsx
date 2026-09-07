@@ -20,7 +20,7 @@ import {
 
 interface ResultsScreenProps {
   result: FinishRunResponse;
-  mode?: 'practice' | 'daily' | 'challenge';
+  mode?: 'practice' | 'daily' | 'challenge' | 'custom';
   onPlayAgain?: () => void;
   onBackToProfile: () => void;
   onViewLeaderboard?: () => void;
