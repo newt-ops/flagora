@@ -26,6 +26,13 @@ export class ChallengeAlreadyCompletedError extends Error {
   }
 }
 
+export class ChallengeNotCompletedError extends Error {
+  constructor(message = 'Challenge is not completed yet') {
+    super(message);
+    this.name = 'ChallengeNotCompletedError';
+  }
+}
+
 export class SelfChallengeNotAllowedError extends Error {
   constructor(message = 'Cannot accept your own challenge') {
     super(message);

@@ -19,9 +19,15 @@ import {
   ChallengeNotFoundError,
   ChallengeExpiredError,
   ChallengeAlreadyCompletedError,
+  ChallengeNotCompletedError,
   SelfChallengeNotAllowedError,
   ChallengeAlreadyAcceptedError,
+  UnauthorizedChallengeAccessError,
 } from './challengeTypes.js';
+import {
+  notifyRematchInvitation,
+  type TelegramServiceOverrides,
+} from '../telegram/telegramService.js';
 
 export async function createChallenge(
   challengerUserId: number,
@@ -242,4 +248,40 @@ export async function acceptChallenge(
     ...run,
     challengeId,
   };
+}
+
+export async function rematchChallenge(
+  challengeId: string,
+  requestingUserId: number,
+  db: Db,
+  overrides?: TelegramServiceOverrides,
+): Promise<CreateChallengeResponse> {
+  const challenge = await getChallenge(challengeId, db);
+  if (!challenge) {
+    throw new ChallengeNotFoundError();
+  }
+
+  if (challenge.status !== 'completed') {
+    throw new ChallengeNotCompletedError();
+  }
+
+  const isChallenger = challenge.challengerUserId === requestingUserId;
+  const isOpponent = challenge.opponentUserId === requestingUserId;
+  if (!isChallenger && !isOpponent) {
+    throw new UnauthorizedChallengeAccessError();
+  }
+
+  const targetUserId = isChallenger ? challenge.opponentUserId! : challenge.challengerUserId;
+
+  const newChallenge = await createChallenge(requestingUserId, db);
+
+  await notifyRematchInvitation(
+    newChallenge.challengeId,
+    targetUserId,
+    requestingUserId,
+    db,
+    overrides,
+  );
+
+  return newChallenge;
 }

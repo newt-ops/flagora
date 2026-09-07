@@ -33,13 +33,16 @@ import {
   createChallenge,
   getChallengeInfo,
   acceptChallenge,
+  rematchChallenge,
 } from './challenge/challengeService.js';
 import {
   ChallengeNotFoundError,
   ChallengeExpiredError,
   ChallengeAlreadyCompletedError,
+  ChallengeNotCompletedError,
   SelfChallengeNotAllowedError,
   ChallengeAlreadyAcceptedError,
+  UnauthorizedChallengeAccessError,
 } from './challenge/challengeTypes.js';
 
 dotenv.config();
@@ -381,6 +384,35 @@ async function bootstrap() {
         return;
       }
       const message = error instanceof Error ? error.message : 'Failed to accept challenge';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.post('/api/challenges/:id/rematch', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const id = String(req.params.id);
+      const challenge = await rematchChallenge(id, telegramUserId, db);
+      res.status(200).json(challenge);
+    } catch (error) {
+      if (error instanceof ChallengeNotFoundError) {
+        res.status(404).json({ error: 'Not found', message: error.message });
+        return;
+      }
+      if (error instanceof ChallengeNotCompletedError) {
+        res.status(400).json({ error: 'Challenge not completed', message: error.message });
+        return;
+      }
+      if (error instanceof UnauthorizedChallengeAccessError) {
+        res.status(403).json({ error: 'Forbidden', message: error.message });
+        return;
+      }
+      const message = error instanceof Error ? error.message : 'Failed to create rematch';
       res.status(500).json({ error: 'Internal server error', message });
     }
   });

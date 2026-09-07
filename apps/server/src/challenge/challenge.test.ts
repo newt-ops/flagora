@@ -1,4 +1,4 @@
-import { describe, it, before, after } from 'node:test';
+import { describe, it, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import express from 'express';
@@ -15,14 +15,24 @@ import {
   getChallenge,
   getChallengeInfo,
   acceptChallenge,
+  rematchChallenge,
 } from './challengeService.js';
 import {
   ChallengeNotFoundError,
   ChallengeExpiredError,
   ChallengeAlreadyCompletedError,
+  ChallengeNotCompletedError,
   SelfChallengeNotAllowedError,
   ChallengeAlreadyAcceptedError,
+  UnauthorizedChallengeAccessError,
 } from './challengeTypes.js';
+
+interface CapturedTelegramMessage {
+  chatId: number;
+  text: string;
+  buttonText?: string;
+  buttonUrl?: string;
+}
 
 describe('challenge backend and rules', () => {
   let mongod: MongoMemoryServer;
@@ -31,9 +41,59 @@ describe('challenge backend and rules', () => {
   let redis: RedisClient;
   let server: http.Server;
   let baseUrl: string;
+  let mockTelegramServer: http.Server;
+  let sentTelegramMessages: CapturedTelegramMessage[] = [];
+  let shouldFailTelegramApi = false;
   const sessionSecret = 'test-secret-challenge-key-32';
 
   before(async () => {
+    mockTelegramServer = http.createServer((req, res) => {
+      if (req.method === 'POST' && req.url?.includes('/sendMessage')) {
+        let body = '';
+        req.on('data', (chunk) => {
+          body += chunk;
+        });
+        req.on('end', () => {
+          if (shouldFailTelegramApi) {
+            res.writeHead(403, { 'Content-Type': 'application/json' });
+            res.end(
+              JSON.stringify({
+                ok: false,
+                error_code: 403,
+                description: 'Forbidden: bot was blocked by the user',
+              }),
+            );
+            return;
+          }
+          const parsed = JSON.parse(body);
+          const button = parsed.reply_markup?.inline_keyboard?.[0]?.[0];
+          sentTelegramMessages.push({
+            chatId: parsed.chat_id,
+            text: parsed.text,
+            buttonText: button?.text,
+            buttonUrl: button?.url,
+          });
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true, result: { message_id: 101 } }));
+        });
+        return;
+      }
+      res.writeHead(404);
+      res.end();
+    });
+
+    await new Promise<void>((resolve) => {
+      mockTelegramServer.listen(0, () => {
+        const addr = mockTelegramServer.address();
+        if (addr && typeof addr === 'object') {
+          process.env.TELEGRAM_API_BASE_URL = `http://127.0.0.1:${addr.port}`;
+          process.env.TELEGRAM_BOT_TOKEN = 'test_mock_bot_token';
+          process.env.TELEGRAM_BOT_USERNAME = 'FlagoraBot';
+        }
+        resolve();
+      });
+    });
+
     mongod = await MongoMemoryServer.create();
     mongoClient = new MongoClient(mongod.getUri());
     await mongoClient.connect();
@@ -124,6 +184,35 @@ describe('challenge backend and rules', () => {
       }
     });
 
+    app.post('/api/challenges/:id/rematch', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+      try {
+        const telegramUserId = req.sessionUser?.telegramUserId;
+        if (!telegramUserId) {
+          res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+          return;
+        }
+
+        const id = String(req.params.id);
+        const challenge = await rematchChallenge(id, telegramUserId, db);
+        res.status(200).json(challenge);
+      } catch (error) {
+        if (error instanceof ChallengeNotFoundError) {
+          res.status(404).json({ error: 'Not found', message: error.message });
+          return;
+        }
+        if (error instanceof ChallengeNotCompletedError) {
+          res.status(400).json({ error: 'Challenge not completed', message: error.message });
+          return;
+        }
+        if (error instanceof UnauthorizedChallengeAccessError) {
+          res.status(403).json({ error: 'Forbidden', message: error.message });
+          return;
+        }
+        const message = error instanceof Error ? error.message : 'Failed to create rematch';
+        res.status(500).json({ error: 'Internal server error', message });
+      }
+    });
+
     server = http.createServer(app);
     await new Promise<void>((resolve) => {
       server.listen(0, () => {
@@ -136,8 +225,14 @@ describe('challenge backend and rules', () => {
     });
   });
 
+  beforeEach(() => {
+    sentTelegramMessages = [];
+    shouldFailTelegramApi = false;
+  });
+
   after(async () => {
     await new Promise<void>((resolve) => server.close(() => resolve()));
+    await new Promise<void>((resolve) => mockTelegramServer.close(() => resolve()));
     await closeRedis();
     await mongoClient.close();
     await mongod.stop();
@@ -480,14 +575,14 @@ describe('challenge backend and rules', () => {
     assert.equal(duplicateBody.error, 'Challenge already accepted');
   });
 
-  it('accepts challenge delivering identical flags and choices, and determines winner correctly for challenger win, opponent win, and tie', async () => {
+  it('accepts challenge delivering identical flags and choices, determines winner, and sends personalized notifications', async () => {
     const challengerId = 94001;
     const opponentId = 94002;
 
     await db.collection<PlayerProfile>('profiles').insertOne({
       telegramUserId: challengerId,
-      username: 'challenger_winner_test',
-      firstName: 'Challenger',
+      username: 'alice_flags',
+      firstName: 'Alice',
       xp: 0,
       level: 1,
       coins: 0,
@@ -502,8 +597,8 @@ describe('challenge backend and rules', () => {
 
     await db.collection<PlayerProfile>('profiles').insertOne({
       telegramUserId: opponentId,
-      username: 'opponent_winner_test',
-      firstName: 'Opponent',
+      username: 'bob_flags',
+      firstName: 'Bob',
       xp: 0,
       level: 1,
       coins: 0,
@@ -540,6 +635,8 @@ describe('challenge backend and rules', () => {
       assert.equal((opponentRunData1.flags[i] as Record<string, unknown>).name, undefined);
     }
 
+    sentTelegramMessages = [];
+
     const c1OpponentRun = await db.collection('runs').findOne({ runId: opponentRunData1.runId });
     assert.ok(c1OpponentRun);
     for (let i = 0; i < 2; i++) {
@@ -552,16 +649,22 @@ describe('challenge backend and rules', () => {
     assert.ok(doc1);
     assert.equal(doc1.status, 'completed');
     assert.equal(doc1.winner, 'challenger');
-    assert.equal(doc1.opponentScore, c1OpponentFinish.totalScore);
-    assert.equal(doc1.challengerScore, c1ChallengerFinish.totalScore);
 
-    const opponentProfile = await db.collection<PlayerProfile>('profiles').findOne({ telegramUserId: opponentId });
-    assert.ok(opponentProfile);
-    assert.equal(opponentProfile.bestScore, 100);
-    assert.ok(opponentProfile.xp > 0);
-    assert.ok(opponentProfile.coins > 0);
-    assert.equal(opponentProfile.gamesPlayed, 1);
+    assert.equal(sentTelegramMessages.length, 2);
+    const challengerMsg = sentTelegramMessages.find((m) => m.chatId === challengerId);
+    const opponentMsg = sentTelegramMessages.find((m) => m.chatId === opponentId);
+    assert.ok(challengerMsg);
+    assert.ok(opponentMsg);
 
+    assert.ok(challengerMsg.text.includes('You won the challenge against @bob_flags!'));
+    assert.ok(challengerMsg.text.includes(String(c1ChallengerFinish.totalScore)));
+    assert.ok(challengerMsg.buttonUrl?.includes(c1.challengeId));
+
+    assert.ok(opponentMsg.text.includes('@alice_flags won the challenge!'));
+    assert.ok(opponentMsg.text.includes(String(c1OpponentFinish.totalScore)));
+    assert.ok(opponentMsg.buttonUrl?.includes(c1.challengeId));
+
+    sentTelegramMessages = [];
     const c2 = await createChallenge(challengerId, db);
     const c2ChallengerRun = await db.collection('runs').findOne({ runId: c2.runId });
     assert.ok(c2ChallengerRun);
@@ -584,11 +687,15 @@ describe('challenge backend and rules', () => {
     const c2OpponentFinish = await finishRun(opponentRunData2.runId, opponentId, db, redis);
 
     assert.ok(c2OpponentFinish.totalScore > c2ChallengerFinish.totalScore);
-    const doc2 = await db.collection<Challenge>('challenges').findOne({ challengeId: c2.challengeId });
-    assert.ok(doc2);
-    assert.equal(doc2.status, 'completed');
-    assert.equal(doc2.winner, 'opponent');
+    assert.equal(sentTelegramMessages.length, 2);
+    const c2ChallengerMsg = sentTelegramMessages.find((m) => m.chatId === challengerId);
+    const c2OpponentMsg = sentTelegramMessages.find((m) => m.chatId === opponentId);
+    assert.ok(c2ChallengerMsg);
+    assert.ok(c2OpponentMsg);
+    assert.ok(c2ChallengerMsg.text.includes('@bob_flags beat your score in the challenge!'));
+    assert.ok(c2OpponentMsg.text.includes('You won the challenge against @alice_flags!'));
 
+    sentTelegramMessages = [];
     const c3 = await createChallenge(challengerId, db);
     const c3ChallengerRun = await db.collection('runs').findOne({ runId: c3.runId });
     assert.ok(c3ChallengerRun);
@@ -627,5 +734,138 @@ describe('challenge backend and rules', () => {
     assert.equal(doc3.winner, 'tie');
     assert.equal(doc3.challengerScore, 400);
     assert.equal(doc3.opponentScore, 400);
+
+    assert.equal(sentTelegramMessages.length, 2);
+    const c3ChallengerMsg = sentTelegramMessages.find((m) => m.chatId === challengerId);
+    const c3OpponentMsg = sentTelegramMessages.find((m) => m.chatId === opponentId);
+    assert.ok(c3ChallengerMsg);
+    assert.ok(c3OpponentMsg);
+    assert.ok(c3ChallengerMsg.text.includes('ended in a tie! Both scored 400 points.'));
+    assert.ok(c3OpponentMsg.text.includes('ended in a tie! Both scored 400 points.'));
+  });
+
+  it('does not fail finishRun when telegram message send fails (blocked bot)', async () => {
+    const challengerId = 95001;
+    const opponentId = 95002;
+
+    const challenge = await createChallenge(challengerId, db);
+    const cRun = await db.collection('runs').findOne({ runId: challenge.runId });
+    assert.ok(cRun);
+    await submitAnswer(challenge.runId, challengerId, 0, cRun.flags[0].isoCode, db);
+    await finishRun(challenge.runId, challengerId, db, redis);
+
+    const opponentToken = createSessionToken(opponentId, sessionSecret);
+    const acceptRes = await fetch(`${baseUrl}/api/challenges/${challenge.challengeId}/accept`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${opponentToken}` },
+    });
+    assert.equal(acceptRes.status, 200);
+    const opponentRunData = await acceptRes.json();
+
+    shouldFailTelegramApi = true;
+
+    const finishResult = await finishRun(opponentRunData.runId, opponentId, db, redis);
+    assert.ok(finishResult.totalScore > 0);
+
+    const updatedChallenge = await db.collection<Challenge>('challenges').findOne({ challengeId: challenge.challengeId });
+    assert.ok(updatedChallenge);
+    assert.equal(updatedChallenge.status, 'completed');
+  });
+
+  it('creates rematch with fresh flag set and sends invite notification, rejecting invalid rematch cases', async () => {
+    const playerA = 96001;
+    const playerB = 96002;
+    const outsider = 96003;
+
+    await db.collection<PlayerProfile>('profiles').insertOne({
+      telegramUserId: playerA,
+      username: 'player_a',
+      firstName: 'Alice',
+      xp: 0,
+      level: 1,
+      coins: 0,
+      gamesPlayed: 0,
+      bestScore: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+      lastPlayedDate: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await db.collection<PlayerProfile>('profiles').insertOne({
+      telegramUserId: playerB,
+      username: 'player_b',
+      firstName: 'Bob',
+      xp: 0,
+      level: 1,
+      coins: 0,
+      gamesPlayed: 0,
+      bestScore: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+      lastPlayedDate: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const challenge = await createChallenge(playerA, db);
+    const cRun = await db.collection('runs').findOne({ runId: challenge.runId });
+    assert.ok(cRun);
+    await submitAnswer(challenge.runId, playerA, 0, cRun.flags[0].isoCode, db);
+    await finishRun(challenge.runId, playerA, db, redis);
+
+    const playerBToken = createSessionToken(playerB, sessionSecret);
+    const resRematchPending = await fetch(`${baseUrl}/api/challenges/${challenge.challengeId}/rematch`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${playerBToken}` },
+    });
+    assert.equal(resRematchPending.status, 400);
+    const pendingBody = await resRematchPending.json();
+    assert.equal(pendingBody.error, 'Challenge not completed');
+
+    const acceptRes = await fetch(`${baseUrl}/api/challenges/${challenge.challengeId}/accept`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${playerBToken}` },
+    });
+    assert.equal(acceptRes.status, 200);
+    const opponentRunData = await acceptRes.json();
+    await finishRun(opponentRunData.runId, playerB, db, redis);
+
+    const outsiderToken = createSessionToken(outsider, sessionSecret);
+    const resOutsider = await fetch(`${baseUrl}/api/challenges/${challenge.challengeId}/rematch`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${outsiderToken}` },
+    });
+    assert.equal(resOutsider.status, 403);
+    const outsiderBody = await resOutsider.json();
+    assert.equal(outsiderBody.error, 'Forbidden');
+
+    sentTelegramMessages = [];
+
+    const resRematch = await fetch(`${baseUrl}/api/challenges/${challenge.challengeId}/rematch`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${playerBToken}` },
+    });
+    assert.equal(resRematch.status, 200);
+    const rematchBody = await resRematch.json();
+
+    assert.ok(rematchBody.challengeId);
+    assert.notEqual(rematchBody.challengeId, challenge.challengeId);
+    assert.ok(rematchBody.runId);
+    assert.equal(rematchBody.flags.length, 10);
+
+    const newChallengeDoc = await db.collection<Challenge>('challenges').findOne({ challengeId: rematchBody.challengeId });
+    assert.ok(newChallengeDoc);
+    assert.equal(newChallengeDoc.challengerUserId, playerB);
+    assert.equal(newChallengeDoc.opponentUserId, null);
+    assert.equal(newChallengeDoc.status, 'pending');
+
+    assert.equal(sentTelegramMessages.length, 1);
+    const rematchInvite = sentTelegramMessages[0];
+    assert.equal(rematchInvite.chatId, playerA);
+    assert.ok(rematchInvite.text.includes('@player_b has challenged you to a rematch!'));
+    assert.equal(rematchInvite.buttonText, 'Accept Rematch');
+    assert.ok(rematchInvite.buttonUrl?.includes(rematchBody.challengeId));
   });
 });

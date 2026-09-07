@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import type { Db } from 'mongodb';
 import type { Redis as RedisClient } from 'ioredis';
 import { updateLeaderboardScore, getDailyLeaderboardKey } from '../leaderboard/leaderboardService.js';
+import { notifyChallengeCompletion } from '../telegram/telegramService.js';
 import {
   COUNTRIES,
   DEFAULT_RUN_TIER_MIX,
@@ -348,6 +349,8 @@ export async function finishRun(
             },
           },
         );
+
+        await notifyChallengeCompletion(run.challengeId, db);
       }
     }
   }
