@@ -18,11 +18,24 @@ import {
   BattleExpiredError,
   SelfBattleNotAllowedError,
   BattleAlreadyJoinedError,
+  UnauthorizedBattleAccessError,
+  BattleNotInProgressError,
 } from './battleTypes.js';
-import type { TypedSocketServer, BattleStartPayload } from '../multiplayer/socketTypes.js';
+import type {
+  TypedSocketServer,
+  BattleStartPayload,
+  AnswerResultPayload,
+  OpponentProgressPayload,
+} from '../multiplayer/socketTypes.js';
 import { selectRunFlags, generateChoices } from '../game/flagSelection.js';
 import { createRun } from '../game/runService.js';
-import type { RunFlagItem } from '../game/runTypes.js';
+import type { RunFlagItem, GameRun } from '../game/runTypes.js';
+import {
+  RunNotFoundError,
+  RunAlreadyFinishedError,
+  TimeExpiredError,
+} from '../game/runTypes.js';
+import { scoreAnswer } from '../game/runScoringService.js';
 
 export async function createBattle(
   challengerUserId: number,
@@ -282,4 +295,111 @@ export async function startBattleSession(
   io.to(`battle:${battleId}`).emit('battleStart', startPayload);
 
   return startPayload;
+}
+
+export interface SubmitBattleAnswerResult {
+  answerResult: AnswerResultPayload;
+  opponentProgress: OpponentProgressPayload;
+}
+
+export async function submitBattleAnswer(
+  battleId: string,
+  userId: number,
+  flagIndex: number,
+  selectedIsoCode: string,
+  db: Db,
+  nowMs: number = Date.now(),
+): Promise<SubmitBattleAnswerResult> {
+  const battle = await db.collection<BattleSession>('battles').findOne({ battleId });
+  if (!battle) {
+    throw new BattleNotFoundError();
+  }
+
+  const isChallenger = battle.challengerUserId === userId;
+  const isOpponent = battle.opponentUserId !== null && battle.opponentUserId === userId;
+
+  if (!isChallenger && !isOpponent) {
+    throw new UnauthorizedBattleAccessError();
+  }
+
+  if (battle.status !== 'in_progress') {
+    throw new BattleNotInProgressError();
+  }
+
+  const runId = isChallenger ? battle.challengerRunId : battle.opponentRunId;
+  if (!runId) {
+    throw new RunNotFoundError();
+  }
+
+  const runsCollection = db.collection<GameRun>('runs');
+  const run = await runsCollection.findOne({ runId });
+  if (!run) {
+    throw new RunNotFoundError();
+  }
+
+  if (run.status !== 'active') {
+    throw new RunAlreadyFinishedError();
+  }
+
+  let scored;
+  try {
+    scored = scoreAnswer(run, flagIndex, selectedIsoCode, nowMs);
+  } catch (error) {
+    if (error instanceof TimeExpiredError) {
+      await runsCollection.updateOne(
+        { runId },
+        {
+          $set: {
+            status: 'expired',
+            finishedAt: new Date(nowMs),
+            updatedAt: new Date(nowMs),
+          },
+        },
+      );
+    }
+    throw error;
+  }
+
+  const flag = run.flags[flagIndex];
+  const updatedFlags = [...run.flags];
+  updatedFlags[flagIndex] = {
+    ...flag,
+    answered: true,
+    selectedIsoCode,
+    correct: scored.isCorrect,
+    points: scored.pointsThisFlag,
+    comboCount: scored.newCombo,
+    answeredAt: scored.answeredAt,
+  };
+
+  await runsCollection.updateOne(
+    { runId },
+    {
+      $set: {
+        flags: updatedFlags,
+        comboCount: scored.newCombo,
+        maxCombo: scored.newMaxCombo,
+        runningTotal: scored.newRunningTotal,
+        updatedAt: new Date(nowMs),
+      },
+    },
+  );
+
+  const answerResult: AnswerResultPayload = {
+    correct: scored.isCorrect,
+    comboCount: scored.newCombo,
+    pointsThisFlag: scored.pointsThisFlag,
+    runningTotal: scored.newRunningTotal,
+  };
+
+  const opponentProgress: OpponentProgressPayload = {
+    flagIndex,
+    correct: scored.isCorrect,
+    runningTotal: scored.newRunningTotal,
+  };
+
+  return {
+    answerResult,
+    opponentProgress,
+  };
 }

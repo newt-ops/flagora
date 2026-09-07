@@ -32,3 +32,10 @@ export class UnauthorizedBattleAccessError extends Error {
     this.name = 'UnauthorizedBattleAccessError';
   }
 }
+
+export class BattleNotInProgressError extends Error {
+  constructor(message = 'Battle is not in progress') {
+    super(message);
+    this.name = 'BattleNotInProgressError';
+  }
+}

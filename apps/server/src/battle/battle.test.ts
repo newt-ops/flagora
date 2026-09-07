@@ -24,9 +24,13 @@ import type {
   BattleStartPayload,
   BattleCountdownPayload,
   PlayerReadyResponse,
+  SubmitAnswerResponse,
+  AnswerResultPayload,
+  OpponentProgressPayload,
 } from '../multiplayer/socketTypes.js';
 import type { GameRun } from '../game/runTypes.js';
 import { scoreAnswer, finalizeRun } from '../game/runScoringService.js';
+import { createRun, submitAnswer as submitRestAnswer } from '../game/runService.js';
 import {
   TimeExpiredError,
   FlagAlreadyAnsweredError,
@@ -579,7 +583,10 @@ describe('battle invite, view, join and room presence', () => {
     assert.equal(opponentReadyRes.success, true);
     assert.equal(opponentReadyRes.readyCount, 2);
 
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    const deadline = Date.now() + 3000;
+    while ((!challengerStart || !opponentStart) && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
 
     const cCountdown = challengerCountdown as unknown as BattleCountdownPayload | undefined;
     const oCountdown = opponentCountdown as unknown as BattleCountdownPayload | undefined;
@@ -701,7 +708,10 @@ describe('battle invite, view, join and room presence', () => {
     assert.equal(challengerReadyRes.success, true);
     assert.equal(challengerReadyRes.readyCount, 2);
 
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    const deadline2 = Date.now() + 3000;
+    while (!startReceived && Date.now() < deadline2) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
     assert.equal(startReceived, true);
   });
 
@@ -810,6 +820,295 @@ describe('battle invite, view, join and room presence', () => {
       assert.equal(finalized.correctCount, 2);
       assert.ok(finalized.xpEarned > 0);
       assert.ok(finalized.coinsEarned > 0);
+    });
+  });
+
+  describe('live battle answer submissions and opponent progress', () => {
+    async function setupActiveBattle(challengerId = 91001, opponentId = 91002) {
+      await db.collection('profiles').deleteMany({ telegramUserId: { $in: [challengerId, opponentId] } });
+      await db.collection('profiles').insertMany([
+        {
+          telegramUserId: challengerId,
+          username: `challenger_${challengerId}`,
+          displayName: `Challenger ${challengerId}`,
+          xp: 0,
+          coins: 0,
+          level: 1,
+          bestScore: 0,
+          gamesPlayed: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          telegramUserId: opponentId,
+          username: `opponent_${opponentId}`,
+          displayName: `Opponent ${opponentId}`,
+          xp: 0,
+          coins: 0,
+          level: 1,
+          bestScore: 0,
+          gamesPlayed: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+
+      const challengerToken = createSessionToken(challengerId, TEST_SECRET);
+      const opponentToken = createSessionToken(opponentId, TEST_SECRET);
+
+      const createRes = await fetch(`${baseUrl}/api/battles`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${challengerToken}`,
+        },
+      });
+      const created = (await createRes.json()) as CreateBattleResponse;
+      const battleId = created.battleId;
+
+      await fetch(`${baseUrl}/api/battles/${battleId}/join`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${opponentToken}` },
+      });
+
+      const challengerSocket = createClient(challengerToken);
+      const opponentSocket = createClient(opponentToken);
+
+      await Promise.all([
+        new Promise<void>((resolve) => challengerSocket.on('connect', () => resolve())),
+        new Promise<void>((resolve) => opponentSocket.on('connect', () => resolve())),
+      ]);
+
+      await Promise.all([
+        new Promise<void>((resolve) => challengerSocket.emit('joinBattleRoom', { battleId }, () => resolve())),
+        new Promise<void>((resolve) => opponentSocket.emit('joinBattleRoom', { battleId }, () => resolve())),
+      ]);
+
+      const startPromise = Promise.all([
+        new Promise<BattleStartPayload>((resolve) => challengerSocket.once('battleStart', resolve)),
+        new Promise<BattleStartPayload>((resolve) => opponentSocket.once('battleStart', resolve)),
+      ]);
+
+      await Promise.all([
+        new Promise<void>((resolve) => challengerSocket.emit('playerReady', { battleId }, () => resolve())),
+        new Promise<void>((resolve) => opponentSocket.emit('playerReady', { battleId }, () => resolve())),
+      ]);
+
+      const [cStart, oStart] = await startPromise;
+
+      return {
+        battleId,
+        challengerId,
+        opponentId,
+        challengerSocket,
+        opponentSocket,
+        cStart,
+        oStart,
+      };
+    }
+
+    it('produces identical scoring results between REST runService and socket submitAnswer for the same input sequence', async () => {
+      const { battleId, challengerSocket, cStart } = await setupActiveBattle(92001, 92002);
+      const battleRun = await db.collection<GameRun>('runs').findOne({ runId: cStart.challengerRunId });
+      assert.ok(battleRun);
+
+      const soloUserId = 92003;
+      await db.collection('profiles').insertOne({
+        telegramUserId: soloUserId,
+        displayName: 'Solo Player',
+        xp: 0,
+        coins: 0,
+        level: 1,
+        bestScore: 0,
+        gamesPlayed: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      const soloRun = await createRun(soloUserId, db, {
+        mode: 'practice',
+        flags: battleRun.flags,
+      });
+
+      const inputSequence = [
+        { flagIndex: 0, selectedIsoCode: battleRun.flags[0].isoCode },
+        { flagIndex: 1, selectedIsoCode: battleRun.flags[1].isoCode },
+        { flagIndex: 2, selectedIsoCode: 'INVALID_ISO' },
+        { flagIndex: 3, selectedIsoCode: battleRun.flags[3].isoCode },
+        { flagIndex: 4, selectedIsoCode: battleRun.flags[4].isoCode },
+      ];
+
+      for (const step of inputSequence) {
+        const restResult = await submitRestAnswer(soloRun.runId, soloUserId, step.flagIndex, step.selectedIsoCode, db);
+
+        const socketEventPromise = new Promise<AnswerResultPayload>((resolve) => {
+          challengerSocket.once('answerResult', resolve);
+        });
+
+        const socketCallbackResult = await new Promise<SubmitAnswerResponse>((resolve) => {
+          challengerSocket.emit(
+            'submitAnswer',
+            {
+              battleId,
+              flagIndex: step.flagIndex,
+              selectedIsoCode: step.selectedIsoCode,
+            },
+            (res: SubmitAnswerResponse) => resolve(res),
+          );
+        });
+
+        const socketEventResult = await socketEventPromise;
+
+        assert.equal(socketCallbackResult.success, true);
+        assert.ok(socketCallbackResult.result);
+        assert.equal(socketCallbackResult.result.correct, restResult.correct);
+        assert.equal(socketCallbackResult.result.comboCount, restResult.comboCount);
+        assert.equal(socketCallbackResult.result.pointsThisFlag, restResult.pointsThisFlag);
+        assert.equal(socketCallbackResult.result.runningTotal, restResult.runningTotal);
+
+        assert.equal(socketEventResult.correct, restResult.correct);
+        assert.equal(socketEventResult.comboCount, restResult.comboCount);
+        assert.equal(socketEventResult.pointsThisFlag, restResult.pointsThisFlag);
+        assert.equal(socketEventResult.runningTotal, restResult.runningTotal);
+      }
+    });
+
+    it('opponentProgress payloads never contain selectedIsoCode or correct-answer data', async () => {
+      const { battleId, challengerSocket, opponentSocket, cStart } = await setupActiveBattle(93001, 93002);
+      const battleRun = await db.collection<GameRun>('runs').findOne({ runId: cStart.challengerRunId });
+      assert.ok(battleRun);
+
+      const receivedProgress: OpponentProgressPayload[] = [];
+      opponentSocket.on('opponentProgress', (payload) => {
+        receivedProgress.push(payload);
+      });
+
+      const answersToSubmit = [
+        { flagIndex: 0, choice: battleRun.flags[0].isoCode },
+        { flagIndex: 1, choice: 'WRONG' },
+        { flagIndex: 2, choice: battleRun.flags[2].isoCode },
+      ];
+
+      for (const item of answersToSubmit) {
+        await new Promise<SubmitAnswerResponse>((resolve) => {
+          challengerSocket.emit(
+            'submitAnswer',
+            {
+              battleId,
+              flagIndex: item.flagIndex,
+              selectedIsoCode: item.choice,
+            },
+            (res: SubmitAnswerResponse) => resolve(res),
+          );
+        });
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      assert.equal(receivedProgress.length, 3);
+
+      for (let i = 0; i < receivedProgress.length; i++) {
+        const item = receivedProgress[i];
+        assert.equal(item.flagIndex, i);
+        assert.equal(typeof item.correct, 'boolean');
+        assert.equal(typeof item.runningTotal, 'number');
+
+        const raw = item as unknown as Record<string, unknown>;
+        assert.equal(raw.selectedIsoCode, undefined);
+        assert.equal(raw.isoCode, undefined);
+        assert.equal(raw.name, undefined);
+        assert.equal(raw.choices, undefined);
+        assert.equal(raw.answer, undefined);
+
+        const keys = Object.keys(item).sort();
+        assert.deepEqual(keys, ['correct', 'flagIndex', 'runningTotal']);
+      }
+    });
+
+    it('rejects double-answering the same flagIndex over socket', async () => {
+      const { battleId, challengerSocket, opponentSocket, cStart } = await setupActiveBattle(94001, 94002);
+      const battleRun = await db.collection<GameRun>('runs').findOne({ runId: cStart.challengerRunId });
+      assert.ok(battleRun);
+
+      const opponentProgressEvents: OpponentProgressPayload[] = [];
+      opponentSocket.on('opponentProgress', (payload) => {
+        opponentProgressEvents.push(payload);
+      });
+
+      const firstRes = await new Promise<SubmitAnswerResponse>((resolve) => {
+        challengerSocket.emit(
+          'submitAnswer',
+          {
+            battleId,
+            flagIndex: 0,
+            selectedIsoCode: battleRun.flags[0].isoCode,
+          },
+          (res: SubmitAnswerResponse) => resolve(res),
+        );
+      });
+      assert.equal(firstRes.success, true);
+
+      let battleErrorEvent: BattleErrorPayload | undefined;
+      challengerSocket.once('battleError', (p) => {
+        battleErrorEvent = p;
+      });
+
+      const secondRes = await new Promise<SubmitAnswerResponse>((resolve) => {
+        challengerSocket.emit(
+          'submitAnswer',
+          {
+            battleId,
+            flagIndex: 0,
+            selectedIsoCode: battleRun.flags[0].isoCode,
+          },
+          (res: SubmitAnswerResponse) => resolve(res),
+        );
+      });
+
+      assert.equal(secondRes.success, false);
+      assert.equal(secondRes.error, 'Bad request');
+      assert.equal(secondRes.message, 'This flag has already been answered');
+
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      assert.ok(battleErrorEvent);
+      assert.equal(battleErrorEvent.message, 'This flag has already been answered');
+      assert.equal(opponentProgressEvents.length, 1);
+    });
+
+    it('rejects an answer submitted after server-side timer has elapsed with time expired result', async () => {
+      const { battleId, challengerSocket, cStart } = await setupActiveBattle(95001, 95002);
+
+      await db.collection<GameRun>('runs').updateOne(
+        { runId: cStart.challengerRunId },
+        { $set: { startedAt: new Date(Date.now() - 65000) } },
+      );
+
+      let battleErrorEvent: BattleErrorPayload | undefined;
+      challengerSocket.once('battleError', (p) => {
+        battleErrorEvent = p;
+      });
+
+      const res = await new Promise<SubmitAnswerResponse>((resolve) => {
+        challengerSocket.emit(
+          'submitAnswer',
+          {
+            battleId,
+            flagIndex: 0,
+            selectedIsoCode: 'FR',
+          },
+          (r: SubmitAnswerResponse) => resolve(r),
+        );
+      });
+
+      assert.equal(res.success, false);
+      assert.equal(res.timeExpired, true);
+      assert.equal(res.error, 'Time expired');
+
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      assert.ok(battleErrorEvent);
+      assert.equal(battleErrorEvent.timeExpired, true);
+      assert.equal(battleErrorEvent.error, 'Time expired');
+
+      const updatedRun = await db.collection<GameRun>('runs').findOne({ runId: cStart.challengerRunId });
+      assert.equal(updatedRun?.status, 'expired');
     });
   });
 });

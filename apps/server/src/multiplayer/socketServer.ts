@@ -10,7 +10,22 @@ import type {
   PingResponse,
   TypedSocketServer,
 } from './socketTypes.js';
-import { startBattleSession } from '../battle/battleService.js';
+import {
+  startBattleSession,
+  submitBattleAnswer,
+} from '../battle/battleService.js';
+import {
+  BattleNotFoundError,
+  UnauthorizedBattleAccessError,
+  BattleNotInProgressError,
+} from '../battle/battleTypes.js';
+import {
+  RunNotFoundError,
+  RunAlreadyFinishedError,
+  FlagAlreadyAnsweredError,
+  InvalidFlagIndexError,
+  TimeExpiredError,
+} from '../game/runTypes.js';
 
 export interface SocketServerOptions {
   countdownDelayMs?: number;
@@ -178,6 +193,111 @@ export function initSocketServer(
             io.to(roomName).emit('battleError', { message: errorMsg, battleId });
           }
         }, delay);
+      }
+    });
+
+    socket.on('submitAnswer', async (payload, callback) => {
+      const { battleId, flagIndex, selectedIsoCode } = payload ?? {};
+      if (
+        !battleId ||
+        typeof battleId !== 'string' ||
+        typeof flagIndex !== 'number' ||
+        typeof selectedIsoCode !== 'string'
+      ) {
+        const message = 'Invalid payload for submitAnswer';
+        socket.emit('battleError', { message, battleId });
+        callback?.({ success: false, error: 'Bad request', message });
+        return;
+      }
+
+      if (!db) {
+        const message = 'Database not available';
+        socket.emit('battleError', { message, battleId });
+        callback?.({ success: false, error: 'Internal server error', message });
+        return;
+      }
+
+      try {
+        const result = await submitBattleAnswer(
+          battleId,
+          userId,
+          flagIndex,
+          selectedIsoCode,
+          db,
+        );
+
+        socket.emit('answerResult', result.answerResult);
+        callback?.({ success: true, result: result.answerResult });
+
+        const roomName = `battle:${battleId}`;
+        socket.to(roomName).emit('opponentProgress', result.opponentProgress);
+      } catch (error) {
+        if (error instanceof TimeExpiredError) {
+          socket.emit('battleError', {
+            error: 'Time expired',
+            message: error.message,
+            timeExpired: true,
+            battleId,
+          });
+          callback?.({
+            success: false,
+            error: 'Time expired',
+            message: error.message,
+            timeExpired: true,
+          });
+          return;
+        }
+
+        if (
+          error instanceof FlagAlreadyAnsweredError ||
+          error instanceof InvalidFlagIndexError ||
+          error instanceof RunAlreadyFinishedError ||
+          error instanceof BattleNotInProgressError
+        ) {
+          socket.emit('battleError', {
+            error: 'Bad request',
+            message: error.message,
+            battleId,
+          });
+          callback?.({
+            success: false,
+            error: 'Bad request',
+            message: error.message,
+          });
+          return;
+        }
+
+        if (error instanceof UnauthorizedBattleAccessError) {
+          socket.emit('battleError', {
+            error: 'Forbidden',
+            message: error.message,
+            battleId,
+          });
+          callback?.({
+            success: false,
+            error: 'Forbidden',
+            message: error.message,
+          });
+          return;
+        }
+
+        if (error instanceof BattleNotFoundError || error instanceof RunNotFoundError) {
+          socket.emit('battleError', {
+            error: 'Not found',
+            message: error.message,
+            battleId,
+          });
+          callback?.({
+            success: false,
+            error: 'Not found',
+            message: error.message,
+          });
+          return;
+        }
+
+        const message = error instanceof Error ? error.message : 'Answer submission failed';
+        socket.emit('battleError', { message, battleId });
+        callback?.({ success: false, error: 'Internal server error', message });
       }
     });
 

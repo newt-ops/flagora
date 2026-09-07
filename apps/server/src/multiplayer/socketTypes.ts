@@ -64,6 +64,35 @@ export interface BattleStartPayload {
 export interface BattleErrorPayload {
   message: string;
   battleId?: string;
+  error?: string;
+  timeExpired?: boolean;
+}
+
+export interface SubmitAnswerPayload {
+  battleId: string;
+  flagIndex: number;
+  selectedIsoCode: string;
+}
+
+export interface AnswerResultPayload {
+  correct: boolean;
+  comboCount: number;
+  pointsThisFlag: number;
+  runningTotal: number;
+}
+
+export interface OpponentProgressPayload {
+  flagIndex: number;
+  correct: boolean;
+  runningTotal: number;
+}
+
+export interface SubmitAnswerResponse {
+  success: boolean;
+  result?: AnswerResultPayload;
+  error?: string;
+  message?: string;
+  timeExpired?: boolean;
 }
 
 export interface ClientToServerEvents {
@@ -76,6 +105,10 @@ export interface ClientToServerEvents {
     payload: PlayerReadyPayload,
     callback?: (response: PlayerReadyResponse) => void,
   ) => void;
+  submitAnswer: (
+    payload: SubmitAnswerPayload,
+    callback?: (response: SubmitAnswerResponse) => void,
+  ) => void;
 }
 
 export interface ServerToClientEvents {
@@ -85,6 +118,8 @@ export interface ServerToClientEvents {
   battleCountdown: (payload: BattleCountdownPayload) => void;
   battleStart: (payload: BattleStartPayload) => void;
   battleError: (payload: BattleErrorPayload) => void;
+  answerResult: (payload: AnswerResultPayload) => void;
+  opponentProgress: (payload: OpponentProgressPayload) => void;
 }
 
 export type TypedSocketServer = Server<
