@@ -7,6 +7,9 @@ export interface BattleSession {
   opponentUserId: number | null;
   opponentTelegramUserId?: number | null;
   status: BattleStatus;
+  challengerRunId?: string | null;
+  opponentRunId?: string | null;
+  startedAt?: Date | string | null;
   createdAt: Date | string;
   expiresAt: Date | string;
   updatedAt: Date | string;

@@ -7,10 +7,6 @@ import {
   COUNTRIES,
   DEFAULT_RUN_TIER_MIX,
   SCORING_CONFIG,
-  calculateFlagPoints,
-  calculateLeftoverBonus,
-  calculateXpEarned,
-  calculateCoinsEarned,
   calculateLevel,
   getUtcDateString,
   calculateStreak,
@@ -22,23 +18,25 @@ import {
   type ChallengeWinner,
 } from '@flagora/shared';
 import { selectRunFlags, generateChoices } from './flagSelection.js';
+import { scoreAnswer, finalizeRun } from './runScoringService.js';
 import {
   type GameRun,
   type RunFlagItem,
   RunNotFoundError,
   UnauthorizedRunAccessError,
   RunAlreadyFinishedError,
-  FlagAlreadyAnsweredError,
   TimeExpiredError,
   InvalidFlagIndexError,
 } from './runTypes.js';
 
 export interface CreateRunOptions {
   runId?: string;
-  mode?: 'practice' | 'daily' | 'challenge';
+  mode?: 'practice' | 'daily' | 'challenge' | 'live-battle';
   challengeId?: string;
+  battleId?: string;
   dailyDate?: string;
   flags?: RunFlagItem[];
+  startedAt?: Date;
 }
 
 export async function createRun(
@@ -67,7 +65,7 @@ export async function createRun(
       };
     });
 
-  const now = new Date();
+  const now = options?.startedAt ?? new Date();
   const runId = options?.runId ?? crypto.randomUUID();
 
   const runDocument: GameRun = {
@@ -81,6 +79,7 @@ export async function createRun(
     status: 'active',
     mode,
     challengeId: options?.challengeId,
+    battleId: options?.battleId,
     dailyDate: options?.dailyDate,
     profileCredited: false,
     runDurationMs: SCORING_CONFIG.runDurationMs,
@@ -128,46 +127,35 @@ export async function submitAnswer(
   }
 
   const now = Date.now();
-  const elapsedMs = now - new Date(run.startedAt).getTime();
-
-  if (elapsedMs > run.runDurationMs) {
-    await collection.updateOne(
-      { runId },
-      {
-        $set: {
-          status: 'expired',
-          finishedAt: new Date(now),
-          updatedAt: new Date(now),
+  let scored;
+  try {
+    scored = scoreAnswer(run, flagIndex, selectedIsoCode, now);
+  } catch (error) {
+    if (error instanceof TimeExpiredError) {
+      await collection.updateOne(
+        { runId },
+        {
+          $set: {
+            status: 'expired',
+            finishedAt: new Date(now),
+            updatedAt: new Date(now),
+          },
         },
-      },
-    );
-    throw new TimeExpiredError();
+      );
+    }
+    throw error;
   }
 
   const flag = run.flags[flagIndex];
-  if (flag.answered) {
-    throw new FlagAlreadyAnsweredError();
-  }
-
-  const isCorrect =
-    Boolean(selectedIsoCode) &&
-    (selectedIsoCode.trim().toLowerCase() === flag.isoCode.toLowerCase() ||
-      selectedIsoCode.trim().toLowerCase() === flag.name.toLowerCase());
-
-  const newCombo = isCorrect ? run.comboCount + 1 : 0;
-  const pointsThisFlag = isCorrect ? calculateFlagPoints(flag.tier, newCombo) : 0;
-  const newRunningTotal = run.runningTotal + pointsThisFlag;
-  const newMaxCombo = Math.max(run.maxCombo, newCombo);
-
   const updatedFlags = [...run.flags];
   updatedFlags[flagIndex] = {
     ...flag,
     answered: true,
     selectedIsoCode,
-    correct: isCorrect,
-    points: pointsThisFlag,
-    comboCount: newCombo,
-    answeredAt: new Date(now),
+    correct: scored.isCorrect,
+    points: scored.pointsThisFlag,
+    comboCount: scored.newCombo,
+    answeredAt: scored.answeredAt,
   };
 
   await collection.updateOne(
@@ -175,19 +163,19 @@ export async function submitAnswer(
     {
       $set: {
         flags: updatedFlags,
-        comboCount: newCombo,
-        maxCombo: newMaxCombo,
-        runningTotal: newRunningTotal,
+        comboCount: scored.newCombo,
+        maxCombo: scored.newMaxCombo,
+        runningTotal: scored.newRunningTotal,
         updatedAt: new Date(now),
       },
     },
   );
 
   return {
-    correct: isCorrect,
-    comboCount: newCombo,
-    pointsThisFlag,
-    runningTotal: newRunningTotal,
+    correct: scored.isCorrect,
+    comboCount: scored.newCombo,
+    pointsThisFlag: scored.pointsThisFlag,
+    runningTotal: scored.newRunningTotal,
   };
 }
 
@@ -213,15 +201,14 @@ export async function finishRun(
   }
 
   const now = Date.now();
-  const elapsedMs = Math.max(0, now - new Date(run.startedAt).getTime());
-  const timeUsedMs = Math.min(elapsedMs, run.runDurationMs);
-  const leftoverMs = Math.max(0, run.runDurationMs - elapsedMs);
-  const leftoverBonus = calculateLeftoverBonus(leftoverMs);
-  const correctCount = run.flags.filter((f) => f.correct).length;
-  const totalScore = run.runningTotal + leftoverBonus;
+  const finalized = finalizeRun(run, now);
+  const timeUsedMs = finalized.timeUsedMs;
+  const leftoverBonus = finalized.leftoverBonus;
+  const correctCount = finalized.correctCount;
+  const totalScore = finalized.totalScore;
 
-  const xpEarned = calculateXpEarned(totalScore);
-  const coinsEarned = calculateCoinsEarned(correctCount);
+  const xpEarned = finalized.xpEarned;
+  const coinsEarned = finalized.coinsEarned;
 
   const claimResult = await collection.findOneAndUpdate(
     { runId, telegramUserId, profileCredited: { $ne: true } },

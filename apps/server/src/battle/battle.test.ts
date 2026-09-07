@@ -21,7 +21,17 @@ import type {
   JoinBattleRoomResponse,
   OpponentJoinedPayload,
   BattleErrorPayload,
+  BattleStartPayload,
+  BattleCountdownPayload,
+  PlayerReadyResponse,
 } from '../multiplayer/socketTypes.js';
+import type { GameRun } from '../game/runTypes.js';
+import { scoreAnswer, finalizeRun } from '../game/runScoringService.js';
+import {
+  TimeExpiredError,
+  FlagAlreadyAnsweredError,
+  InvalidFlagIndexError,
+} from '../game/runTypes.js';
 import {
   createBattle,
   getBattleInfo,
@@ -72,7 +82,7 @@ describe('battle invite, view, join and room presence', () => {
     const sessionMiddleware = createRequireSessionMiddleware(TEST_SECRET);
 
     httpServer = http.createServer(app);
-    io = initSocketServer(httpServer, TEST_SECRET, db);
+    io = initSocketServer(httpServer, TEST_SECRET, db, { countdownDelayMs: 50 });
 
     app.post('/api/battles', sessionMiddleware, async (req, res) => {
       try {
@@ -490,5 +500,316 @@ describe('battle invite, view, join and room presence', () => {
 
     assert.equal(bothPlayersPresentReceivedByChallenger, true);
     assert.equal(bothPlayersPresentReceivedByOpponent, true);
+  });
+
+  it('synchronized start: waits for both playerReady events before emitting battleCountdown and battleStart with identical flags and authoritative timestamp', async () => {
+    const challengerId = 88601;
+    const opponentId = 88602;
+
+    const challengerToken = createSessionToken(challengerId, TEST_SECRET);
+    const opponentToken = createSessionToken(opponentId, TEST_SECRET);
+
+    const createRes = await fetch(`${baseUrl}/api/battles`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${challengerToken}`,
+      },
+    });
+    const created = (await createRes.json()) as CreateBattleResponse;
+
+    const joinRes = await fetch(`${baseUrl}/api/battles/${created.battleId}/join`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${opponentToken}` },
+    });
+    assert.equal(joinRes.status, 200);
+
+    const challengerSocket = createClient(challengerToken);
+    const opponentSocket = createClient(opponentToken);
+
+    await Promise.all([
+      new Promise<void>((resolve) => challengerSocket.on('connect', () => resolve())),
+      new Promise<void>((resolve) => opponentSocket.on('connect', () => resolve())),
+    ]);
+
+    await Promise.all([
+      new Promise<void>((resolve) => {
+        challengerSocket.emit('joinBattleRoom', { battleId: created.battleId }, () => resolve());
+      }),
+      new Promise<void>((resolve) => {
+        opponentSocket.emit('joinBattleRoom', { battleId: created.battleId }, () => resolve());
+      }),
+    ]);
+
+    let challengerCountdown: BattleCountdownPayload | undefined;
+    let opponentCountdown: BattleCountdownPayload | undefined;
+    challengerSocket.on('battleCountdown', (p) => {
+      challengerCountdown = p;
+    });
+    opponentSocket.on('battleCountdown', (p) => {
+      opponentCountdown = p;
+    });
+
+    let challengerStart: BattleStartPayload | undefined;
+    let opponentStart: BattleStartPayload | undefined;
+    challengerSocket.on('battleStart', (p) => {
+      challengerStart = p;
+    });
+    opponentSocket.on('battleStart', (p) => {
+      opponentStart = p;
+    });
+
+    const challengerReadyRes = await new Promise<PlayerReadyResponse>((resolve) => {
+      challengerSocket.emit('playerReady', { battleId: created.battleId }, (res: PlayerReadyResponse) => {
+        resolve(res);
+      });
+    });
+    assert.equal(challengerReadyRes.success, true);
+    assert.equal(challengerReadyRes.readyCount, 1);
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    assert.equal(challengerCountdown, undefined);
+    assert.equal(challengerStart, undefined);
+
+    const opponentReadyRes = await new Promise<PlayerReadyResponse>((resolve) => {
+      opponentSocket.emit('playerReady', { battleId: created.battleId }, (res: PlayerReadyResponse) => {
+        resolve(res);
+      });
+    });
+    assert.equal(opponentReadyRes.success, true);
+    assert.equal(opponentReadyRes.readyCount, 2);
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    const cCountdown = challengerCountdown as unknown as BattleCountdownPayload | undefined;
+    const oCountdown = opponentCountdown as unknown as BattleCountdownPayload | undefined;
+    const cStart = challengerStart as unknown as BattleStartPayload | undefined;
+    const oStart = opponentStart as unknown as BattleStartPayload | undefined;
+
+    assert.ok(cCountdown);
+    assert.ok(oCountdown);
+    assert.equal(cCountdown?.countdownSeconds, 3);
+    assert.equal(oCountdown?.countdownSeconds, 3);
+
+    assert.ok(cStart);
+    assert.ok(oStart);
+    assert.equal(cStart?.battleId, created.battleId);
+    assert.equal(oStart?.battleId, created.battleId);
+
+    assert.equal(cStart?.startedAt, oStart?.startedAt);
+    assert.equal(cStart?.challengerRunId, oStart?.challengerRunId);
+    assert.equal(cStart?.opponentRunId, oStart?.opponentRunId);
+
+    assert.equal(cStart?.flags.length, 10);
+    assert.equal(oStart?.flags.length, 10);
+    for (let i = 0; i < 10; i++) {
+      assert.equal(cStart?.flags[i].flagIndex, i);
+      assert.equal(cStart?.flags[i].isoCode, oStart?.flags[i].isoCode);
+      assert.deepEqual(cStart?.flags[i].choices, oStart?.flags[i].choices);
+    }
+
+    const updatedBattle = await db.collection<BattleSession>('battles').findOne({ battleId: created.battleId });
+    assert.ok(updatedBattle);
+    assert.equal(updatedBattle?.status, 'in_progress');
+    assert.ok(updatedBattle?.challengerRunId);
+    assert.ok(updatedBattle?.opponentRunId);
+    assert.notEqual(updatedBattle?.challengerRunId, updatedBattle?.opponentRunId);
+
+    const challengerRunDoc = await db.collection<GameRun>('runs').findOne({ runId: updatedBattle?.challengerRunId });
+    const opponentRunDoc = await db.collection<GameRun>('runs').findOne({ runId: updatedBattle?.opponentRunId });
+
+    assert.ok(challengerRunDoc);
+    assert.ok(opponentRunDoc);
+    assert.equal(challengerRunDoc?.mode, 'live-battle');
+    assert.equal(opponentRunDoc?.mode, 'live-battle');
+    assert.equal(challengerRunDoc?.battleId, created.battleId);
+    assert.equal(opponentRunDoc?.battleId, created.battleId);
+    assert.equal(challengerRunDoc?.telegramUserId, challengerId);
+    assert.equal(opponentRunDoc?.telegramUserId, opponentId);
+
+    assert.equal(challengerRunDoc?.startedAt.getTime(), opponentRunDoc?.startedAt.getTime());
+    assert.equal(new Date(cStart?.startedAt || 0).getTime(), challengerRunDoc?.startedAt.getTime());
+
+    assert.equal(challengerRunDoc?.flags.length, 10);
+    assert.equal(opponentRunDoc?.flags.length, 10);
+    for (let i = 0; i < 10; i++) {
+      assert.equal(challengerRunDoc?.flags[i].isoCode, opponentRunDoc?.flags[i].isoCode);
+      assert.equal(challengerRunDoc?.flags[i].tier, opponentRunDoc?.flags[i].tier);
+      assert.deepEqual(challengerRunDoc?.flags[i].choices, opponentRunDoc?.flags[i].choices);
+    }
+  });
+
+  it('order independence: opponent emitting playerReady first also starts countdown and battle once challenger readies up', async () => {
+    const challengerId = 88701;
+    const opponentId = 88702;
+
+    const challengerToken = createSessionToken(challengerId, TEST_SECRET);
+    const opponentToken = createSessionToken(opponentId, TEST_SECRET);
+
+    const createRes = await fetch(`${baseUrl}/api/battles`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${challengerToken}`,
+      },
+    });
+    const created = (await createRes.json()) as CreateBattleResponse;
+
+    await fetch(`${baseUrl}/api/battles/${created.battleId}/join`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${opponentToken}` },
+    });
+
+    const challengerSocket = createClient(challengerToken);
+    const opponentSocket = createClient(opponentToken);
+
+    await Promise.all([
+      new Promise<void>((resolve) => challengerSocket.on('connect', () => resolve())),
+      new Promise<void>((resolve) => opponentSocket.on('connect', () => resolve())),
+    ]);
+
+    await Promise.all([
+      new Promise<void>((resolve) => {
+        challengerSocket.emit('joinBattleRoom', { battleId: created.battleId }, () => resolve());
+      }),
+      new Promise<void>((resolve) => {
+        opponentSocket.emit('joinBattleRoom', { battleId: created.battleId }, () => resolve());
+      }),
+    ]);
+
+    let startReceived = false;
+    challengerSocket.on('battleStart', () => {
+      startReceived = true;
+    });
+
+    const opponentReadyRes = await new Promise<PlayerReadyResponse>((resolve) => {
+      opponentSocket.emit('playerReady', { battleId: created.battleId }, (res: PlayerReadyResponse) => {
+        resolve(res);
+      });
+    });
+    assert.equal(opponentReadyRes.success, true);
+    assert.equal(opponentReadyRes.readyCount, 1);
+
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    assert.equal(startReceived, false);
+
+    const challengerReadyRes = await new Promise<PlayerReadyResponse>((resolve) => {
+      challengerSocket.emit('playerReady', { battleId: created.battleId }, (res: PlayerReadyResponse) => {
+        resolve(res);
+      });
+    });
+    assert.equal(challengerReadyRes.success, true);
+    assert.equal(challengerReadyRes.readyCount, 2);
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    assert.equal(startReceived, true);
+  });
+
+  describe('runScoringService transport-agnostic evaluation', () => {
+    const baseRun: GameRun = {
+      runId: 'scoring-test-run',
+      telegramUserId: 99999,
+      comboCount: 0,
+      maxCombo: 0,
+      runningTotal: 0,
+      startedAt: new Date(Date.now() - 5000),
+      status: 'active',
+      mode: 'practice',
+      profileCredited: false,
+      runDurationMs: 60000,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      flags: [
+        {
+          flagIndex: 0,
+          isoCode: 'FR',
+          name: 'France',
+          tier: 1,
+          choices: ['France', 'Germany', 'Spain', 'Italy'],
+          answered: false,
+        },
+        {
+          flagIndex: 1,
+          isoCode: 'BR',
+          name: 'Brazil',
+          tier: 2,
+          choices: ['Brazil', 'Argentina', 'Chile', 'Peru'],
+          answered: false,
+        },
+      ],
+    };
+
+    it('correctly calculates points and combo for correct and wrong answers', () => {
+      const correctResult = scoreAnswer(baseRun, 0, 'FR', Date.now());
+      assert.equal(correctResult.isCorrect, true);
+      assert.equal(correctResult.newCombo, 1);
+      assert.equal(correctResult.pointsThisFlag, 55);
+      assert.equal(correctResult.newRunningTotal, 55);
+      assert.equal(correctResult.newMaxCombo, 1);
+
+      const runAfterFirst = {
+        ...baseRun,
+        comboCount: correctResult.newCombo,
+        maxCombo: correctResult.newMaxCombo,
+        runningTotal: correctResult.newRunningTotal,
+        flags: [
+          { ...baseRun.flags[0], answered: true, correct: true },
+          baseRun.flags[1],
+        ],
+      };
+
+      const wrongResult = scoreAnswer(runAfterFirst, 1, 'WRONG', Date.now());
+      assert.equal(wrongResult.isCorrect, false);
+      assert.equal(wrongResult.newCombo, 0);
+      assert.equal(wrongResult.pointsThisFlag, 0);
+      assert.equal(wrongResult.newRunningTotal, 55);
+      assert.equal(wrongResult.newMaxCombo, 1);
+    });
+
+    it('throws TimeExpiredError when answering after duration has elapsed', () => {
+      assert.throws(
+        () => scoreAnswer(baseRun, 0, 'FR', new Date(baseRun.startedAt).getTime() + 60001),
+        (err) => err instanceof TimeExpiredError,
+      );
+    });
+
+    it('throws FlagAlreadyAnsweredError when answering an already answered flag', () => {
+      const answeredRun: GameRun = {
+        ...baseRun,
+        flags: [{ ...baseRun.flags[0], answered: true }],
+      };
+      assert.throws(
+        () => scoreAnswer(answeredRun, 0, 'FR', Date.now()),
+        (err) => err instanceof FlagAlreadyAnsweredError,
+      );
+    });
+
+    it('throws InvalidFlagIndexError for out-of-bounds flag index', () => {
+      assert.throws(
+        () => scoreAnswer(baseRun, 99, 'FR', Date.now()),
+        (err) => err instanceof InvalidFlagIndexError,
+      );
+    });
+
+    it('finalizes run with leftover bonus and awards accurately', () => {
+      const runToFinalize: GameRun = {
+        ...baseRun,
+        runningTotal: 500,
+        flags: [
+          { ...baseRun.flags[0], answered: true, correct: true },
+          { ...baseRun.flags[1], answered: true, correct: true },
+        ],
+      };
+
+      const finalized = finalizeRun(runToFinalize, new Date(runToFinalize.startedAt).getTime() + 20000);
+      assert.equal(finalized.elapsedMs, 20000);
+      assert.equal(finalized.timeUsedMs, 20000);
+      assert.equal(finalized.leftoverMs, 40000);
+      assert.equal(finalized.leftoverBonus, 400);
+      assert.equal(finalized.totalScore, 900);
+      assert.equal(finalized.correctCount, 2);
+      assert.ok(finalized.xpEarned > 0);
+      assert.ok(finalized.coinsEarned > 0);
+    });
   });
 });

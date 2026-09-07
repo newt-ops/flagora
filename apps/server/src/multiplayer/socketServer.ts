@@ -10,11 +10,17 @@ import type {
   PingResponse,
   TypedSocketServer,
 } from './socketTypes.js';
+import { startBattleSession } from '../battle/battleService.js';
+
+export interface SocketServerOptions {
+  countdownDelayMs?: number;
+}
 
 export function initSocketServer(
   httpServer: HttpServer,
   sessionSecret: string,
   db?: Db,
+  options?: SocketServerOptions,
 ): TypedSocketServer {
   const io = new SocketIOServer<
     ClientToServerEvents,
@@ -27,6 +33,8 @@ export function initSocketServer(
       methods: ['GET', 'POST'],
     },
   });
+
+  const readyPlayersByBattle = new Map<string, Set<number>>();
 
   io.use(createSocketAuthMiddleware(sessionSecret));
 
@@ -97,6 +105,79 @@ export function initSocketServer(
         presentUserIds.has(battle.opponentUserId)
       ) {
         io.to(roomName).emit('bothPlayersPresent', { battleId });
+      }
+    });
+
+    socket.on('playerReady', async (payload, callback) => {
+      const { battleId } = payload;
+      if (!battleId || typeof battleId !== 'string') {
+        const message = 'Invalid battleId';
+        socket.emit('battleError', { message, battleId });
+        callback?.({ success: false, battleId, readyCount: 0, error: message });
+        return;
+      }
+
+      if (!db) {
+        const message = 'Database not available';
+        socket.emit('battleError', { message, battleId });
+        callback?.({ success: false, battleId, readyCount: 0, error: message });
+        return;
+      }
+
+      const battle = await db.collection<BattleSession>('battles').findOne({ battleId });
+      if (!battle) {
+        const message = 'Battle not found';
+        socket.emit('battleError', { message, battleId });
+        callback?.({ success: false, battleId, readyCount: 0, error: message });
+        return;
+      }
+
+      const isParticipant =
+        battle.challengerUserId === userId ||
+        (battle.opponentUserId !== null && battle.opponentUserId === userId);
+
+      if (!isParticipant) {
+        const message = 'Forbidden: You are not a participant in this battle';
+        socket.emit('battleError', { message, battleId });
+        callback?.({ success: false, battleId, readyCount: 0, error: message });
+        return;
+      }
+
+      if (battle.status !== 'ready') {
+        const message = 'Battle is not in ready status';
+        socket.emit('battleError', { message, battleId });
+        callback?.({ success: false, battleId, readyCount: 0, error: message });
+        return;
+      }
+
+      let readySet = readyPlayersByBattle.get(battleId);
+      if (!readySet) {
+        readySet = new Set<number>();
+        readyPlayersByBattle.set(battleId, readySet);
+      }
+      readySet.add(userId);
+      const readyCount = readySet.size;
+
+      callback?.({ success: true, battleId, readyCount });
+
+      if (
+        battle.opponentUserId !== null &&
+        readySet.has(battle.challengerUserId) &&
+        readySet.has(battle.opponentUserId)
+      ) {
+        readyPlayersByBattle.delete(battleId);
+        const roomName = `battle:${battleId}`;
+        io.to(roomName).emit('battleCountdown', { battleId, countdownSeconds: 3 });
+
+        const delay = options?.countdownDelayMs ?? 3000;
+        setTimeout(async () => {
+          try {
+            await startBattleSession(battleId, db, io);
+          } catch (error) {
+            const errorMsg = error instanceof Error ? error.message : 'Failed to start battle';
+            io.to(roomName).emit('battleError', { message: errorMsg, battleId });
+          }
+        }, delay);
       }
     });
 

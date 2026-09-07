@@ -7,14 +7,22 @@ import type {
   BattleInfoResponse,
   JoinBattleResponse,
 } from '@flagora/shared';
-import { getEffectiveBattleStatus, getDisplayName } from '@flagora/shared';
+import {
+  getEffectiveBattleStatus,
+  getDisplayName,
+  COUNTRIES,
+  DEFAULT_RUN_TIER_MIX,
+} from '@flagora/shared';
 import {
   BattleNotFoundError,
   BattleExpiredError,
   SelfBattleNotAllowedError,
   BattleAlreadyJoinedError,
 } from './battleTypes.js';
-import type { TypedSocketServer } from '../multiplayer/socketTypes.js';
+import type { TypedSocketServer, BattleStartPayload } from '../multiplayer/socketTypes.js';
+import { selectRunFlags, generateChoices } from '../game/flagSelection.js';
+import { createRun } from '../game/runService.js';
+import type { RunFlagItem } from '../game/runTypes.js';
 
 export async function createBattle(
   challengerUserId: number,
@@ -207,4 +215,71 @@ export async function joinBattle(
     opponentUserId,
     opponentTelegramUserId: opponentUserId,
   };
+}
+
+export async function startBattleSession(
+  battleId: string,
+  db: Db,
+  io: TypedSocketServer,
+): Promise<BattleStartPayload | null> {
+  const battle = await db.collection<BattleSession>('battles').findOne({ battleId });
+  if (!battle || battle.status !== 'ready' || battle.opponentUserId === null) {
+    return null;
+  }
+
+  const selectedFlags = selectRunFlags(DEFAULT_RUN_TIER_MIX, [], COUNTRIES);
+  const flagItems: RunFlagItem[] = selectedFlags.map((flag, index) => {
+    const tierPeers = COUNTRIES.filter((f) => f.tier === flag.tier);
+    const choices = generateChoices(flag, tierPeers);
+    return {
+      flagIndex: index,
+      isoCode: flag.isoCode,
+      name: flag.name,
+      tier: flag.tier,
+      choices,
+      answered: false,
+    };
+  });
+
+  const serverStartTime = new Date();
+
+  const challengerRun = await createRun(battle.challengerUserId, db, {
+    mode: 'live-battle',
+    battleId,
+    flags: flagItems,
+    startedAt: serverStartTime,
+  });
+
+  const opponentRun = await createRun(battle.opponentUserId, db, {
+    mode: 'live-battle',
+    battleId,
+    flags: flagItems,
+    startedAt: serverStartTime,
+  });
+
+  await db.collection<BattleSession>('battles').updateOne(
+    { battleId },
+    {
+      $set: {
+        status: 'in_progress',
+        challengerRunId: challengerRun.runId,
+        opponentRunId: opponentRun.runId,
+        startedAt: serverStartTime,
+        updatedAt: serverStartTime,
+      },
+    },
+  );
+
+  const startPayload: BattleStartPayload = {
+    battleId,
+    startedAt: serverStartTime.toISOString(),
+    runDurationMs: challengerRun.runDurationMs,
+    flags: challengerRun.flags,
+    challengerRunId: challengerRun.runId,
+    opponentRunId: opponentRun.runId,
+  };
+
+  io.to(`battle:${battleId}`).emit('battleStart', startPayload);
+
+  return startPayload;
 }

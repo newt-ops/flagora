@@ -30,6 +30,37 @@ export interface BothPlayersPresentPayload {
   battleId: string;
 }
 
+export interface PlayerReadyPayload {
+  battleId: string;
+}
+
+export interface PlayerReadyResponse {
+  success: boolean;
+  battleId: string;
+  readyCount: number;
+  error?: string;
+}
+
+export interface BattleCountdownPayload {
+  battleId: string;
+  countdownSeconds: number;
+}
+
+export interface BattleStartFlag {
+  flagIndex: number;
+  isoCode: string;
+  choices: string[];
+}
+
+export interface BattleStartPayload {
+  battleId: string;
+  startedAt: string;
+  runDurationMs: number;
+  flags: BattleStartFlag[];
+  challengerRunId: string;
+  opponentRunId: string;
+}
+
 export interface BattleErrorPayload {
   message: string;
   battleId?: string;
@@ -41,12 +72,18 @@ export interface ClientToServerEvents {
     payload: JoinBattleRoomPayload,
     callback?: (response: JoinBattleRoomResponse) => void,
   ) => void;
+  playerReady: (
+    payload: PlayerReadyPayload,
+    callback?: (response: PlayerReadyResponse) => void,
+  ) => void;
 }
 
 export interface ServerToClientEvents {
   pong: (response: PingResponse) => void;
   opponentJoined: (payload: OpponentJoinedPayload) => void;
   bothPlayersPresent: (payload: BothPlayersPresentPayload) => void;
+  battleCountdown: (payload: BattleCountdownPayload) => void;
+  battleStart: (payload: BattleStartPayload) => void;
   battleError: (payload: BattleErrorPayload) => void;
 }
 
@@ -63,4 +100,3 @@ export type TypedSocket = Socket<
   Record<string, never>,
   SocketData
 >;
-
