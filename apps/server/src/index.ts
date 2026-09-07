@@ -1,5 +1,7 @@
+import http from 'node:http';
 import dotenv from 'dotenv';
 import express from 'express';
+import { initSocketServer } from './multiplayer/socketServer.js';
 import { createTelegramAuthMiddleware } from './auth/middleware.js';
 import type { AuthenticatedRequest } from './auth/types.js';
 import { initDatabase } from './db/mongo.js';
@@ -417,7 +419,10 @@ async function bootstrap() {
     }
   });
 
-  app.listen(port, () => {
+  const httpServer = http.createServer(app);
+  initSocketServer(httpServer, sessionSecret!);
+
+  httpServer.listen(port, () => {
     process.stdout.write(`Server listening on port ${port}\n`);
   });
 }
