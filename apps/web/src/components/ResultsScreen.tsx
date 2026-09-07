@@ -9,6 +9,7 @@ import {
   Sparkles,
   Coins,
   Flame,
+  Share2,
 } from 'lucide-react';
 import type { FinishRunResponse } from '@flagora/shared';
 import { getStreakBadgeText } from './streakDisplayHelpers.js';
@@ -19,10 +20,11 @@ import {
 
 interface ResultsScreenProps {
   result: FinishRunResponse;
-  mode?: 'practice' | 'daily';
+  mode?: 'practice' | 'daily' | 'challenge';
   onPlayAgain?: () => void;
   onBackToProfile: () => void;
   onViewLeaderboard?: () => void;
+  onShareChallenge?: () => void;
   isStartingAgain?: boolean;
 }
 
@@ -32,11 +34,13 @@ export function ResultsScreen({
   onPlayAgain,
   onBackToProfile,
   onViewLeaderboard,
+  onShareChallenge,
   isStartingAgain = false,
 }: ResultsScreenProps) {
   const timeSeconds = (result.timeUsedMs / 1000).toFixed(1);
   const streakBadgeText = getStreakBadgeText(result.streakChange, result.currentStreak);
   const isDaily = mode === 'daily';
+  const isChallenge = mode === 'challenge';
   const showPlayAgain = shouldShowPlayAgain(mode);
   const showDailyLb = shouldShowDailyLeaderboardButton(mode);
 
@@ -55,7 +59,7 @@ export function ResultsScreen({
         </div>
 
         <h2 className="mt-4 text-xs font-semibold uppercase tracking-wider text-tg-hint">
-          {isDaily ? 'Daily Challenge Completed' : 'Run Completed'}
+          {isDaily ? 'Daily Challenge Completed' : isChallenge ? 'Challenge Created' : 'Run Completed'}
         </h2>
 
         <div className="mt-1 flex items-baseline justify-center gap-1">
@@ -65,8 +69,14 @@ export function ResultsScreen({
           <span className="text-sm font-semibold text-tg-hint">pts</span>
         </div>
 
+        {isChallenge && (
+          <div className="mt-3 rounded-xl bg-indigo-500/15 px-4 py-2 text-sm font-bold text-indigo-300 ring-1 ring-indigo-500/30">
+            Beat my score: {result.totalScore.toLocaleString()} points!
+          </div>
+        )}
+
         <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
-          {!isDaily && result.isNewBest && (
+          {!isDaily && !isChallenge && result.isNewBest && (
             <div className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-3 py-0.5 text-xs font-bold text-emerald-400 ring-1 ring-emerald-500/30">
               <Sparkles className="h-3 w-3" />
               <span>New Best!</span>
@@ -133,6 +143,17 @@ export function ResultsScreen({
       </div>
 
       <div className="flex w-full flex-col gap-2.5">
+        {isChallenge && onShareChallenge && (
+          <button
+            type="button"
+            onClick={onShareChallenge}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 font-bold text-white shadow transition-transform hover:bg-indigo-500 active:scale-95"
+          >
+            <Share2 className="h-4 w-4" />
+            <span>Share Challenge</span>
+          </button>
+        )}
+
         {showDailyLb && onViewLeaderboard && (
           <button
             type="button"
@@ -144,7 +165,7 @@ export function ResultsScreen({
           </button>
         )}
 
-        {!isDaily && result.isNewBest && onViewLeaderboard && (
+        {!isDaily && !isChallenge && result.isNewBest && onViewLeaderboard && (
           <button
             type="button"
             onClick={onViewLeaderboard}

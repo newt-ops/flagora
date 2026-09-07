@@ -5,6 +5,8 @@ import { useProfile } from './hooks/useProfile.js';
 import { useStore } from './store/useStore.js';
 import { useGameRun } from './hooks/useGameRun.js';
 import { useDailyChallenge } from './hooks/useDailyChallenge.js';
+import { createChallenge } from './api/client.js';
+import { shareChallenge } from './components/challengeShareHelpers.js';
 import { ProfileCard } from './components/ProfileCard.js';
 import { GameScreen } from './components/GameScreen.js';
 import { ResultsScreen } from './components/ResultsScreen.js';
@@ -19,10 +21,12 @@ export function App() {
   const { dailyStatus, startDaily, isStartingDaily } = useDailyChallenge(sessionToken);
 
   const [screen, setScreen] = useState<'profile' | 'playing' | 'results' | 'leaderboard'>('profile');
-  const [runMode, setRunMode] = useState<'practice' | 'daily'>('practice');
+  const [runMode, setRunMode] = useState<'practice' | 'daily' | 'challenge'>('practice');
   const [leaderboardMode, setLeaderboardMode] = useState<'global' | 'daily'>('global');
   const [currentRun, setCurrentRun] = useState<StartRunResponse | null>(null);
   const [lastResult, setLastResult] = useState<FinishRunResponse | null>(null);
+  const [activeChallengeId, setActiveChallengeId] = useState<string | null>(null);
+  const [isStartingChallenge, setIsStartingChallenge] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
   const handleStartPractice = async () => {
@@ -57,6 +61,33 @@ export function App() {
     }
   };
 
+  const handleStartChallenge = async () => {
+    if (!sessionToken) {
+      return;
+    }
+    setStartError(null);
+    setIsStartingChallenge(true);
+    try {
+      const response = await createChallenge(sessionToken);
+      setActiveChallengeId(response.challengeId);
+      setRunMode('challenge');
+      setCurrentRun(response);
+      setScreen('playing');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to start challenge';
+      setStartError(message);
+    } finally {
+      setIsStartingChallenge(false);
+    }
+  };
+
+  const handleShareChallenge = () => {
+    if (!activeChallengeId || !lastResult) {
+      return;
+    }
+    shareChallenge(activeChallengeId, lastResult.totalScore);
+  };
+
   const handleFinishGame = (result: FinishRunResponse) => {
     setLastResult(result);
     setScreen('results');
@@ -70,6 +101,7 @@ export function App() {
     setCurrentRun(null);
     setLastResult(null);
     setStartError(null);
+    setActiveChallengeId(null);
   };
 
   const handleOpenGlobalLeaderboard = () => {
@@ -97,7 +129,13 @@ export function App() {
         <div className="mb-4">
           <ErrorState
             message={startError}
-            onRetry={runMode === 'daily' ? handleStartDaily : handleStartPractice}
+            onRetry={
+              runMode === 'daily'
+                ? handleStartDaily
+                : runMode === 'challenge'
+                ? handleStartChallenge
+                : handleStartPractice
+            }
           />
         </div>
       )}
@@ -108,10 +146,12 @@ export function App() {
           dailyStatus={dailyStatus}
           onPlay={handleStartPractice}
           onStartDaily={handleStartDaily}
+          onChallengeFriend={handleStartChallenge}
           onViewLeaderboard={handleOpenGlobalLeaderboard}
           onViewDailyLeaderboard={handleOpenDailyLeaderboard}
           isStarting={isStarting}
           isStartingDaily={isStartingDaily}
+          isStartingChallenge={isStartingChallenge}
         />
       )}
 
@@ -132,6 +172,7 @@ export function App() {
           onViewLeaderboard={
             runMode === 'daily' ? handleOpenDailyLeaderboard : handleOpenGlobalLeaderboard
           }
+          onShareChallenge={handleShareChallenge}
           isStartingAgain={isStarting}
         />
       )}

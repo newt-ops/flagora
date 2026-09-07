@@ -1,4 +1,4 @@
-import { Play, Flame, Trophy, Calendar, CheckCircle2 } from 'lucide-react';
+import { Play, Flame, Trophy, Calendar, CheckCircle2, Swords } from 'lucide-react';
 import { type PlayerProfile, type DailyChallengeStatusResponse, getDisplayName } from '@flagora/shared';
 import { getProfileStreakDisplay } from './streakDisplayHelpers.js';
 import { getDailyResultSummary } from './dailyChallengeHelpers.js';
@@ -10,10 +10,12 @@ interface ProfileCardProps {
   dailyStatus?: DailyChallengeStatusResponse | null;
   onPlay?: () => void;
   onStartDaily?: () => void;
+  onChallengeFriend?: () => void;
   onViewLeaderboard?: () => void;
   onViewDailyLeaderboard?: () => void;
   isStarting?: boolean;
   isStartingDaily?: boolean;
+  isStartingChallenge?: boolean;
 }
 
 export function ProfileCard({
@@ -21,10 +23,12 @@ export function ProfileCard({
   dailyStatus,
   onPlay,
   onStartDaily,
+  onChallengeFriend,
   onViewLeaderboard,
   onViewDailyLeaderboard,
   isStarting = false,
   isStartingDaily = false,
+  isStartingChallenge = false,
 }: ProfileCardProps) {
   const displayName = getDisplayName(profile);
   const initial = profile.firstName ? profile.firstName.charAt(0).toUpperCase() : 'P';
@@ -160,6 +164,18 @@ export function ProfileCard({
         >
           <Play className={`h-4 w-4 fill-current ${isStarting ? 'animate-spin' : ''}`} />
           <span>{isStarting ? 'Starting Run...' : 'Play Practice'}</span>
+        </button>
+      )}
+
+      {onChallengeFriend && (
+        <button
+          type="button"
+          onClick={onChallengeFriend}
+          disabled={isStartingChallenge}
+          className="mt-2.5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 font-bold text-white shadow-md transition-transform hover:bg-indigo-500 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+        >
+          <Swords className={`h-4 w-4 ${isStartingChallenge ? 'animate-spin' : ''}`} />
+          <span>{isStartingChallenge ? 'Creating Challenge...' : 'Challenge a Friend'}</span>
         </button>
       )}
 

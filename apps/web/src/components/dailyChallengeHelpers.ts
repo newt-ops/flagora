@@ -4,11 +4,11 @@ export function isDailyAttempted(status: DailyChallengeStatusResponse | null): b
   return Boolean(status && status.attempted);
 }
 
-export function shouldShowPlayAgain(mode?: 'practice' | 'daily'): boolean {
-  return mode !== 'daily';
+export function shouldShowPlayAgain(mode?: 'practice' | 'daily' | 'challenge'): boolean {
+  return mode === 'practice' || mode === undefined;
 }
 
-export function shouldShowDailyLeaderboardButton(mode?: 'practice' | 'daily'): boolean {
+export function shouldShowDailyLeaderboardButton(mode?: 'practice' | 'daily' | 'challenge'): boolean {
   return mode === 'daily';
 }
 

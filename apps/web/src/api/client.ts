@@ -9,6 +9,7 @@ import type {
   LeaderboardMeResponse,
   DailyChallengeStatusResponse,
   DailyLeaderboardResponse,
+  CreateChallengeResponse,
 } from '@flagora/shared';
 
 const API_URL =
@@ -281,6 +282,32 @@ export async function getDailyLeaderboard(
 
   if (!response.ok) {
     let message = `Failed to fetch daily leaderboard: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function createChallenge(
+  sessionToken: string,
+): Promise<CreateChallengeResponse> {
+  const response = await fetch(`${API_URL}/api/challenges`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to create challenge: status ${response.status}`;
     try {
       const data = await response.json();
       if (data?.message) {
