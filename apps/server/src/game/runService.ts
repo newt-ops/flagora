@@ -17,6 +17,7 @@ import {
   type AnswerRunResponse,
   type FinishRunResponse,
   type PlayerProfile,
+  type Challenge,
 } from '@flagora/shared';
 import { selectRunFlags, generateChoices } from './flagSelection.js';
 import {
@@ -32,7 +33,8 @@ import {
 
 export interface CreateRunOptions {
   runId?: string;
-  mode?: 'practice' | 'daily';
+  mode?: 'practice' | 'daily' | 'challenge';
+  challengeId?: string;
   dailyDate?: string;
   flags?: RunFlagItem[];
 }
@@ -76,6 +78,7 @@ export async function createRun(
     startedAt: now,
     status: 'active',
     mode,
+    challengeId: options?.challengeId,
     dailyDate: options?.dailyDate,
     profileCredited: false,
     runDurationMs: SCORING_CONFIG.runDurationMs,
@@ -239,10 +242,12 @@ export async function finishRun(
   }
 
   const isDaily = run.mode === 'daily';
+  const isChallenge = run.mode === 'challenge';
+  const isPractice = run.mode === 'practice' || (!isDaily && !isChallenge);
   const profilesCollection = db.collection<PlayerProfile>('profiles');
   const existingProfile = await profilesCollection.findOne({ telegramUserId });
   const previousBest = existingProfile?.bestScore ?? 0;
-  const isNewBest = isDaily ? false : totalScore > previousBest;
+  const isNewBest = isPractice ? totalScore > previousBest : false;
 
   const todayStr = getUtcDateString(new Date(now));
   const streakResult = calculateStreak(
@@ -266,7 +271,7 @@ export async function finishRun(
     },
   };
 
-  if (!isDaily) {
+  if (isPractice) {
     updateFields.$max = {
       bestScore: totalScore,
     };
@@ -282,7 +287,7 @@ export async function finishRun(
   let newCoins = coinsEarned;
   let newLevel = calculateLevel(xpEarned);
   let leveledUp = false;
-  let bestScore = isDaily ? previousBest : totalScore;
+  let bestScore = isPractice ? totalScore : previousBest;
 
   if (profileUpdate) {
     newXp = profileUpdate.xp;
@@ -305,13 +310,26 @@ export async function finishRun(
     }
   }
 
+  if (isChallenge && run.challengeId) {
+    const challengesCollection = db.collection<Challenge>('challenges');
+    await challengesCollection.updateOne(
+      { challengeId: run.challengeId, challengerRunId: run.runId },
+      {
+        $set: {
+          challengerScore: totalScore,
+          updatedAt: new Date(now),
+        },
+      },
+    );
+  }
+
   if (redis) {
     try {
       if (isDaily) {
         const targetDate = run.dailyDate ?? todayStr;
         const dailyKey = getDailyLeaderboardKey(targetDate);
         await updateLeaderboardScore(telegramUserId, totalScore, redis, dailyKey);
-      } else if (isNewBest) {
+      } else if (isPractice && isNewBest) {
         await updateLeaderboardScore(telegramUserId, bestScore, redis);
       }
     } catch (err) {

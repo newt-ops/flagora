@@ -32,4 +32,5 @@ export * from './streak.js';
 export * from './leaderboard.js';
 export * from './profile.js';
 export * from './daily.js';
+export * from './challenge.js';
 

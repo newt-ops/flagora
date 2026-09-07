@@ -29,6 +29,7 @@ import {
   getDailyLeaderboard,
 } from './daily/dailyService.js';
 import { DailyChallengeAlreadyAttemptedError } from './daily/dailyTypes.js';
+import { createChallenge } from './challenge/challengeService.js';
 
 dotenv.config();
 
@@ -295,6 +296,22 @@ async function bootstrap() {
       res.status(200).json(result);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch daily leaderboard';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.post('/api/challenges', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const challenge = await createChallenge(telegramUserId, db);
+      res.status(200).json(challenge);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create challenge';
       res.status(500).json({ error: 'Internal server error', message });
     }
   });

@@ -24,7 +24,8 @@ export interface GameRun {
   startedAt: Date;
   finishedAt?: Date;
   status: 'active' | 'finished' | 'expired';
-  mode?: 'practice' | 'daily';
+  mode?: 'practice' | 'daily' | 'challenge';
+  challengeId?: string;
   dailyDate?: string;
   profileCredited: boolean;
   runDurationMs: number;
