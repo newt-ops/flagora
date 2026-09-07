@@ -23,3 +23,5 @@ services:
         generateValue: true
       - key: REDIS_URL
         value: memory
+      - key: CLIENT_URL
+        value: https://flagora-delta.vercel.app

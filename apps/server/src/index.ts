@@ -106,6 +106,10 @@ app.post('/api/telegram/webhook', async (req, res) => {
       const startParam = parts[1];
       const rawUsername = process.env.TELEGRAM_BOT_USERNAME || process.env.BOT_USERNAME || 'flagora_bot';
       const cleanUsername = rawUsername.replace(/^@/, '');
+      const frontendUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://flagora-delta.vercel.app';
+      const webAppUrl = startParam
+        ? `${frontendUrl}?startapp=${encodeURIComponent(startParam)}`
+        : frontendUrl;
       const buttonUrl = startParam
         ? `https://t.me/${cleanUsername}?startapp=${encodeURIComponent(startParam)}`
         : `https://t.me/${cleanUsername}`;
@@ -114,6 +118,7 @@ app.post('/api/telegram/webhook', async (req, res) => {
         chatId,
         text: 'Welcome to Flagora! Guess flags, climb the leaderboard, and challenge friends in live battles.',
         buttonText: 'Play Flagora',
+        webAppUrl,
         buttonUrl,
         botToken: botToken!,
       });

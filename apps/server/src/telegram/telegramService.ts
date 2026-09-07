@@ -11,6 +11,7 @@ export interface SendTelegramMessageOptions {
   text: string;
   buttonText?: string;
   buttonUrl?: string;
+  webAppUrl?: string;
   botToken?: string;
   apiBaseUrl?: string;
 }
@@ -39,7 +40,18 @@ export async function sendTelegramMessage(
     text: options.text,
   };
 
-  if (options.buttonText && options.buttonUrl) {
+  if (options.buttonText && options.webAppUrl) {
+    payload.reply_markup = {
+      inline_keyboard: [
+        [
+          {
+            text: options.buttonText,
+            web_app: { url: options.webAppUrl },
+          },
+        ],
+      ],
+    };
+  } else if (options.buttonText && options.buttonUrl) {
     payload.reply_markup = {
       inline_keyboard: [
         [
