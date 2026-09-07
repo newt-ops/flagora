@@ -49,6 +49,8 @@ export interface ChallengeInfoResponse {
   isOpponent: boolean;
   expiresAt: Date | string;
   opponentUserId?: number | null;
+  opponentDisplayName?: string | null;
+  opponentPhotoUrl?: string | null;
   opponentScore?: number | null;
   winner?: ChallengeWinner | null;
 }

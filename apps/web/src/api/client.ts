@@ -10,6 +10,8 @@ import type {
   DailyChallengeStatusResponse,
   DailyLeaderboardResponse,
   CreateChallengeResponse,
+  AcceptChallengeResponse,
+  ChallengeInfoResponse,
 } from '@flagora/shared';
 
 const API_URL =
@@ -308,6 +310,87 @@ export async function createChallenge(
 
   if (!response.ok) {
     let message = `Failed to create challenge: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function getChallengeInfo(
+  sessionToken: string,
+  challengeId: string,
+): Promise<ChallengeInfoResponse> {
+  const response = await fetch(`${API_URL}/api/challenges/${encodeURIComponent(challengeId)}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to fetch challenge info: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function acceptChallenge(
+  sessionToken: string,
+  challengeId: string,
+): Promise<AcceptChallengeResponse> {
+  const response = await fetch(`${API_URL}/api/challenges/${encodeURIComponent(challengeId)}/accept`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to accept challenge: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function rematchChallenge(
+  sessionToken: string,
+  challengeId: string,
+): Promise<CreateChallengeResponse> {
+  const response = await fetch(`${API_URL}/api/challenges/${encodeURIComponent(challengeId)}/rematch`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to create rematch: status ${response.status}`;
     try {
       const data = await response.json();
       if (data?.message) {

@@ -143,6 +143,16 @@ export async function getChallengeInfo(
   const isChallenger = requestingUserId === challenge.challengerUserId;
   const isOpponent = Boolean(challenge.opponentUserId && requestingUserId === challenge.opponentUserId);
 
+  let opponentDisplayName: string | null = null;
+  let opponentPhotoUrl: string | null = null;
+  if (challenge.opponentUserId) {
+    const opponentProfile = await profilesCollection.findOne({ telegramUserId: challenge.opponentUserId });
+    opponentDisplayName = opponentProfile
+      ? getDisplayName(opponentProfile)
+      : `Player ${challenge.opponentUserId}`;
+    opponentPhotoUrl = opponentProfile?.photoUrl ?? null;
+  }
+
   return {
     challengeId: challenge.challengeId,
     challengerUserId: challenge.challengerUserId,
@@ -155,6 +165,8 @@ export async function getChallengeInfo(
     isOpponent,
     expiresAt: challenge.expiresAt,
     opponentUserId: challenge.opponentUserId,
+    opponentDisplayName,
+    opponentPhotoUrl,
     opponentScore: challenge.opponentScore,
     winner: challenge.winner ?? null,
   };
