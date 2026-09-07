@@ -14,22 +14,35 @@ import {
   Share2,
   Copy,
   Check,
+  Loader2,
 } from 'lucide-react';
-import { type PlayerProfile, type DailyChallengeStatusResponse, getDisplayName } from '@flagora/shared';
+import {
+  type PlayerProfile,
+  type DailyChallengeStatusResponse,
+  type StreakStatusResponse,
+  getDisplayName,
+} from '@flagora/shared';
 import { getProfileStreakDisplay } from './streakDisplayHelpers.js';
 import { getDailyResultSummary } from './dailyChallengeHelpers.js';
+import { StreakSaveBanner } from './StreakSaveBanner.js';
+import { useBonusCoinsAd } from '../hooks/useBonusCoinsAd.js';
+import { getBonusAdsButtonText } from './rewardUiHelpers.js';
 
 export { getDisplayName };
 
 interface ProfileCardProps {
   profile: PlayerProfile;
   dailyStatus?: DailyChallengeStatusResponse | null;
+  streakStatus?: StreakStatusResponse | null;
+  sessionToken?: string | null;
   onPlay?: () => void;
   onStartDaily?: () => void;
   onChallengeFriend?: () => void;
   onBattleFriend?: () => void;
   onViewLeaderboard?: () => void;
   onViewDailyLeaderboard?: () => void;
+  onRefetchProfile?: () => void;
+  onRefetchStreakStatus?: () => void;
   isStarting?: boolean;
   isStartingDaily?: boolean;
   isStartingChallenge?: boolean;
@@ -40,12 +53,16 @@ interface ProfileCardProps {
 export function ProfileCard({
   profile,
   dailyStatus,
+  streakStatus,
+  sessionToken,
   onPlay,
   onStartDaily,
   onChallengeFriend,
   onBattleFriend,
   onViewLeaderboard,
   onViewDailyLeaderboard,
+  onRefetchProfile,
+  onRefetchStreakStatus,
   isStarting = false,
   isStartingDaily = false,
   isStartingChallenge = false,
@@ -57,6 +74,17 @@ export function ProfileCard({
   const initial = profile.firstName ? profile.firstName.charAt(0).toUpperCase() : 'P';
   const streakInfo = getProfileStreakDisplay(profile.currentStreak, profile.longestStreak);
   const dailySummary = getDailyResultSummary(dailyStatus?.result ?? null);
+
+  const {
+    isWatchingAd,
+    feedback: bonusFeedback,
+    remainingAds,
+    isCapReached,
+    handleWatchAd,
+  } = useBonusCoinsAd({
+    sessionToken,
+    onRewardSuccess: onRefetchProfile,
+  });
 
   const botUsername =
     (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BOT_USERNAME) || 'FlagoraBot';
@@ -78,7 +106,7 @@ export function ProfileCard({
       setReferralCopied(true);
       setTimeout(() => setReferralCopied(false), 2000);
     } catch {
-      // fallback
+      void 0;
     }
   };
 
@@ -139,6 +167,19 @@ export function ProfileCard({
         )}
       </div>
 
+      {streakStatus?.isAtRisk && (
+        <div className="mt-3">
+          <StreakSaveBanner
+            sessionToken={sessionToken}
+            streakStatus={streakStatus}
+            onSuccess={() => {
+              onRefetchProfile?.();
+              onRefetchStreakStatus?.();
+            }}
+          />
+        </div>
+      )}
+
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg border border-tg-separator p-3 text-center">
           <div className="flex items-center gap-1.5 text-tg-hint">
@@ -173,7 +214,6 @@ export function ProfileCard({
         </div>
       </div>
 
-      {/* Referral & Invite Section */}
       <div className="mt-4 flex w-full flex-col rounded-xl bg-tg-secondary-bg border border-tg-separator p-4 text-left">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -218,6 +258,54 @@ export function ProfileCard({
             <span>Share Link</span>
           </button>
         </div>
+      </div>
+
+      <div className="mt-4 flex w-full flex-col rounded-xl bg-tg-secondary-bg border border-tg-separator p-4 text-left">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20">
+              <Coins className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-tg-text">Bonus Coins</p>
+              <p className="text-[11px] text-tg-hint">+50 coins per ad</p>
+            </div>
+          </div>
+          <span
+            data-testid="bonus-coins-remaining-badge"
+            className="rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-bold text-tg-button"
+          >
+            {remainingAds > 0 ? `${remainingAds}/5 remaining today` : 'Daily cap reached (5/5)'}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleWatchAd}
+          disabled={isCapReached || isWatchingAd || !sessionToken}
+          data-testid="watch-bonus-ad-button"
+          className="mt-3.5 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-tg-button px-3 text-xs font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
+        >
+          {isWatchingAd ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Coins className="h-3.5 w-3.5" />
+          )}
+          <span>{getBonusAdsButtonText(remainingAds, isWatchingAd)}</span>
+        </button>
+
+        {bonusFeedback && (
+          <div
+            data-testid="bonus-coins-feedback"
+            className={`mt-2.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
+              bonusFeedback.isSuccess
+                ? 'bg-emerald-500/15 text-emerald-400'
+                : 'bg-amber-500/15 text-amber-300'
+            }`}
+          >
+            {bonusFeedback.text}
+          </div>
+        )}
       </div>
 
       {showGameActions && (

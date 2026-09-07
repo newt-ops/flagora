@@ -12,6 +12,7 @@ import { useProfile } from './hooks/useProfile.js';
 import { useStore } from './store/useStore.js';
 import { useGameRun } from './hooks/useGameRun.js';
 import { useDailyChallenge } from './hooks/useDailyChallenge.js';
+import { useStreakStatus } from './hooks/useStreakStatus.js';
 import { useBattleSocket } from './hooks/useBattleSocket.js';
 import {
   createChallenge,
@@ -49,6 +50,7 @@ export function App() {
   const { sessionToken } = useStore();
   const { startRun, isStarting } = useGameRun();
   const { dailyStatus, startDaily, isStartingDaily } = useDailyChallenge(sessionToken);
+  const { streakStatus, refetchStreakStatus } = useStreakStatus(sessionToken);
 
   const [screen, setScreen] = useState<
     | 'profile'
@@ -129,7 +131,7 @@ export function App() {
         void queryClient.invalidateQueries({ queryKey: ['profile'] });
       }
     } catch {
-      // ignore
+      void 0;
     }
   }, [sessionToken, activeBattleId, queryClient]);
 
@@ -445,11 +447,7 @@ export function App() {
 
   return (
     <main
-      className="flex min-h-screen flex-col items-center justify-start bg-tg-secondary-bg text-tg-text px-4"
-      style={{
-        paddingTop: 'calc(var(--app-safe-top, 0px) + 1.25rem)',
-        paddingBottom: 'calc(var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) + 5.5rem)',
-      }}
+      className="flex min-h-screen flex-col items-center justify-start bg-tg-secondary-bg text-tg-text px-4 pt-[calc(var(--app-safe-top,0px)+1.25rem)] pb-[calc(var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))+5.5rem)]"
     >
       {isLoading && <PlaySkeleton />}
 
@@ -480,6 +478,8 @@ export function App() {
             <PlayScreen
               profile={profile}
               dailyStatus={dailyStatus}
+              streakStatus={streakStatus}
+              sessionToken={sessionToken}
               onPlayPractice={handleStartPractice}
               onStartCustomGame={handleStartPractice}
               onStartDaily={handleStartDaily}
@@ -487,6 +487,8 @@ export function App() {
               onBattleFriend={handleStartBattle}
               onViewDailyLeaderboard={handleOpenDailyLeaderboard}
               onNavigateToProfile={() => setActiveTab('profile')}
+              onRefetchProfile={refetch}
+              onRefetchStreakStatus={refetchStreakStatus}
               isStarting={isStarting}
               isStartingDaily={isStartingDaily}
               isStartingChallenge={isStartingChallenge}
@@ -515,6 +517,10 @@ export function App() {
               <ProfileCard
                 profile={profile}
                 dailyStatus={dailyStatus}
+                streakStatus={streakStatus}
+                sessionToken={sessionToken}
+                onRefetchProfile={refetch}
+                onRefetchStreakStatus={refetchStreakStatus}
                 showGameActions={false}
               />
             </div>

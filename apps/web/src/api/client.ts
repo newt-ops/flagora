@@ -15,6 +15,11 @@ import type {
   CreateBattleResponse,
   BattleInfoResponse,
   JoinBattleResponse,
+  StreakStatusResponse,
+  BonusCoinsIntentSuccessResponse,
+  BonusCoinsRedeemSuccessResponse,
+  StreakSaveIntentSuccessResponse,
+  StreakSaveRedeemSuccessResponse,
 } from '@flagora/shared';
 
 const API_URL =
@@ -24,6 +29,27 @@ export class TimeExpiredApiError extends Error {
   constructor(message = 'Time has expired for this run') {
     super(message);
     this.name = 'TimeExpiredApiError';
+  }
+}
+
+export class RewardCapReachedApiError extends Error {
+  readonly dailyCap: number;
+  readonly usedCount: number;
+  readonly resetAtUtc?: string;
+
+  constructor(message: string, dailyCap: number, usedCount: number, resetAtUtc?: string) {
+    super(message);
+    this.name = 'RewardCapReachedApiError';
+    this.dailyCap = dailyCap;
+    this.usedCount = usedCount;
+    this.resetAtUtc = resetAtUtc;
+  }
+}
+
+export class StreakNotAtRiskApiError extends Error {
+  constructor(message = 'Streak is not at risk') {
+    super(message);
+    this.name = 'StreakNotAtRiskApiError';
   }
 }
 
@@ -486,6 +512,176 @@ export async function joinBattle(
     let message = `Failed to join battle: status ${response.status}`;
     try {
       const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+interface RewardErrorPayload {
+  error?: string;
+  message?: string;
+  dailyCap?: number;
+  usedCount?: number;
+  resetAtUtc?: string;
+}
+
+export async function getStreakStatus(
+  sessionToken: string,
+): Promise<StreakStatusResponse> {
+  const response = await fetch(`${API_URL}/api/streak/status`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to get streak status: status ${response.status}`;
+    try {
+      const data: RewardErrorPayload = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function requestBonusCoinsIntent(
+  sessionToken: string,
+): Promise<BonusCoinsIntentSuccessResponse> {
+  const response = await fetch(`${API_URL}/api/rewards/bonus-coins/intent`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to request bonus coins intent: status ${response.status}`;
+    let body: RewardErrorPayload | null = null;
+    try {
+      body = await response.json();
+      if (body?.message) {
+        message = body.message;
+      }
+    } catch {
+      void 0;
+    }
+
+    if (response.status === 429) {
+      throw new RewardCapReachedApiError(
+        message,
+        body?.dailyCap ?? 5,
+        body?.usedCount ?? 5,
+        body?.resetAtUtc,
+      );
+    }
+
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function redeemBonusCoins(
+  sessionToken: string,
+  token: string,
+): Promise<BonusCoinsRedeemSuccessResponse> {
+  const response = await fetch(`${API_URL}/api/rewards/bonus-coins/redeem`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${sessionToken}`,
+    },
+    body: JSON.stringify({ token }),
+  });
+
+  if (!response.ok) {
+    let message = `Failed to redeem bonus coins: status ${response.status}`;
+    try {
+      const data: RewardErrorPayload = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function requestStreakSaveIntent(
+  sessionToken: string,
+): Promise<StreakSaveIntentSuccessResponse> {
+  const response = await fetch(`${API_URL}/api/rewards/streak-save/intent`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to request streak save intent: status ${response.status}`;
+    let body: RewardErrorPayload | null = null;
+    try {
+      body = await response.json();
+      if (body?.message) {
+        message = body.message;
+      }
+    } catch {
+      void 0;
+    }
+
+    if (response.status === 429) {
+      throw new RewardCapReachedApiError(
+        message,
+        body?.dailyCap ?? 1,
+        body?.usedCount ?? 1,
+        body?.resetAtUtc,
+      );
+    }
+
+    if (response.status === 400 && (message.includes('not at risk') || body?.error === 'Streak not at risk')) {
+      throw new StreakNotAtRiskApiError(message);
+    }
+
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function redeemStreakSave(
+  sessionToken: string,
+  token: string,
+): Promise<StreakSaveRedeemSuccessResponse> {
+  const response = await fetch(`${API_URL}/api/rewards/streak-save/redeem`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${sessionToken}`,
+    },
+    body: JSON.stringify({ token }),
+  });
+
+  if (!response.ok) {
+    let message = `Failed to redeem streak save: status ${response.status}`;
+    try {
+      const data: RewardErrorPayload = await response.json();
       if (data?.message) {
         message = data.message;
       }

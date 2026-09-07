@@ -66,6 +66,21 @@ import {
   notifyReferralReward,
   type InlineKeyboardButton,
 } from './telegram/telegramService.js';
+import {
+  requestBonusCoinsIntent,
+  redeemBonusCoins,
+  getStreakStatus,
+  requestStreakSaveIntent,
+  redeemStreakSave,
+  StreakNotAtRiskError,
+  RewardCapReachedError,
+  RewardTokenError,
+  UnauthorizedTokenRedemptionError,
+  ExpiredRewardTokenError,
+  RewardTokenAlreadyRedeemedError,
+  RewardTypeMismatchError,
+  InvalidRewardTokenError,
+} from './rewards/index.js';
 import { getDisplayName, type PlayerProfile } from '@flagora/shared';
 
 dotenv.config();
@@ -528,6 +543,196 @@ async function bootstrap() {
     }
   });
 
+  app.post(
+    '/api/rewards/bonus-coins/intent',
+    sessionMiddleware,
+    async (req: AuthenticatedSessionRequest, res) => {
+      try {
+        const telegramUserId = req.sessionUser?.telegramUserId;
+        if (!telegramUserId) {
+          res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+          return;
+        }
+
+        const result = await requestBonusCoinsIntent(telegramUserId, { redis });
+        res.status(200).json(result);
+      } catch (error) {
+        if (error instanceof RewardCapReachedError) {
+          res.status(429).json({
+            ok: false,
+            error: 'Daily cap reached',
+            message: error.message,
+            dailyCap: error.dailyCap,
+            usedCount: error.usedCount,
+            resetAtUtc: error.resetAtUtc,
+          });
+          return;
+        }
+        const message = error instanceof Error ? error.message : 'Failed to create reward intent';
+        res.status(500).json({ error: 'Internal server error', message });
+      }
+    },
+  );
+
+  app.post(
+    '/api/rewards/bonus-coins/redeem',
+    sessionMiddleware,
+    async (req: AuthenticatedSessionRequest, res) => {
+      try {
+        const telegramUserId = req.sessionUser?.telegramUserId;
+        if (!telegramUserId) {
+          res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+          return;
+        }
+
+        const { token } = req.body || {};
+        if (!token || typeof token !== 'string' || token.trim() === '') {
+          res.status(400).json({ error: 'Missing token', message: 'Reward token is required' });
+          return;
+        }
+
+        const result = await redeemBonusCoins(token, telegramUserId, db, { redis });
+        res.status(200).json(result);
+      } catch (error) {
+        if (error instanceof UnauthorizedTokenRedemptionError) {
+          res.status(403).json({ error: 'Forbidden', message: error.message });
+          return;
+        }
+        if (error instanceof ExpiredRewardTokenError) {
+          res.status(400).json({ error: 'Token expired', message: error.message });
+          return;
+        }
+        if (error instanceof RewardTokenAlreadyRedeemedError) {
+          res.status(400).json({ error: 'Token already redeemed', message: error.message });
+          return;
+        }
+        if (error instanceof RewardTypeMismatchError) {
+          res.status(400).json({ error: 'Type mismatch', message: error.message });
+          return;
+        }
+        if (error instanceof InvalidRewardTokenError) {
+          res.status(400).json({ error: 'Invalid token', message: error.message });
+          return;
+        }
+        if (error instanceof RewardTokenError) {
+          res.status(400).json({ error: 'Invalid reward token', message: error.message });
+          return;
+        }
+        const message = error instanceof Error ? error.message : 'Failed to redeem reward token';
+        res.status(500).json({ error: 'Internal server error', message });
+      }
+    },
+  );
+
+  app.get(
+    '/api/streak/status',
+    sessionMiddleware,
+    async (req: AuthenticatedSessionRequest, res) => {
+      try {
+        const telegramUserId = req.sessionUser?.telegramUserId;
+        if (!telegramUserId) {
+          res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+          return;
+        }
+
+        const result = await getStreakStatus(telegramUserId, db);
+        res.status(200).json(result);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch streak status';
+        res.status(500).json({ error: 'Internal server error', message });
+      }
+    },
+  );
+
+  app.post(
+    '/api/rewards/streak-save/intent',
+    sessionMiddleware,
+    async (req: AuthenticatedSessionRequest, res) => {
+      try {
+        const telegramUserId = req.sessionUser?.telegramUserId;
+        if (!telegramUserId) {
+          res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+          return;
+        }
+
+        const result = await requestStreakSaveIntent(telegramUserId, db, { redis });
+        res.status(200).json(result);
+      } catch (error) {
+        if (error instanceof StreakNotAtRiskError) {
+          res.status(400).json({ error: 'Streak not at risk', message: error.message });
+          return;
+        }
+        if (error instanceof RewardCapReachedError) {
+          res.status(429).json({
+            ok: false,
+            error: 'Daily cap reached',
+            message: error.message,
+            dailyCap: error.dailyCap,
+            usedCount: error.usedCount,
+            resetAtUtc: error.resetAtUtc,
+          });
+          return;
+        }
+        const message = error instanceof Error ? error.message : 'Failed to create streak save intent';
+        res.status(500).json({ error: 'Internal server error', message });
+      }
+    },
+  );
+
+  app.post(
+    '/api/rewards/streak-save/redeem',
+    sessionMiddleware,
+    async (req: AuthenticatedSessionRequest, res) => {
+      try {
+        const telegramUserId = req.sessionUser?.telegramUserId;
+        if (!telegramUserId) {
+          res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+          return;
+        }
+
+        const { token } = req.body || {};
+        if (!token || typeof token !== 'string' || token.trim() === '') {
+          res.status(400).json({ error: 'Missing token', message: 'Reward token is required' });
+          return;
+        }
+
+        const result = await redeemStreakSave(token, telegramUserId, db, { redis });
+        res.status(200).json(result);
+      } catch (error) {
+        if (error instanceof StreakNotAtRiskError) {
+          res.status(400).json({ error: 'Streak not at risk', message: error.message });
+          return;
+        }
+        if (error instanceof UnauthorizedTokenRedemptionError) {
+          res.status(403).json({ error: 'Forbidden', message: error.message });
+          return;
+        }
+        if (error instanceof ExpiredRewardTokenError) {
+          res.status(400).json({ error: 'Token expired', message: error.message });
+          return;
+        }
+        if (error instanceof RewardTokenAlreadyRedeemedError) {
+          res.status(400).json({ error: 'Token already redeemed', message: error.message });
+          return;
+        }
+        if (error instanceof RewardTypeMismatchError) {
+          res.status(400).json({ error: 'Type mismatch', message: error.message });
+          return;
+        }
+        if (error instanceof InvalidRewardTokenError) {
+          res.status(400).json({ error: 'Invalid token', message: error.message });
+          return;
+        }
+        if (error instanceof RewardTokenError) {
+          res.status(400).json({ error: 'Invalid reward token', message: error.message });
+          return;
+        }
+        const message = error instanceof Error ? error.message : 'Failed to redeem streak save';
+        res.status(500).json({ error: 'Internal server error', message });
+      }
+    },
+  );
+
   app.post('/api/telegram/webhook', async (req, res) => {
     res.status(200).json({ ok: true });
     try {
@@ -540,7 +745,6 @@ async function bootstrap() {
         process.env.FRONTEND_URL ||
         'https://flagora-delta.vercel.app';
 
-      // 1. Handle Callback Query (Inline Keyboard Clicks) -> Edit Message In-Place
       if (update?.callback_query) {
         const callbackQuery = update.callback_query;
         const data = callbackQuery.data;
@@ -673,7 +877,6 @@ async function bootstrap() {
         return;
       }
 
-      // 2. Handle Text Messages (/start, /help)
       const message = update?.message;
       if (message?.text && typeof message.text === 'string') {
         const chatId = Number(message.chat.id);
@@ -683,7 +886,6 @@ async function bootstrap() {
         const startParam = parts[1];
 
         if (command === '/start') {
-          // Check for referral
           if (startParam && startParam.startsWith('ref_')) {
             const refUserId = Number(startParam.replace(/^ref_/, ''));
             if (refUserId && refUserId !== chatId) {

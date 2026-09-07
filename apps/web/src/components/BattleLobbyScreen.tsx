@@ -116,7 +116,6 @@ export function BattleLobbyScreen({
         </div>
       )}
 
-      {/* Match Details Banner */}
       <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg border border-tg-separator px-4 py-2.5 text-xs text-tg-hint">
         <span className="font-semibold text-tg-text">{totalFlags} Flags</span>
         <span>•</span>

@@ -12,7 +12,6 @@ import type {
   OpponentProgressPayload,
   BattleFinishedPayload,
   SubmitAnswerResponse,
-  PlayerReadyBroadcastPayload,
 } from '@flagora/shared';
 
 const API_URL =
@@ -123,7 +122,7 @@ export function useBattleSocket({
       setBothPlayersPresent(true);
     });
 
-    socket.on('battlePlayerReady', (_payload: PlayerReadyBroadcastPayload) => {
+    socket.on('battlePlayerReady', () => {
       setOpponentReady(true);
     });
 
@@ -163,7 +162,6 @@ export function useBattleSocket({
     };
   }, [sessionToken, battleId]);
 
-  // Active client-side 1s countdown decrement
   useEffect(() => {
     if (countdown === null || countdown <= 0) return;
     const timer = setInterval(() => {

@@ -478,7 +478,7 @@ export async function startBattleSession(
     try {
       await checkAndFinalizeBattle(battleId, db, undefined, io);
     } catch {
-      // ignore
+      void 0;
     }
   }, challengerRun.runDurationMs + 1000);
   autoFinalizeTimer.unref?.();

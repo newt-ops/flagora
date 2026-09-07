@@ -189,7 +189,6 @@ export function initSocketServer(
         opponentReady,
       });
 
-      // Notify opponent via bot if they haven't marked ready yet
       void notifyOpponentReady(battleId, userId, db);
 
       if (

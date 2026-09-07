@@ -36,3 +36,4 @@ export * from './profile.js';
 export * from './daily.js';
 export * from './challenge.js';
 export * from './battle.js';
+export * from './rewards.js';

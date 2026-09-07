@@ -11,14 +11,21 @@ import {
   Globe,
   Sliders,
 } from 'lucide-react';
-import type { PlayerProfile, DailyChallengeStatusResponse } from '@flagora/shared';
+import type {
+  PlayerProfile,
+  DailyChallengeStatusResponse,
+  StreakStatusResponse,
+} from '@flagora/shared';
 import { getDisplayName } from '@flagora/shared';
 import { getDailyResultSummary } from './dailyChallengeHelpers.js';
 import { CustomGameModal, type CustomGameConfig } from './CustomGameModal.js';
+import { StreakSaveBanner } from './StreakSaveBanner.js';
 
 interface PlayScreenProps {
   profile: PlayerProfile;
   dailyStatus?: DailyChallengeStatusResponse | null;
+  streakStatus?: StreakStatusResponse | null;
+  sessionToken?: string | null;
   onPlayPractice: () => void;
   onStartDaily: () => void;
   onChallengeFriend: () => void;
@@ -26,6 +33,8 @@ interface PlayScreenProps {
   onStartCustomGame?: (config: CustomGameConfig) => void;
   onViewDailyLeaderboard: () => void;
   onNavigateToProfile: () => void;
+  onRefetchProfile?: () => void;
+  onRefetchStreakStatus?: () => void;
   isStarting?: boolean;
   isStartingDaily?: boolean;
   isStartingChallenge?: boolean;
@@ -35,6 +44,8 @@ interface PlayScreenProps {
 export function PlayScreen({
   profile,
   dailyStatus,
+  streakStatus,
+  sessionToken,
   onPlayPractice,
   onStartDaily,
   onChallengeFriend,
@@ -42,6 +53,8 @@ export function PlayScreen({
   onStartCustomGame,
   onViewDailyLeaderboard,
   onNavigateToProfile,
+  onRefetchProfile,
+  onRefetchStreakStatus,
   isStarting = false,
   isStartingDaily = false,
   isStartingChallenge = false,
@@ -101,6 +114,17 @@ export function PlayScreen({
           </div>
         </div>
       </div>
+
+      {streakStatus?.isAtRisk && (
+        <StreakSaveBanner
+          sessionToken={sessionToken}
+          streakStatus={streakStatus}
+          onSuccess={() => {
+            onRefetchProfile?.();
+            onRefetchStreakStatus?.();
+          }}
+        />
+      )}
 
       <div className="rounded-2xl bg-tg-section border border-tg-separator p-5 shadow-sm">
         <div className="flex items-center justify-between">
@@ -190,7 +214,6 @@ export function PlayScreen({
           </button>
         </div>
 
-        {/* Custom Game Mode */}
         <div className="rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

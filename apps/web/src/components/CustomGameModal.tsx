@@ -36,7 +36,6 @@ export function CustomGameModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="relative w-full max-w-md rounded-3xl bg-tg-section border border-tg-separator shadow-2xl p-5 max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-tg-separator mb-4">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-tg-button/10 text-tg-button">
@@ -56,7 +55,6 @@ export function CustomGameModal({
           </button>
         </div>
 
-        {/* Interactive Continent Map */}
         <div className="mb-4">
           <label className="text-xs font-semibold text-tg-hint uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Globe className="w-3.5 h-3.5 text-tg-button" />
@@ -64,7 +62,6 @@ export function CustomGameModal({
           </label>
           <ContinentMap selectedContinent={continent} onSelectContinent={setContinent} />
 
-          {/* Continent Chips */}
           <div className="grid grid-cols-3 gap-1.5 mt-3">
             {continents.map((c) => (
               <button
@@ -83,7 +80,6 @@ export function CustomGameModal({
           </div>
         </div>
 
-        {/* Flag Count Selector */}
         <div className="mb-4">
           <label className="text-xs font-semibold text-tg-hint uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Flag className="w-3.5 h-3.5 text-tg-button" />
@@ -107,7 +103,6 @@ export function CustomGameModal({
           </div>
         </div>
 
-        {/* Timer Selector */}
         <div className="mb-6">
           <label className="text-xs font-semibold text-tg-hint uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Timer className="w-3.5 h-3.5 text-tg-button" />
@@ -131,7 +126,6 @@ export function CustomGameModal({
           </div>
         </div>
 
-        {/* Start Game Action */}
         <button
           type="button"
           onClick={() => onStart({ continent, flagCount, durationSeconds })}

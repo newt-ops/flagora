@@ -69,7 +69,7 @@ export function initTelegramWebApp(): void {
     try {
       tg.requestFullscreen?.();
     } catch {
-      // requestFullscreen not supported on older Telegram clients
+      void 0;
     }
 
     updateSafeAreaInsets(tg);
@@ -79,7 +79,7 @@ export function initTelegramWebApp(): void {
       tg.onEvent?.('contentSafeAreaChanged', () => updateSafeAreaInsets(tg));
       tg.onEvent?.('fullscreenChanged', () => updateSafeAreaInsets(tg));
     } catch {
-      // safe area events not supported on older clients
+      void 0;
     }
   }
 }

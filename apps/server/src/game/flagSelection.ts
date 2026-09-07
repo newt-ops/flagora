@@ -87,7 +87,6 @@ export function generateChoices(
   correctFlag: CountryFlag,
   distractorPool: CountryFlag[] = COUNTRIES,
 ): string[] {
-  // Try same tier candidates first
   const sameTierCandidates = distractorPool.filter(
     (f) =>
       f.tier === correctFlag.tier &&
