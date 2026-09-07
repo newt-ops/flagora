@@ -446,4 +446,41 @@ describe('Phase 8 Prompt 04: AdsGram SDK Integration', () => {
     assert.equal(initCount, 2);
     assert.equal(c3, fakeController);
   });
+
+  it('passes debug as boolean false by default and omits undefined properties', () => {
+    let capturedOptions: Record<string, unknown> | undefined;
+    const fakeController: AdsgramController = {
+      show: async () => ({ done: true, state: 'destroy', description: '', error: false }),
+    };
+
+    (globalThis as unknown as { window?: unknown }).window = {
+      Adsgram: {
+        init: (options: Record<string, unknown>) => {
+          capturedOptions = options;
+          return fakeController;
+        },
+      },
+    };
+
+    const controller = getAdsgramController({ blockId: 'test-block-debug' });
+    assert.equal(controller, fakeController);
+    assert.ok(capturedOptions);
+    assert.equal(typeof capturedOptions?.debug, 'boolean');
+    assert.equal(capturedOptions?.debug, false);
+    assert.equal('debugBannerType' in (capturedOptions || {}), false);
+    assert.equal('debugConsole' in (capturedOptions || {}), false);
+  });
+
+  it('safely handles window.Adsgram.init throwing an error', () => {
+    (globalThis as unknown as { window?: unknown }).window = {
+      Adsgram: {
+        init: () => {
+          throw new Error('debug should be boolean you call with undefined');
+        },
+      },
+    };
+
+    const controller = getAdsgramController({ blockId: 'test-block-throws' });
+    assert.equal(controller, null);
+  });
 });

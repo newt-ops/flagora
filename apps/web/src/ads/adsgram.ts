@@ -32,7 +32,7 @@ export function getAdsgramBlockId(): string {
   if (envBlockId && typeof envBlockId === 'string' && envBlockId.trim() !== '') {
     return envBlockId.trim();
   }
-  return '46708';
+  return '46710';
 }
 
 export function getAdsgramController(
@@ -43,23 +43,34 @@ export function getAdsgramController(
   }
 
   const blockId = options?.blockId ?? getAdsgramBlockId();
-  if (cachedController && cachedBlockId === blockId && !options?.debug) {
+  const debug = typeof options?.debug === 'boolean' ? options.debug : false;
+  if (cachedController && cachedBlockId === blockId && !debug) {
     return cachedController;
   }
 
-  const controller = window.Adsgram.init({
+  const initConfig: AdsgramInitOptions = {
     blockId,
-    debug: options?.debug,
-    debugBannerType: options?.debugBannerType,
-    debugConsole: options?.debugConsole,
-  });
-
-  if (!options?.debug) {
-    cachedController = controller;
-    cachedBlockId = blockId;
+    debug,
+  };
+  if (typeof options?.debugBannerType === 'string') {
+    initConfig.debugBannerType = options.debugBannerType;
+  }
+  if (typeof options?.debugConsole === 'boolean') {
+    initConfig.debugConsole = options.debugConsole;
   }
 
-  return controller;
+  try {
+    const controller = window.Adsgram.init(initConfig);
+
+    if (!debug) {
+      cachedController = controller;
+      cachedBlockId = blockId;
+    }
+
+    return controller;
+  } catch {
+    return null;
+  }
 }
 
 export function resetAdsgramController(): void {
@@ -122,7 +133,7 @@ export async function showRewardedAd(
     options?.controller ??
     getAdsgramController({
       blockId: options?.blockId ?? getAdsgramBlockId(),
-      debug: options?.debug,
+      debug: typeof options?.debug === 'boolean' ? options.debug : false,
     });
 
   if (!controller) {
