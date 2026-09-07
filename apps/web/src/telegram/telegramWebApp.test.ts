@@ -4,6 +4,7 @@ import {
   getTelegramWebApp,
   initTelegramWebApp,
   syncTelegramBackButton,
+  updateSafeAreaInsets,
 } from './telegramWebApp.js';
 
 describe('telegramWebApp', () => {
@@ -130,6 +131,97 @@ describe('telegramWebApp', () => {
       assert.equal(cleanup, undefined);
     } finally {
       delete (globalThis as unknown as { Telegram?: unknown }).Telegram;
+    }
+  });
+
+  it('sets minimum safe area top in fullscreen mode when insets are missing', () => {
+    const mockStyles: Record<string, string> = {};
+    const mockClassList = new Set<string>();
+
+    (globalThis as unknown as { document?: unknown }).document = {
+      documentElement: {
+        style: {
+          setProperty: (key: string, value: string) => {
+            mockStyles[key] = value;
+          },
+        },
+        classList: {
+          add: (cls: string) => mockClassList.add(cls),
+          remove: (cls: string) => mockClassList.delete(cls),
+        },
+      },
+    };
+
+    try {
+      updateSafeAreaInsets({
+        isFullscreen: true,
+      });
+
+      assert.equal(mockStyles['--tg-safe-top'], '44px');
+      assert.equal(mockClassList.has('tg-fullscreen'), true);
+    } finally {
+      delete (globalThis as unknown as { document?: unknown }).document;
+    }
+  });
+
+  it('uses reported contentSafeAreaInset top when available', () => {
+    const mockStyles: Record<string, string> = {};
+    const mockClassList = new Set<string>();
+
+    (globalThis as unknown as { document?: unknown }).document = {
+      documentElement: {
+        style: {
+          setProperty: (key: string, value: string) => {
+            mockStyles[key] = value;
+          },
+        },
+        classList: {
+          add: (cls: string) => mockClassList.add(cls),
+          remove: (cls: string) => mockClassList.delete(cls),
+        },
+      },
+    };
+
+    try {
+      updateSafeAreaInsets({
+        isFullscreen: true,
+        contentSafeAreaInset: { top: 59, bottom: 34, left: 0, right: 0 },
+      });
+
+      assert.equal(mockStyles['--tg-safe-top'], '59px');
+      assert.equal(mockClassList.has('tg-fullscreen'), true);
+    } finally {
+      delete (globalThis as unknown as { document?: unknown }).document;
+    }
+  });
+
+  it('removes tg-fullscreen and sets 0px in normal windowed mode', () => {
+    const mockStyles: Record<string, string> = {};
+    const mockClassList = new Set<string>(['tg-fullscreen']);
+
+    (globalThis as unknown as { document?: unknown }).document = {
+      documentElement: {
+        style: {
+          setProperty: (key: string, value: string) => {
+            mockStyles[key] = value;
+          },
+        },
+        classList: {
+          add: (cls: string) => mockClassList.add(cls),
+          remove: (cls: string) => mockClassList.delete(cls),
+        },
+      },
+    };
+
+    try {
+      updateSafeAreaInsets({
+        isFullscreen: false,
+      });
+
+      assert.equal(mockStyles['--tg-safe-top'], '0px');
+      assert.equal(mockClassList.has('tg-fullscreen'), false);
+    } finally {
+      delete (globalThis as unknown as { document?: unknown }).document;
     }
   });
 });

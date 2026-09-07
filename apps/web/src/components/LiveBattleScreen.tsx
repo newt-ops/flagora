@@ -116,7 +116,10 @@ export function LiveBattleScreen({
   return (
     <div className="relative flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
       {isReconnecting && (
-        <div className="fixed top-3 z-50 flex items-center gap-2 rounded-full bg-tg-button/90 px-4 py-1.5 text-xs font-bold text-tg-button-text shadow-lg backdrop-blur-sm">
+        <div
+          className="fixed z-50 flex items-center gap-2 rounded-full bg-tg-button/90 px-4 py-1.5 text-xs font-bold text-tg-button-text shadow-lg backdrop-blur-sm"
+          style={{ top: 'calc(var(--app-safe-top, 0px) + 0.75rem)' }}
+        >
           <WifiOff className="h-3.5 w-3.5 animate-pulse" />
           <span>Reconnecting to battle...</span>
         </div>

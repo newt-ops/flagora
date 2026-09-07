@@ -14,8 +14,25 @@
   --accent-text-color: var(--tg-theme-accent-text-color, #2481cc);
   --section-bg-color: var(--tg-theme-section-bg-color, #ffffff);
   --section-separator-color: var(--tg-theme-section-separator-color, rgba(128, 128, 128, 0.16));
+  --tg-safe-top: 0px;
   --tg-safe-area-inset-top: env(safe-area-inset-top, 0px);
   --tg-safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --app-safe-top: max(
+    var(--tg-safe-top, 0px),
+    var(--tg-content-safe-area-inset-top, 0px),
+    var(--tg-safe-area-inset-top, 0px),
+    env(safe-area-inset-top, 0px)
+  );
+}
+
+.tg-fullscreen {
+  --app-safe-top: max(
+    var(--tg-safe-top, 44px),
+    var(--tg-content-safe-area-inset-top, 44px),
+    var(--tg-safe-area-inset-top, 44px),
+    env(safe-area-inset-top, 44px),
+    44px
+  );
 }
 
 body {

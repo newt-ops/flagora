@@ -444,7 +444,13 @@ export function App() {
   }, [screen]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-start bg-tg-secondary-bg text-tg-text px-4 py-6">
+    <main
+      className="flex min-h-screen flex-col items-center justify-start bg-tg-secondary-bg text-tg-text px-4"
+      style={{
+        paddingTop: 'calc(var(--app-safe-top, 0px) + 1.25rem)',
+        paddingBottom: 'calc(var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) + 5.5rem)',
+      }}
+    >
       {isLoading && <PlaySkeleton />}
 
       {isLoadingChallengeInfo && <CardSkeleton message="Loading challenge..." />}
