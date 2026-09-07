@@ -36,7 +36,7 @@ export function ChallengeLandingScreen({
         </button>
 
         <div className="flex items-center gap-2">
-          <Swords className="h-5 w-5 text-indigo-400" />
+          <Swords className="h-5 w-5 text-tg-button" />
           <h1 className="text-lg font-bold text-tg-text">Friend Challenge</h1>
         </div>
 
@@ -48,10 +48,10 @@ export function ChallengeLandingScreen({
           <img
             src={challengeInfo.challengerPhotoUrl}
             alt={challengeInfo.challengerDisplayName}
-            className="h-20 w-20 rounded-full object-cover ring-2 ring-indigo-500"
+            className="h-20 w-20 rounded-full object-cover ring-2 ring-tg-button"
           />
         ) : (
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-indigo-600 text-3xl font-semibold text-white shadow-sm">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-tg-button text-3xl font-semibold text-tg-button-text shadow-sm">
             {initial}
           </div>
         )}
@@ -64,12 +64,12 @@ export function ChallengeLandingScreen({
           <>
             <p className="mt-1 text-xs text-tg-hint">has challenged you to a flag quiz duel!</p>
 
-            <div className="mt-5 w-full rounded-xl bg-tg-secondary-bg border border-indigo-500/30 p-4">
+            <div className="mt-5 w-full rounded-xl bg-tg-secondary-bg border border-tg-separator p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-tg-hint">
                 Score to Beat
               </p>
               <div className="mt-1 flex items-baseline justify-center gap-1">
-                <span className="text-3xl font-extrabold tracking-tight text-indigo-400">
+                <span className="text-3xl font-extrabold tracking-tight text-tg-button">
                   {challengeInfo.challengerScore?.toLocaleString() ?? 0}
                 </span>
                 <span className="text-xs font-semibold text-tg-hint">pts</span>
@@ -82,8 +82,8 @@ export function ChallengeLandingScreen({
         )}
 
         {isSelf && (
-          <div className="mt-5 w-full rounded-xl bg-amber-500/10 p-4 text-left border border-amber-500/30">
-            <div className="flex items-center gap-2 text-amber-400">
+          <div className="mt-5 w-full rounded-xl bg-tg-button/10 p-4 text-left border border-tg-button/30">
+            <div className="flex items-center gap-2 text-tg-button">
               <Clock className="h-4 w-4" />
               <p className="text-xs font-bold uppercase tracking-wider">Waiting for Opponent</p>
             </div>
@@ -128,7 +128,7 @@ export function ChallengeLandingScreen({
             type="button"
             onClick={onAccept}
             disabled={isAccepting}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 font-bold text-white shadow-sm transition-opacity hover:bg-indigo-500 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
           >
             <Play className={`h-4 w-4 fill-current ${isAccepting ? 'animate-spin' : ''}`} />
             <span>{isAccepting ? 'Starting Match...' : 'Accept Challenge'}</span>
@@ -139,7 +139,7 @@ export function ChallengeLandingScreen({
           <button
             type="button"
             onClick={onShareChallenge}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 font-bold text-white shadow-sm transition-opacity hover:bg-indigo-500 active:opacity-75"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75"
           >
             <Share2 className="h-4 w-4" />
             <span>Share Challenge</span>

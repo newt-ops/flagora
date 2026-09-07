@@ -83,13 +83,13 @@ export function PlayScreen({
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/25 px-2.5 py-1 text-xs font-bold text-amber-400">
-            <Coins className="h-3.5 w-3.5 text-amber-400" />
+          <div className="flex items-center gap-1.5 rounded-full bg-tg-secondary-bg border border-tg-separator px-2.5 py-1 text-xs font-bold text-tg-text">
+            <Coins className="h-3.5 w-3.5 text-tg-button" />
             <span>{profile.coins.toLocaleString()}</span>
           </div>
 
-          <div className="flex items-center gap-1 rounded-full bg-orange-500/15 border border-orange-500/25 px-2.5 py-1 text-xs font-bold text-orange-400">
-            <Flame className="h-3.5 w-3.5 fill-current text-orange-400" />
+          <div className="flex items-center gap-1.5 rounded-full bg-tg-secondary-bg border border-tg-separator px-2.5 py-1 text-xs font-bold text-tg-text">
+            <Flame className="h-3.5 w-3.5 fill-current text-tg-button" />
             <span>{profile.currentStreak}</span>
           </div>
         </div>
@@ -98,7 +98,7 @@ export function PlayScreen({
       <div className="rounded-2xl bg-tg-section border border-tg-separator p-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/25">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button border border-tg-button/20">
               <Calendar className="h-4 w-4" />
             </div>
             <div className="text-left">
@@ -108,12 +108,12 @@ export function PlayScreen({
           </div>
 
           {dailyStatus?.attempted ? (
-            <span className="flex items-center gap-1 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400">
+            <span className="flex items-center gap-1 rounded-full bg-tg-secondary-bg border border-tg-separator px-2.5 py-0.5 text-[11px] font-semibold text-tg-hint">
               <CheckCircle2 className="h-3 w-3" />
               Completed
             </span>
           ) : (
-            <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-[11px] font-bold text-amber-400">
+            <span className="rounded-full bg-tg-button/15 border border-tg-button/30 px-2.5 py-0.5 text-[11px] font-bold text-tg-button">
               Available
             </span>
           )}
@@ -134,9 +134,9 @@ export function PlayScreen({
             <button
               type="button"
               onClick={onViewDailyLeaderboard}
-              className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-amber-500/15 font-bold text-amber-400 border border-amber-500/30 transition-opacity hover:opacity-90 active:opacity-75"
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg border border-tg-separator font-bold text-tg-text transition-opacity hover:opacity-90 active:opacity-75"
             >
-              <Trophy className="h-4 w-4 text-amber-400" />
+              <Trophy className="h-4 w-4 text-tg-button" />
               <span>View Daily Leaderboard</span>
             </button>
           </div>
@@ -146,7 +146,7 @@ export function PlayScreen({
               type="button"
               onClick={onStartDaily}
               disabled={isStartingDaily}
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-amber-500 font-bold text-white shadow-sm transition-opacity hover:bg-amber-400 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
             >
               <Play className={`h-4 w-4 fill-current ${isStartingDaily ? 'animate-spin' : ''}`} />
               <span>{isStartingDaily ? 'Starting Challenge...' : 'Play Daily Challenge'}</span>
@@ -163,7 +163,7 @@ export function PlayScreen({
         <div className="rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-tg-button/15 text-tg-button">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
                 <Play className="h-5 w-5 fill-current" />
               </div>
               <div className="text-left">
@@ -186,7 +186,7 @@ export function PlayScreen({
         <div className="rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/15 text-violet-400">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
                 <Zap className="h-5 w-5" />
               </div>
               <div className="text-left">
@@ -199,7 +199,7 @@ export function PlayScreen({
             type="button"
             onClick={onBattleFriend}
             disabled={isStartingBattle}
-            className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 font-bold text-white shadow-sm transition-opacity hover:bg-violet-500 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
+            className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
           >
             <Zap className={`h-3.5 w-3.5 ${isStartingBattle ? 'animate-spin' : ''}`} />
             <span>{isStartingBattle ? 'Creating Battle...' : 'Battle Live'}</span>
@@ -209,7 +209,7 @@ export function PlayScreen({
         <div className="rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-400">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
                 <Swords className="h-5 w-5" />
               </div>
               <div className="text-left">
@@ -222,7 +222,7 @@ export function PlayScreen({
             type="button"
             onClick={onChallengeFriend}
             disabled={isStartingChallenge}
-            className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 font-bold text-white shadow-sm transition-opacity hover:bg-indigo-500 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
+            className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
           >
             <Swords className={`h-3.5 w-3.5 ${isStartingChallenge ? 'animate-spin' : ''}`} />
             <span>{isStartingChallenge ? 'Creating Challenge...' : 'Start Duel'}</span>

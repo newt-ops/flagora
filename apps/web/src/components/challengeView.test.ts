@@ -133,7 +133,7 @@ describe('challenge view helpers', () => {
     it('returns appropriate heading for tie', () => {
       const heading = getPerspectiveHeading('tie');
       assert.equal(heading.title, "It's a Tie!");
-      assert.ok(heading.badgeClass.includes('amber'));
+      assert.ok(heading.badgeClass.includes('tg-button'));
     });
 
     it('returns appropriate heading for spectator with winner name', () => {

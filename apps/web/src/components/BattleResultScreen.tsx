@@ -93,7 +93,7 @@ export function BattleResultScreen({
   return (
     <div className="flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
       <div className="flex w-full flex-col items-center rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-400 ring-1 ring-violet-500/20">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20">
           <Trophy className="h-8 w-8" />
         </div>
 
@@ -106,7 +106,7 @@ export function BattleResultScreen({
           <div
             className={`flex flex-col items-center rounded-xl bg-tg-secondary-bg border p-4 transition-all ${
               challengerWon
-                ? 'border-amber-500/60 shadow-md shadow-amber-500/10'
+                ? 'border-tg-button shadow-sm'
                 : 'border-tg-separator'
             }`}
           >
@@ -115,15 +115,15 @@ export function BattleResultScreen({
                 <img
                   src={challengerPhoto}
                   alt={challengerName}
-                  className="h-14 w-14 rounded-full object-cover ring-2 ring-violet-500"
+                  className="h-14 w-14 rounded-full object-cover ring-2 ring-tg-button"
                 />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-600 text-xl font-bold text-white">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text">
                   {challengerInitial}
                 </div>
               )}
               {challengerWon && (
-                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-amber-950 ring-2 ring-tg-section">
+                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-tg-button text-tg-button-text ring-2 ring-tg-section">
                   <Trophy className="h-3 w-3" />
                 </span>
               )}
@@ -148,7 +148,7 @@ export function BattleResultScreen({
             </span>
 
             {challengerWon && (
-              <span className="mt-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400 ring-1 ring-amber-500/30">
+              <span className="mt-2 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-bold text-tg-button border border-tg-button/30">
                 Winner
               </span>
             )}
@@ -157,7 +157,7 @@ export function BattleResultScreen({
           <div
             className={`flex flex-col items-center rounded-xl bg-tg-secondary-bg border p-4 transition-all ${
               opponentWon
-                ? 'border-amber-500/60 shadow-md shadow-amber-500/10'
+                ? 'border-tg-button shadow-sm'
                 : 'border-tg-separator'
             }`}
           >
@@ -166,15 +166,15 @@ export function BattleResultScreen({
                 <img
                   src={opponentPhoto}
                   alt={opponentName}
-                  className="h-14 w-14 rounded-full object-cover ring-2 ring-indigo-500"
+                  className="h-14 w-14 rounded-full object-cover ring-2 ring-tg-button"
                 />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-xl font-bold text-white">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text">
                   {opponentInitial}
                 </div>
               )}
               {opponentWon && (
-                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-amber-950 ring-2 ring-tg-section">
+                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-tg-button text-tg-button-text ring-2 ring-tg-section">
                   <Trophy className="h-3 w-3" />
                 </span>
               )}
@@ -199,7 +199,7 @@ export function BattleResultScreen({
             </span>
 
             {opponentWon && (
-              <span className="mt-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400 ring-1 ring-amber-500/30">
+              <span className="mt-2 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-bold text-tg-button border border-tg-button/30">
                 Winner
               </span>
             )}

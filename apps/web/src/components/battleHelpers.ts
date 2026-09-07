@@ -185,14 +185,14 @@ export function getBattlePerspectiveHeading(
       return {
         title: "It's a Tie!",
         subtitle: 'Both players tied in the live battle!',
-        badgeClass: 'bg-amber-500/20 text-amber-400 ring-amber-500/30',
+        badgeClass: 'bg-tg-button/15 text-tg-button ring-tg-button/30',
       };
     case 'spectator':
     default:
       return {
         title: winnerName ? `${winnerName} Won!` : 'Live Battle Completed',
         subtitle: 'Head-to-head battle finished',
-        badgeClass: 'bg-violet-500/20 text-violet-400 ring-violet-500/30',
+        badgeClass: 'bg-tg-button/15 text-tg-button ring-tg-button/30',
       };
   }
 }

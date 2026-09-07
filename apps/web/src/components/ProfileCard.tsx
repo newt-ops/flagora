@@ -69,8 +69,8 @@ export function ProfileCard({
 
       <div className="mt-5 flex items-center justify-between rounded-xl bg-tg-secondary-bg border border-tg-separator px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20">
-            <Flame className="h-5 w-5 fill-current text-orange-400" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20">
+            <Flame className="h-5 w-5 fill-current text-tg-button" />
           </div>
           <div className="text-left">
             <p className="text-sm font-bold text-tg-text">{streakInfo.title}</p>
@@ -78,7 +78,7 @@ export function ProfileCard({
           </div>
         </div>
         {streakInfo.isActive && (
-          <span className="rounded-full bg-orange-500/20 px-2.5 py-0.5 text-xs font-semibold text-orange-400 ring-1 ring-orange-500/30">
+          <span className="rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-semibold text-tg-button ring-1 ring-tg-button/30">
             Active
           </span>
         )}
@@ -87,7 +87,7 @@ export function ProfileCard({
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg border border-tg-separator p-3 text-center">
           <div className="flex items-center gap-1.5 text-tg-hint">
-            <Coins className="h-4 w-4 text-amber-400" />
+            <Coins className="h-4 w-4 text-tg-button" />
             <span className="text-xs font-medium">Coins</span>
           </div>
           <p className="mt-1.5 text-lg font-bold text-tg-text">{profile.coins.toLocaleString()}</p>
@@ -95,7 +95,7 @@ export function ProfileCard({
 
         <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg border border-tg-separator p-3 text-center">
           <div className="flex items-center gap-1.5 text-tg-hint">
-            <Zap className="h-4 w-4 text-violet-400" />
+            <Zap className="h-4 w-4 text-tg-button" />
             <span className="text-xs font-medium">XP</span>
           </div>
           <p className="mt-1.5 text-lg font-bold text-tg-text">{profile.xp.toLocaleString()}</p>
@@ -103,7 +103,7 @@ export function ProfileCard({
 
         <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg border border-tg-separator p-3 text-center">
           <div className="flex items-center gap-1.5 text-tg-hint">
-            <Trophy className="h-4 w-4 text-yellow-400" />
+            <Trophy className="h-4 w-4 text-tg-button" />
             <span className="text-xs font-medium">Best Score</span>
           </div>
           <p className="mt-1.5 text-lg font-bold text-tg-text">{profile.bestScore.toLocaleString()}</p>
@@ -111,7 +111,7 @@ export function ProfileCard({
 
         <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg border border-tg-separator p-3 text-center">
           <div className="flex items-center gap-1.5 text-tg-hint">
-            <Gamepad2 className="h-4 w-4 text-sky-400" />
+            <Gamepad2 className="h-4 w-4 text-tg-button" />
             <span className="text-xs font-medium">Games Played</span>
           </div>
           <p className="mt-1.5 text-lg font-bold text-tg-text">{profile.gamesPlayed.toLocaleString()}</p>
@@ -123,7 +123,7 @@ export function ProfileCard({
           <div className="mt-4 rounded-xl bg-tg-secondary-bg p-4 border border-tg-separator">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20">
                   <Calendar className="h-4 w-4" />
                 </div>
                 <div className="text-left">
@@ -132,12 +132,12 @@ export function ProfileCard({
                 </div>
               </div>
               {dailyStatus?.attempted ? (
-                <span className="flex items-center gap-1 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400">
+                <span className="flex items-center gap-1 rounded-full bg-tg-button/15 px-2.5 py-0.5 text-[11px] font-bold text-tg-button">
                   <CheckCircle2 className="h-3 w-3" />
                   Completed
                 </span>
               ) : (
-                <span className="rounded-full bg-amber-500/20 px-2.5 py-0.5 text-[11px] font-bold text-amber-400">
+                <span className="rounded-full bg-tg-button/15 px-2.5 py-0.5 text-[11px] font-bold text-tg-button">
                   Available
                 </span>
               )}
@@ -161,9 +161,9 @@ export function ProfileCard({
                   <button
                     type="button"
                     onClick={onViewDailyLeaderboard}
-                    className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-amber-500/15 font-bold text-amber-400 border border-amber-500/30 transition-opacity hover:opacity-90 active:opacity-75"
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-tg-button/15 font-bold text-tg-button border border-tg-button/30 transition-opacity hover:opacity-90 active:opacity-75"
                   >
-                    <Trophy className="h-4 w-4 text-amber-400" />
+                    <Trophy className="h-4 w-4 text-tg-button" />
                     <span>View Daily Leaderboard</span>
                   </button>
                 )}
@@ -175,7 +175,7 @@ export function ProfileCard({
                     type="button"
                     onClick={onStartDaily}
                     disabled={isStartingDaily}
-                    className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-amber-500 font-bold text-white shadow transition-opacity hover:bg-amber-400 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
                   >
                     <Play className={`h-3.5 w-3.5 fill-current ${isStartingDaily ? 'animate-spin' : ''}`} />
                     <span>{isStartingDaily ? 'Starting Challenge...' : 'Play Daily Challenge'}</span>
@@ -202,7 +202,7 @@ export function ProfileCard({
               type="button"
               onClick={onChallengeFriend}
               disabled={isStartingChallenge}
-              className="mt-2.5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 font-bold text-white shadow-sm transition-opacity hover:bg-indigo-500 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
+              className="mt-2.5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
             >
               <Swords className={`h-4 w-4 ${isStartingChallenge ? 'animate-spin' : ''}`} />
               <span>{isStartingChallenge ? 'Creating Challenge...' : 'Challenge a Friend'}</span>
@@ -214,7 +214,7 @@ export function ProfileCard({
               type="button"
               onClick={onBattleFriend}
               disabled={isStartingBattle}
-              className="mt-2.5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 font-bold text-white shadow-sm transition-opacity hover:bg-violet-500 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
+              className="mt-2.5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
             >
               <Zap className={`h-4 w-4 ${isStartingBattle ? 'animate-spin' : ''}`} />
               <span>{isStartingBattle ? 'Creating Battle...' : 'Battle a Friend'}</span>
@@ -227,7 +227,7 @@ export function ProfileCard({
               onClick={onViewLeaderboard}
               className="mt-2.5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg border border-tg-separator font-semibold text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
             >
-              <Trophy className="h-4 w-4 text-amber-400" />
+              <Trophy className="h-4 w-4 text-tg-button" />
               <span>Global Leaderboard</span>
             </button>
           )}

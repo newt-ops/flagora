@@ -67,10 +67,10 @@ export function BattleLobbyScreen({
     <div className="relative flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
       {countdown !== null && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-2xl bg-tg-bg/90 backdrop-blur-md">
-          <p className="text-xs font-bold uppercase tracking-widest text-violet-400">
+          <p className="text-xs font-bold uppercase tracking-widest text-tg-button">
             Battle Starting In
           </p>
-          <div className="mt-4 flex h-28 w-28 items-center justify-center rounded-full bg-violet-600/20 text-6xl font-black text-white ring-4 ring-violet-500 animate-pulse">
+          <div className="mt-4 flex h-28 w-28 items-center justify-center rounded-full bg-tg-button/20 text-6xl font-black text-tg-button ring-4 ring-tg-button animate-pulse">
             {countdown > 0 ? countdown : 'GO!'}
           </div>
           <p className="mt-4 text-xs font-semibold text-tg-hint">Get Ready!</p>
@@ -87,7 +87,7 @@ export function BattleLobbyScreen({
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/20 text-violet-400">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-tg-button/10 text-tg-button">
             <Swords className="h-4 w-4" />
           </div>
           <span className="text-sm font-bold uppercase tracking-wider text-tg-text">
@@ -111,10 +111,10 @@ export function BattleLobbyScreen({
                 <img
                   src={challengerPhoto}
                   alt={challengerName}
-                  className="h-14 w-14 rounded-full object-cover ring-2 ring-violet-500"
+                  className="h-14 w-14 rounded-full object-cover ring-2 ring-tg-button"
                 />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-600 text-xl font-bold text-white">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text">
                   {challengerInitial}
                 </div>
               )}
@@ -122,7 +122,7 @@ export function BattleLobbyScreen({
             <p className="mt-2 max-w-[120px] truncate text-xs font-bold text-tg-text">
               {challengerName}
             </p>
-            <span className="mt-1 rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] font-semibold text-violet-300 ring-1 ring-violet-500/30">
+            <span className="mt-1 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-semibold text-tg-button ring-1 ring-tg-button/30">
               {isChallenger ? 'You (Host)' : 'Host'}
             </span>
           </div>
@@ -135,10 +135,10 @@ export function BattleLobbyScreen({
                     <img
                       src={opponentPhotoUrl}
                       alt={opponentDisplayName || 'Opponent'}
-                      className="h-14 w-14 rounded-full object-cover ring-2 ring-indigo-500"
+                      className="h-14 w-14 rounded-full object-cover ring-2 ring-tg-button"
                     />
                   ) : (
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-xl font-bold text-white">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text">
                       {opponentInitial}
                     </div>
                   )}
@@ -146,7 +146,7 @@ export function BattleLobbyScreen({
                 <p className="mt-2 max-w-[120px] truncate text-xs font-bold text-tg-text">
                   {opponentDisplayName}
                 </p>
-                <span className="mt-1 rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-semibold text-indigo-300 ring-1 ring-indigo-500/30">
+                <span className="mt-1 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-semibold text-tg-button ring-1 ring-tg-button/30">
                   {!isChallenger ? 'You' : 'Opponent'}
                 </span>
               </>
@@ -165,7 +165,7 @@ export function BattleLobbyScreen({
         <div className="mt-5 flex w-full flex-col items-center">
           {isConnecting && (
             <div className="flex items-center gap-2 text-xs font-medium text-tg-hint">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-tg-button" />
               <span>Connecting to battle server...</span>
             </div>
           )}
@@ -179,7 +179,7 @@ export function BattleLobbyScreen({
                 <button
                   type="button"
                   onClick={handleShare}
-                  className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-violet-600 px-3 text-xs font-bold text-white shadow-sm transition-opacity hover:bg-violet-500 active:opacity-75"
+                  className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-tg-button px-3 text-xs font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75"
                 >
                   <Share2 className="h-3.5 w-3.5" />
                   <span>Share Invite</span>
@@ -207,7 +207,7 @@ export function BattleLobbyScreen({
 
           {hasOpponent && !bothPlayersPresent && (
             <div className="flex items-center gap-2 text-xs font-medium text-tg-hint">
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-400" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-tg-button" />
               <span>Establishing synchronized connection...</span>
             </div>
           )}
@@ -221,7 +221,7 @@ export function BattleLobbyScreen({
                 type="button"
                 onClick={onReady}
                 disabled={isReady}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 font-bold text-white shadow-sm transition-opacity hover:bg-emerald-500 active:opacity-75 disabled:pointer-events-none disabled:opacity-75"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-75"
               >
                 {isReady ? (
                   <>

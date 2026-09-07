@@ -120,14 +120,14 @@ export function getPerspectiveHeading(
       return {
         title: "It's a Tie!",
         subtitle: 'Both players achieved identical scores!',
-        badgeClass: 'bg-amber-500/20 text-amber-400 ring-amber-500/30',
+        badgeClass: 'bg-tg-button/15 text-tg-button ring-tg-button/30',
       };
     case 'spectator':
     default:
       return {
         title: winnerName ? `${winnerName} Won!` : 'Challenge Completed',
         subtitle: 'Head-to-head match finished',
-        badgeClass: 'bg-indigo-500/20 text-indigo-400 ring-indigo-500/30',
+        badgeClass: 'bg-tg-button/15 text-tg-button ring-tg-button/30',
       };
   }
 }

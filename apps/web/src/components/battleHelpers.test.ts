@@ -247,13 +247,13 @@ describe('battleHelpers', () => {
     it('returns correct heading for tie', () => {
       const heading = getBattlePerspectiveHeading('tie');
       assert.equal(heading.title, "It's a Tie!");
-      assert.ok(heading.badgeClass.includes('amber'));
+      assert.ok(heading.badgeClass.includes('tg-button'));
     });
 
     it('returns correct heading for spectator', () => {
       const heading = getBattlePerspectiveHeading('spectator', 'Alice');
       assert.equal(heading.title, 'Alice Won!');
-      assert.ok(heading.badgeClass.includes('violet'));
+      assert.ok(heading.badgeClass.includes('tg-button'));
     });
   });
 

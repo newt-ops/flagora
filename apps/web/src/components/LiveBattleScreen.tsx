@@ -114,7 +114,7 @@ export function LiveBattleScreen({
   return (
     <div className="relative flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
       {isReconnecting && (
-        <div className="fixed top-3 z-50 flex items-center gap-2 rounded-full bg-amber-500/90 px-4 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur-sm">
+        <div className="fixed top-3 z-50 flex items-center gap-2 rounded-full bg-tg-button/90 px-4 py-1.5 text-xs font-bold text-tg-button-text shadow-lg backdrop-blur-sm">
           <WifiOff className="h-3.5 w-3.5 animate-pulse" />
           <span>Reconnecting to battle...</span>
         </div>
@@ -132,7 +132,7 @@ export function LiveBattleScreen({
             <div className="mt-1 flex items-center gap-1.5">
               <span className="text-lg font-black text-tg-text">{runningScore}</span>
               {comboCount > 0 && (
-                <span className="flex items-center gap-0.5 rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-extrabold text-amber-400">
+                <span className="flex items-center gap-0.5 rounded bg-tg-button/20 px-1.5 py-0.5 text-[10px] font-extrabold text-tg-button">
                   <Zap className="h-2.5 w-2.5" />
                   {comboMultiplier}x
                 </span>
@@ -187,9 +187,7 @@ export function LiveBattleScreen({
               className={`transition-all duration-100 ease-linear ${
                 timerSeconds <= 10
                   ? 'fill-rose-500'
-                  : timerSeconds <= 25
-                    ? 'fill-amber-500'
-                    : 'fill-violet-500'
+                  : 'fill-tg-button'
               }`}
             />
           </svg>
@@ -198,7 +196,7 @@ export function LiveBattleScreen({
 
       {timeExpired ? (
         <div className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
-          <Loader2 className="h-6 w-6 animate-spin text-violet-400" />
+          <Loader2 className="h-6 w-6 animate-spin text-tg-button" />
           <p className="text-sm font-bold text-tg-text">Time is up!</p>
           <p className="text-xs text-tg-hint">Waiting for final battle tally...</p>
         </div>
@@ -244,7 +242,7 @@ export function LiveBattleScreen({
                       ? 'bg-emerald-600 text-white font-bold ring-2 ring-emerald-400'
                       : 'bg-rose-600 text-white font-bold ring-2 ring-rose-400';
                   } else {
-                    buttonStyle = 'bg-violet-600 text-white font-bold';
+                    buttonStyle = 'bg-tg-button text-tg-button-text font-bold';
                   }
                 }
 

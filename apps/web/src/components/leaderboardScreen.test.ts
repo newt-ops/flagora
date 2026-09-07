@@ -95,9 +95,9 @@ describe('leaderboard helpers', () => {
 
   describe('getRankBadgeClass', () => {
     it('returns distinctive styles for top 3 ranks', () => {
-      assert.ok(getRankBadgeClass(1).includes('amber-400'));
-      assert.ok(getRankBadgeClass(2).includes('slate-200'));
-      assert.ok(getRankBadgeClass(3).includes('amber-500'));
+      assert.ok(getRankBadgeClass(1).includes('bg-tg-button'));
+      assert.ok(getRankBadgeClass(2).includes('bg-tg-button/20'));
+      assert.ok(getRankBadgeClass(3).includes('bg-tg-button/10'));
     });
 
     it('returns neutral styles for rank 4 and beyond', () => {

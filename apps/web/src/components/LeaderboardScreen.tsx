@@ -58,7 +58,7 @@ export function LeaderboardScreen({
         )}
 
         <div className="flex items-center gap-2">
-          <Trophy className="h-5 w-5 text-amber-400" />
+          <Trophy className="h-5 w-5 text-tg-button" />
           <h1 className="text-lg font-bold text-tg-text">{getLeaderboardTitle(mode)}</h1>
         </div>
 
@@ -182,7 +182,7 @@ export function LeaderboardScreen({
                             {entry.displayName}
                           </span>
                           {isMe && (
-                            <span className="shrink-0 rounded-full bg-emerald-500/20 px-2 py-0.2 text-[10px] font-bold text-emerald-400">
+                            <span className="shrink-0 rounded-full bg-tg-button/15 px-2 py-0.2 text-[10px] font-bold text-tg-button">
                               You
                             </span>
                           )}
@@ -203,15 +203,15 @@ export function LeaderboardScreen({
           </div>
 
           {showPinnedRow && myRank && (
-            <div className="flex items-center justify-between rounded-2xl bg-tg-section p-3.5 shadow-sm border border-amber-500/40">
+            <div className="flex items-center justify-between rounded-2xl bg-tg-section p-3.5 shadow-sm border border-tg-button/40">
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20 text-xs font-extrabold text-amber-400 ring-1 ring-amber-500/30">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-tg-button/20 text-xs font-extrabold text-tg-button ring-1 ring-tg-button/30">
                   #{myRank.rank}
                 </div>
                 <div className="text-left">
                   <div className="flex items-center gap-1.5">
                     <p className="text-sm font-bold text-tg-text">Your Standing</p>
-                    <span className="rounded-full bg-emerald-500/20 px-2 py-0.2 text-[10px] font-bold text-emerald-400">
+                    <span className="rounded-full bg-tg-button/15 px-2 py-0.2 text-[10px] font-bold text-tg-button">
                       You
                     </span>
                   </div>
@@ -230,8 +230,8 @@ export function LeaderboardScreen({
 
           {isUnranked && (
             <div className="flex flex-col items-center gap-2 rounded-2xl bg-tg-section border border-tg-separator p-4 text-center shadow-sm">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-400">
-                <Sparkles className="h-4 w-4 text-amber-400" />
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-tg-button">
+                <Sparkles className="h-4 w-4 text-tg-button" />
                 <span>{mode === 'daily' ? 'Not Ranked Today' : 'Not Ranked Yet'}</span>
               </div>
               <p className="text-xs text-tg-hint">

@@ -164,7 +164,7 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
 
           <div className="flex items-center gap-2">
             {comboCount > 0 && (
-              <div className="flex items-center gap-1 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-bold text-amber-400 ring-1 ring-amber-500/30">
+              <div className="flex items-center gap-1 rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-bold text-tg-button ring-1 ring-tg-button/30">
                 <Zap className="h-3 w-3" />
                 <span>{comboMultiplier}x</span>
               </div>
@@ -198,9 +198,7 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
               className={`transition-all duration-100 ease-linear ${
                 timerSeconds <= 10
                   ? 'fill-rose-500'
-                  : timerSeconds <= 25
-                    ? 'fill-amber-500'
-                    : 'fill-emerald-500'
+                  : 'fill-tg-button'
               }`}
             />
           </svg>
