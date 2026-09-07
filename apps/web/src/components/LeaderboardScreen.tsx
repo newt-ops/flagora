@@ -10,6 +10,7 @@ import {
   getLeaderboardTitle,
   getLeaderboardSubtitle,
 } from './dailyChallengeHelpers.js';
+import type { LeaderboardEntry } from '@flagora/shared';
 
 interface LeaderboardScreenProps {
   sessionToken: string;
@@ -121,7 +122,7 @@ export function LeaderboardScreen({
                 </p>
               </div>
             ) : (
-              topEntries.map((entry) => {
+              topEntries.map((entry: LeaderboardEntry) => {
                 const isMe = entry.telegramUserId === currentUserId;
                 const initial = entry.displayName.replace(/^@/, '').charAt(0).toUpperCase() || 'P';
 

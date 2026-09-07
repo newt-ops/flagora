@@ -234,7 +234,7 @@ export function LiveBattleScreen({
             )}
 
             <div className="grid w-full grid-cols-2 gap-2.5">
-              {currentFlag.choices.map((choice) => {
+              {currentFlag.choices.map((choice: string) => {
                 const isSelected = selectedChoice === choice;
                 let buttonStyle = 'bg-tg-secondary-bg text-tg-text hover:brightness-110';
 
