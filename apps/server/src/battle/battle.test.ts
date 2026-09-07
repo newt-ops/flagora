@@ -27,10 +27,11 @@ import type {
   SubmitAnswerResponse,
   AnswerResultPayload,
   OpponentProgressPayload,
+  BattleFinishedPayload,
 } from '../multiplayer/socketTypes.js';
 import type { GameRun } from '../game/runTypes.js';
 import { scoreAnswer, finalizeRun } from '../game/runScoringService.js';
-import { createRun, submitAnswer as submitRestAnswer } from '../game/runService.js';
+import { createRun, submitAnswer as submitRestAnswer, finishRun } from '../game/runService.js';
 import {
   TimeExpiredError,
   FlagAlreadyAnsweredError,
@@ -150,6 +151,22 @@ describe('battle invite, view, join and room presence', () => {
           res.status(400).json({ error: 'Battle already joined', message: error.message });
           return;
         }
+        const message = error instanceof Error ? error.message : 'Error';
+        res.status(500).json({ error: message });
+      }
+    });
+
+    app.post('/api/runs/:id/finish', sessionMiddleware, async (req, res) => {
+      try {
+        const userId = (req as unknown as { sessionUser?: { telegramUserId: number } }).sessionUser?.telegramUserId;
+        if (!userId) {
+          res.status(401).json({ error: 'Unauthorized' });
+          return;
+        }
+        const id = String(req.params.id);
+        const result = await finishRun(id, userId, db, undefined, io);
+        res.status(200).json(result);
+      } catch (error) {
         const message = error instanceof Error ? error.message : 'Error';
         res.status(500).json({ error: message });
       }
@@ -1109,6 +1126,314 @@ describe('battle invite, view, join and room presence', () => {
 
       const updatedRun = await db.collection<GameRun>('runs').findOne({ runId: cStart.challengerRunId });
       assert.equal(updatedRun?.status, 'expired');
+    });
+  });
+
+  describe('battle completion, lazy finalization, and disconnects', () => {
+    async function setupActiveBattleForCompletion(challengerId: number, opponentId: number) {
+      await db.collection('profiles').deleteMany({ telegramUserId: { $in: [challengerId, opponentId] } });
+      await db.collection('profiles').insertMany([
+        {
+          telegramUserId: challengerId,
+          username: `challenger_${challengerId}`,
+          displayName: `Challenger ${challengerId}`,
+          xp: 0,
+          coins: 0,
+          level: 1,
+          bestScore: 0,
+          gamesPlayed: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          telegramUserId: opponentId,
+          username: `opponent_${opponentId}`,
+          displayName: `Opponent ${opponentId}`,
+          xp: 0,
+          coins: 0,
+          level: 1,
+          bestScore: 0,
+          gamesPlayed: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+
+      const challengerToken = createSessionToken(challengerId, TEST_SECRET);
+      const opponentToken = createSessionToken(opponentId, TEST_SECRET);
+
+      const createRes = await fetch(`${baseUrl}/api/battles`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${challengerToken}`,
+        },
+      });
+      const created = (await createRes.json()) as CreateBattleResponse;
+      const battleId = created.battleId;
+
+      await fetch(`${baseUrl}/api/battles/${battleId}/join`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${opponentToken}` },
+      });
+
+      const challengerSocket = createClient(challengerToken);
+      const opponentSocket = createClient(opponentToken);
+
+      await Promise.all([
+        new Promise<void>((resolve) => challengerSocket.on('connect', () => resolve())),
+        new Promise<void>((resolve) => opponentSocket.on('connect', () => resolve())),
+      ]);
+
+      await Promise.all([
+        new Promise<void>((resolve) => challengerSocket.emit('joinBattleRoom', { battleId }, () => resolve())),
+        new Promise<void>((resolve) => opponentSocket.emit('joinBattleRoom', { battleId }, () => resolve())),
+      ]);
+
+      const startPromise = Promise.all([
+        new Promise<BattleStartPayload>((resolve) => challengerSocket.once('battleStart', resolve)),
+        new Promise<BattleStartPayload>((resolve) => opponentSocket.once('battleStart', resolve)),
+      ]);
+
+      await Promise.all([
+        new Promise<void>((resolve) => challengerSocket.emit('playerReady', { battleId }, () => resolve())),
+        new Promise<void>((resolve) => opponentSocket.emit('playerReady', { battleId }, () => resolve())),
+      ]);
+
+      const [cStart, oStart] = await startPromise;
+
+      return {
+        battleId,
+        challengerId,
+        opponentId,
+        challengerToken,
+        opponentToken,
+        challengerSocket,
+        opponentSocket,
+        cStart,
+        oStart,
+      };
+    }
+
+    it('lazily finalizes an abandoned opponent run when the other participant finishes', async () => {
+      const { battleId, challengerSocket, opponentSocket, challengerToken, cStart, oStart } =
+        await setupActiveBattleForCompletion(96001, 96002);
+
+      opponentSocket.disconnect();
+
+      await db.collection('runs').updateOne(
+        { runId: oStart.opponentRunId },
+        { $set: { startedAt: new Date(Date.now() - 70000) } },
+      );
+
+      let finishedPayload: BattleFinishedPayload | undefined;
+      challengerSocket.once('battleFinished', (payload) => {
+        finishedPayload = payload;
+      });
+
+      const finishRes = await fetch(`${baseUrl}/api/runs/${cStart.challengerRunId}/finish`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${challengerToken}` },
+      });
+      assert.equal(finishRes.status, 200);
+
+      const deadline = Date.now() + 3000;
+      while (!finishedPayload && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+
+      assert.ok(finishedPayload);
+      assert.equal(finishedPayload.battleId, battleId);
+
+      const opponentRun = await db.collection<GameRun>('runs').findOne({ runId: oStart.opponentRunId });
+      assert.ok(opponentRun);
+      assert.equal(opponentRun.profileCredited, true);
+
+      const battleDoc = await db.collection<BattleSession>('battles').findOne({ battleId });
+      assert.equal(battleDoc?.status, 'completed');
+      assert.ok(battleDoc?.winner);
+      assert.equal(typeof battleDoc?.challengerScore, 'number');
+      assert.equal(typeof battleDoc?.opponentScore, 'number');
+    });
+
+    it('correctly determines winner for win, lose, and tie outcomes', async () => {
+      const battleA = await setupActiveBattleForCompletion(97001, 97002);
+      await db.collection('runs').updateOne(
+        { runId: battleA.cStart.challengerRunId },
+        { $set: { runningTotal: 800, startedAt: new Date(Date.now() - 65000) } },
+      );
+      await db.collection('runs').updateOne(
+        { runId: battleA.oStart.opponentRunId },
+        { $set: { runningTotal: 400, startedAt: new Date(Date.now() - 65000) } },
+      );
+      await finishRun(battleA.cStart.challengerRunId, 97001, db, undefined, io);
+      const docA = await db.collection<BattleSession>('battles').findOne({ battleId: battleA.battleId });
+      assert.equal(docA?.status, 'completed');
+      assert.equal(docA?.winner, 'challenger');
+
+      const battleB = await setupActiveBattleForCompletion(97003, 97004);
+      await db.collection('runs').updateOne(
+        { runId: battleB.cStart.challengerRunId },
+        { $set: { runningTotal: 300, startedAt: new Date(Date.now() - 65000) } },
+      );
+      await db.collection('runs').updateOne(
+        { runId: battleB.oStart.opponentRunId },
+        { $set: { runningTotal: 700, startedAt: new Date(Date.now() - 65000) } },
+      );
+      await finishRun(battleB.cStart.challengerRunId, 97003, db, undefined, io);
+      const docB = await db.collection<BattleSession>('battles').findOne({ battleId: battleB.battleId });
+      assert.equal(docB?.status, 'completed');
+      assert.equal(docB?.winner, 'opponent');
+
+      const battleC = await setupActiveBattleForCompletion(97005, 97006);
+      await db.collection('runs').updateOne(
+        { runId: battleC.cStart.challengerRunId },
+        { $set: { runningTotal: 500, startedAt: new Date(Date.now() - 65000) } },
+      );
+      await db.collection('runs').updateOne(
+        { runId: battleC.oStart.opponentRunId },
+        { $set: { runningTotal: 500, startedAt: new Date(Date.now() - 65000) } },
+      );
+      await finishRun(battleC.cStart.challengerRunId, 97005, db, undefined, io);
+      const docC = await db.collection<BattleSession>('battles').findOne({ battleId: battleC.battleId });
+      assert.equal(docC?.status, 'completed');
+      assert.equal(docC?.winner, 'tie');
+    });
+
+    it('returns full completion breakdown via GET /api/battles/:id for offline participant', async () => {
+      const { battleId, opponentToken, oStart } = await setupActiveBattleForCompletion(98001, 98002);
+
+      await db.collection('runs').updateOne(
+        { runId: oStart.opponentRunId },
+        { $set: { runningTotal: 650, startedAt: new Date(Date.now() - 65000) } },
+      );
+      await finishRun(oStart.challengerRunId, 98001, db, undefined, io);
+
+      const getRes = await fetch(`${baseUrl}/api/battles/${battleId}`, {
+        headers: { Authorization: `Bearer ${opponentToken}` },
+      });
+      assert.equal(getRes.status, 200);
+      const data = (await getRes.json()) as BattleInfoResponse;
+
+      assert.equal(data.status, 'completed');
+      assert.ok(data.winner);
+      assert.equal(typeof data.challengerScore, 'number');
+      assert.equal(typeof data.opponentScore, 'number');
+      assert.ok(data.completedAt);
+      assert.ok(data.challengerResult);
+      assert.equal(data.challengerResult.userId, 98001);
+      assert.ok(data.opponentResult);
+      assert.equal(data.opponentResult.userId, 98002);
+    });
+
+    it('live-battle finish awards progression without affecting bestScore or global leaderboard', async () => {
+      const initialProfile: PlayerProfile = {
+        telegramUserId: 99001,
+        firstName: 'Progression',
+        lastName: 'Player',
+        username: 'progression_player',
+        xp: 100,
+        coins: 50,
+        level: 1,
+        currentStreak: 0,
+        longestStreak: 0,
+        bestScore: 500,
+        gamesPlayed: 2,
+        lastPlayedDate: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      await db.collection('profiles').deleteMany({ telegramUserId: 99001 });
+      await db.collection('profiles').insertOne(initialProfile);
+
+      const run = await createRun(99001, db, {
+        mode: 'live-battle',
+        battleId: 'test-regression-battle-id',
+      });
+
+      const updatedFlags = run.flags.map((f, i) =>
+        i < 5
+          ? {
+              ...f,
+              answered: true,
+              selectedIsoCode: f.isoCode,
+              correct: true,
+              points: 100,
+              comboCount: 1,
+              answeredAt: new Date(),
+            }
+          : f,
+      );
+      await db.collection('runs').updateOne(
+        { runId: run.runId },
+        { $set: { runningTotal: 1500, flags: updatedFlags } },
+      );
+
+      const finishRes = await finishRun(run.runId, 99001, db);
+      assert.equal(finishRes.isNewBest, false);
+
+      const updatedProfile = await db.collection<PlayerProfile>('profiles').findOne({ telegramUserId: 99001 });
+      assert.ok(updatedProfile);
+      assert.equal(updatedProfile.bestScore, 500);
+      assert.ok(updatedProfile.xp > 100);
+      assert.ok(updatedProfile.coins > 50);
+      assert.equal(updatedProfile.gamesPlayed, 3);
+    });
+
+    it('disconnect correctly clears presence tracking without corrupting bothPlayersPresent on reconnect', async () => {
+      const challengerId = 99101;
+      const opponentId = 99102;
+      const challengerToken = createSessionToken(challengerId, TEST_SECRET);
+      const opponentToken = createSessionToken(opponentId, TEST_SECRET);
+
+      const createRes = await fetch(`${baseUrl}/api/battles`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${challengerToken}`,
+        },
+      });
+      const created = (await createRes.json()) as CreateBattleResponse;
+      const battleId = created.battleId;
+
+      await fetch(`${baseUrl}/api/battles/${battleId}/join`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${opponentToken}` },
+      });
+
+      const cSocket = createClient(challengerToken);
+      let oSocket = createClient(opponentToken);
+
+      await Promise.all([
+        new Promise<void>((resolve) => cSocket.on('connect', () => resolve())),
+        new Promise<void>((resolve) => oSocket.on('connect', () => resolve())),
+      ]);
+
+      let bothCount = 0;
+      cSocket.on('bothPlayersPresent', () => {
+        bothCount++;
+      });
+
+      await Promise.all([
+        new Promise<void>((resolve) => cSocket.emit('joinBattleRoom', { battleId }, () => resolve())),
+        new Promise<void>((resolve) => oSocket.emit('joinBattleRoom', { battleId }, () => resolve())),
+      ]);
+
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      assert.equal(bothCount, 1);
+
+      oSocket.disconnect();
+      await new Promise((resolve) => setTimeout(resolve, 80));
+
+      const roomSockets = await io.in(`battle:${battleId}`).fetchSockets();
+      assert.equal(roomSockets.length, 1);
+
+      oSocket = createClient(opponentToken);
+      await new Promise<void>((resolve) => oSocket.on('connect', () => resolve()));
+      await new Promise<void>((resolve) => oSocket.emit('joinBattleRoom', { battleId }, () => resolve()));
+
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      assert.equal(bothCount, 2);
     });
   });
 });

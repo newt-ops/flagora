@@ -231,7 +231,7 @@ async function bootstrap() {
       }
 
       const id = String(req.params.id);
-      const result = await finishRun(id, telegramUserId, db, redis);
+      const result = await finishRun(id, telegramUserId, db, redis, io);
       res.status(200).json(result);
     } catch (error) {
       if (error instanceof RunNotFoundError) {

@@ -1,4 +1,5 @@
 import type { Server, Socket } from 'socket.io';
+import type { BattleWinner, BattleParticipantResult } from '@flagora/shared';
 
 export interface SocketData {
   telegramUserId: number;
@@ -111,6 +112,16 @@ export interface ClientToServerEvents {
   ) => void;
 }
 
+export interface BattleFinishedPayload {
+  battleId: string;
+  winner: BattleWinner;
+  challengerScore: number;
+  opponentScore: number;
+  completedAt: string;
+  challengerResult: BattleParticipantResult;
+  opponentResult: BattleParticipantResult;
+}
+
 export interface ServerToClientEvents {
   pong: (response: PingResponse) => void;
   opponentJoined: (payload: OpponentJoinedPayload) => void;
@@ -120,6 +131,7 @@ export interface ServerToClientEvents {
   battleError: (payload: BattleErrorPayload) => void;
   answerResult: (payload: AnswerResultPayload) => void;
   opponentProgress: (payload: OpponentProgressPayload) => void;
+  battleFinished: (payload: BattleFinishedPayload) => void;
 }
 
 export type TypedSocketServer = Server<

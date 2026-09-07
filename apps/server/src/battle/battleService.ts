@@ -1,8 +1,11 @@
 import crypto from 'node:crypto';
 import type { Db } from 'mongodb';
+import type { Redis as RedisClient } from 'ioredis';
 import type {
   PlayerProfile,
   BattleSession,
+  BattleWinner,
+  BattleParticipantResult,
   CreateBattleResponse,
   BattleInfoResponse,
   JoinBattleResponse,
@@ -24,11 +27,12 @@ import {
 import type {
   TypedSocketServer,
   BattleStartPayload,
+  BattleFinishedPayload,
   AnswerResultPayload,
   OpponentProgressPayload,
 } from '../multiplayer/socketTypes.js';
 import { selectRunFlags, generateChoices } from '../game/flagSelection.js';
-import { createRun } from '../game/runService.js';
+import { createRun, finishRun } from '../game/runService.js';
 import type { RunFlagItem, GameRun } from '../game/runTypes.js';
 import {
   RunNotFoundError,
@@ -73,14 +77,144 @@ export async function getBattleById(
   return db.collection<BattleSession>('battles').findOne({ battleId });
 }
 
+export async function checkAndFinalizeBattle(
+  battleId: string,
+  db: Db,
+  redis?: RedisClient,
+  io?: TypedSocketServer,
+): Promise<BattleSession | null> {
+  const battle = await db.collection<BattleSession>('battles').findOne({ battleId });
+  if (!battle || battle.status !== 'in_progress' || !battle.challengerRunId || !battle.opponentRunId) {
+    return battle;
+  }
+
+  const runsCollection = db.collection<GameRun>('runs');
+  let challengerRun = await runsCollection.findOne({ runId: battle.challengerRunId });
+  let opponentRun = await runsCollection.findOne({ runId: battle.opponentRunId });
+  if (!challengerRun || !opponentRun) {
+    return battle;
+  }
+
+  const now = Date.now();
+
+  if (challengerRun.status === 'active' && !challengerRun.profileCredited) {
+    const elapsed = now - new Date(challengerRun.startedAt).getTime();
+    if (elapsed >= challengerRun.runDurationMs) {
+      await finishRun(challengerRun.runId, challengerRun.telegramUserId, db, redis, io);
+      challengerRun = await runsCollection.findOne({ runId: battle.challengerRunId });
+    }
+  }
+
+  if (opponentRun.status === 'active' && !opponentRun.profileCredited) {
+    const elapsed = now - new Date(opponentRun.startedAt).getTime();
+    if (elapsed >= opponentRun.runDurationMs) {
+      await finishRun(opponentRun.runId, opponentRun.telegramUserId, db, redis, io);
+      opponentRun = await runsCollection.findOne({ runId: battle.opponentRunId });
+    }
+  }
+
+  if (
+    challengerRun &&
+    opponentRun &&
+    challengerRun.profileCredited &&
+    opponentRun.profileCredited
+  ) {
+    const challengerScore = challengerRun.finalScore?.totalScore ?? challengerRun.runningTotal;
+    const opponentScore = opponentRun.finalScore?.totalScore ?? opponentRun.runningTotal;
+
+    let winner: BattleWinner = 'tie';
+    if (challengerScore > opponentScore) {
+      winner = 'challenger';
+    } else if (opponentScore > challengerScore) {
+      winner = 'opponent';
+    }
+
+    const completedAt = new Date();
+    const updateResult = await db.collection<BattleSession>('battles').findOneAndUpdate(
+      { battleId, status: 'in_progress' },
+      {
+        $set: {
+          status: 'completed',
+          winner,
+          challengerScore,
+          opponentScore,
+          completedAt,
+          updatedAt: completedAt,
+        },
+      },
+      { returnDocument: 'after' },
+    );
+
+    if (updateResult) {
+      const profilesCollection = db.collection<PlayerProfile>('profiles');
+      const challengerProfile = await profilesCollection.findOne({
+        telegramUserId: battle.challengerUserId,
+      });
+      const opponentProfile = await profilesCollection.findOne({
+        telegramUserId: battle.opponentUserId!,
+      });
+
+      const challengerDisplayName = challengerProfile
+        ? getDisplayName(challengerProfile)
+        : 'Player';
+      const opponentDisplayName = opponentProfile
+        ? getDisplayName(opponentProfile)
+        : 'Player';
+
+      const challengerResult: BattleParticipantResult = {
+        userId: battle.challengerUserId,
+        displayName: challengerDisplayName,
+        photoUrl: challengerProfile?.photoUrl ?? null,
+        score: challengerScore,
+        correctCount: challengerRun.flags.filter((f) => f.correct).length,
+        totalFlags: challengerRun.flags.length,
+      };
+
+      const opponentResult: BattleParticipantResult = {
+        userId: battle.opponentUserId!,
+        displayName: opponentDisplayName,
+        photoUrl: opponentProfile?.photoUrl ?? null,
+        score: opponentScore,
+        correctCount: opponentRun.flags.filter((f) => f.correct).length,
+        totalFlags: opponentRun.flags.length,
+      };
+
+      if (io) {
+        const payload: BattleFinishedPayload = {
+          battleId,
+          winner,
+          challengerScore,
+          opponentScore,
+          completedAt: completedAt.toISOString(),
+          challengerResult,
+          opponentResult,
+        };
+        io.to(`battle:${battleId}`).emit('battleFinished', payload);
+      }
+
+      return updateResult;
+    }
+  }
+
+  return battle;
+}
+
 export async function getBattleInfo(
   battleId: string,
   requestingUserId: number,
   db: Db,
 ): Promise<BattleInfoResponse> {
-  const battle = await db.collection<BattleSession>('battles').findOne({ battleId });
+  let battle = await db.collection<BattleSession>('battles').findOne({ battleId });
   if (!battle) {
     throw new BattleNotFoundError();
+  }
+
+  if (battle.status === 'in_progress') {
+    await checkAndFinalizeBattle(battleId, db);
+    const refreshed = await db.collection<BattleSession>('battles').findOne({ battleId });
+    if (refreshed) {
+      battle = refreshed;
+    }
   }
 
   const effectiveStatus = getEffectiveBattleStatus(battle);
@@ -120,13 +254,48 @@ export async function getBattleInfo(
   const isJoinable =
     effectiveStatus === 'waiting' && battle.opponentUserId === null;
 
+  let challengerResult: BattleParticipantResult | null = null;
+  let opponentResult: BattleParticipantResult | null = null;
+
+  if (battle.status === 'completed') {
+    const runsCollection = db.collection<GameRun>('runs');
+    const cRun = battle.challengerRunId
+      ? await runsCollection.findOne({ runId: battle.challengerRunId })
+      : null;
+    const oRun = battle.opponentRunId
+      ? await runsCollection.findOne({ runId: battle.opponentRunId })
+      : null;
+
+    if (cRun) {
+      challengerResult = {
+        userId: battle.challengerUserId,
+        displayName: challengerDisplayName,
+        photoUrl: challengerPhotoUrl,
+        score: battle.challengerScore ?? cRun.finalScore?.totalScore ?? cRun.runningTotal,
+        correctCount: cRun.flags.filter((f) => f.correct).length,
+        totalFlags: cRun.flags.length,
+      };
+    }
+
+    if (oRun && battle.opponentUserId) {
+      opponentResult = {
+        userId: battle.opponentUserId,
+        displayName: opponentDisplayName ?? 'Player',
+        photoUrl: opponentPhotoUrl,
+        score: battle.opponentScore ?? oRun.finalScore?.totalScore ?? oRun.runningTotal,
+        correctCount: oRun.flags.filter((f) => f.correct).length,
+        totalFlags: oRun.flags.length,
+      };
+    }
+  }
+
   return {
     battleId: battle.battleId,
     challengerUserId: battle.challengerUserId,
     challengerTelegramUserId: battle.challengerUserId,
     challengerDisplayName,
     challengerPhotoUrl,
-    status: effectiveStatus,
+    status: battle.status,
     isChallenger,
     isOwnInvite,
     isOpponent,
@@ -136,6 +305,12 @@ export async function getBattleInfo(
     opponentTelegramUserId: battle.opponentUserId,
     opponentDisplayName,
     opponentPhotoUrl,
+    winner: battle.winner ?? null,
+    challengerScore: battle.challengerScore ?? null,
+    opponentScore: battle.opponentScore ?? null,
+    completedAt: battle.completedAt ?? null,
+    challengerResult,
+    opponentResult,
   };
 }
 
@@ -356,6 +531,8 @@ export async function submitBattleAnswer(
           },
         },
       );
+      await finishRun(runId, userId, db);
+      await checkAndFinalizeBattle(battleId, db);
     }
     throw error;
   }
@@ -384,6 +561,11 @@ export async function submitBattleAnswer(
       },
     },
   );
+
+  if (updatedFlags.every((f) => f.answered)) {
+    await finishRun(runId, userId, db);
+    await checkAndFinalizeBattle(battleId, db);
+  }
 
   const answerResult: AnswerResultPayload = {
     correct: scored.isCorrect,

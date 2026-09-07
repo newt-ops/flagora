@@ -19,6 +19,8 @@ import {
 } from '@flagora/shared';
 import { selectRunFlags, generateChoices } from './flagSelection.js';
 import { scoreAnswer, finalizeRun } from './runScoringService.js';
+import type { TypedSocketServer } from '../multiplayer/socketTypes.js';
+import { checkAndFinalizeBattle } from '../battle/battleService.js';
 import {
   type GameRun,
   type RunFlagItem,
@@ -184,6 +186,7 @@ export async function finishRun(
   telegramUserId: number,
   db: Db,
   redis?: RedisClient,
+  io?: TypedSocketServer,
 ): Promise<FinishRunResponse> {
   const collection = db.collection<GameRun>('runs');
   const run = await collection.findOne({ runId });
@@ -196,7 +199,7 @@ export async function finishRun(
     throw new UnauthorizedRunAccessError();
   }
 
-  if (run.status === 'finished' && run.profileCredited && run.finalScore) {
+  if ((run.status === 'finished' || run.status === 'expired') && run.profileCredited && run.finalScore) {
     return run.finalScore;
   }
 
@@ -214,7 +217,7 @@ export async function finishRun(
     { runId, telegramUserId, profileCredited: { $ne: true } },
     {
       $set: {
-        status: 'finished',
+        status: run.status === 'expired' ? 'expired' : 'finished',
         profileCredited: true,
         finishedAt: new Date(now),
         updatedAt: new Date(now),
@@ -232,7 +235,8 @@ export async function finishRun(
 
   const isDaily = run.mode === 'daily';
   const isChallenge = run.mode === 'challenge';
-  const isPractice = run.mode === 'practice' || (!isDaily && !isChallenge);
+  const isLiveBattle = run.mode === 'live-battle';
+  const isPractice = run.mode === 'practice' || (!isDaily && !isChallenge && !isLiveBattle);
   const profilesCollection = db.collection<PlayerProfile>('profiles');
   const existingProfile = await profilesCollection.findOne({ telegramUserId });
   const previousBest = existingProfile?.bestScore ?? 0;
@@ -340,6 +344,10 @@ export async function finishRun(
         await notifyChallengeCompletion(run.challengeId, db);
       }
     }
+  }
+
+  if (isLiveBattle && run.battleId) {
+    await checkAndFinalizeBattle(run.battleId, db, redis, io);
   }
 
   if (redis) {

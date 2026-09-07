@@ -1,5 +1,7 @@
 export type BattleStatus = 'waiting' | 'ready' | 'in_progress' | 'completed' | 'expired';
 
+export type BattleWinner = 'challenger' | 'opponent' | 'tie';
+
 export interface BattleSession {
   battleId: string;
   challengerUserId: number;
@@ -10,6 +12,10 @@ export interface BattleSession {
   challengerRunId?: string | null;
   opponentRunId?: string | null;
   startedAt?: Date | string | null;
+  winner?: BattleWinner | null;
+  challengerScore?: number | null;
+  opponentScore?: number | null;
+  completedAt?: Date | string | null;
   createdAt: Date | string;
   expiresAt: Date | string;
   updatedAt: Date | string;
@@ -19,6 +25,15 @@ export interface CreateBattleResponse {
   battleId: string;
   status: BattleStatus;
   expiresAt: Date | string;
+}
+
+export interface BattleParticipantResult {
+  userId: number;
+  displayName: string;
+  photoUrl?: string | null;
+  score: number;
+  correctCount: number;
+  totalFlags: number;
 }
 
 export interface BattleInfoResponse {
@@ -37,6 +52,12 @@ export interface BattleInfoResponse {
   opponentTelegramUserId?: number | null;
   opponentDisplayName?: string | null;
   opponentPhotoUrl?: string | null;
+  winner?: BattleWinner | null;
+  challengerScore?: number | null;
+  opponentScore?: number | null;
+  completedAt?: Date | string | null;
+  challengerResult?: BattleParticipantResult | null;
+  opponentResult?: BattleParticipantResult | null;
 }
 
 export interface JoinBattleResponse {
