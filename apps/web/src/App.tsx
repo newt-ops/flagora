@@ -4,25 +4,36 @@ import type {
   StartRunResponse,
   FinishRunResponse,
   ChallengeInfoResponse,
+  BattleInfoResponse,
+  BattleStartPayload,
+  BattleFinishedPayload,
 } from '@flagora/shared';
 import { useProfile } from './hooks/useProfile.js';
 import { useStore } from './store/useStore.js';
 import { useGameRun } from './hooks/useGameRun.js';
 import { useDailyChallenge } from './hooks/useDailyChallenge.js';
+import { useBattleSocket } from './hooks/useBattleSocket.js';
 import {
   createChallenge,
   getChallengeInfo,
   acceptChallenge,
   rematchChallenge,
+  createBattle,
+  getBattleInfo,
+  joinBattle,
 } from './api/client.js';
 import { shareChallenge } from './components/challengeShareHelpers.js';
 import { getChallengeStartParam } from './components/challengeViewHelpers.js';
+import { getBattleStartParam } from './components/battleHelpers.js';
 import { ProfileCard } from './components/ProfileCard.js';
 import { GameScreen } from './components/GameScreen.js';
 import { ResultsScreen } from './components/ResultsScreen.js';
 import { LeaderboardScreen } from './components/LeaderboardScreen.js';
 import { ChallengeLandingScreen } from './components/ChallengeLandingScreen.js';
 import { HeadToHeadResultScreen } from './components/HeadToHeadResultScreen.js';
+import { BattleLobbyScreen } from './components/BattleLobbyScreen.js';
+import { LiveBattleScreen } from './components/LiveBattleScreen.js';
+import { BattleResultScreen } from './components/BattleResultScreen.js';
 import { ErrorState } from './components/ErrorState.js';
 
 export function App() {
@@ -33,7 +44,15 @@ export function App() {
   const { dailyStatus, startDaily, isStartingDaily } = useDailyChallenge(sessionToken);
 
   const [screen, setScreen] = useState<
-    'profile' | 'playing' | 'results' | 'leaderboard' | 'challenge_landing' | 'head_to_head'
+    | 'profile'
+    | 'playing'
+    | 'results'
+    | 'leaderboard'
+    | 'challenge_landing'
+    | 'head_to_head'
+    | 'battle_lobby'
+    | 'battle_live'
+    | 'battle_result'
   >('profile');
   const [runMode, setRunMode] = useState<'practice' | 'daily' | 'challenge'>('practice');
   const [activeRole, setActiveRole] = useState<'challenger' | 'opponent' | null>(null);
@@ -48,10 +67,91 @@ export function App() {
   const [isLoadingChallengeInfo, setIsLoadingChallengeInfo] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
+  const [activeBattleId, setActiveBattleId] = useState<string | null>(null);
+  const [activeBattleInfo, setActiveBattleInfo] = useState<BattleInfoResponse | null>(null);
+  const [activeBattleStart, setActiveBattleStart] = useState<BattleStartPayload | null>(null);
+  const [activeBattleFinished, setActiveBattleFinished] = useState<BattleFinishedPayload | null>(null);
+  const [isStartingBattle, setIsStartingBattle] = useState(false);
+  const [isLoadingBattleInfo, setIsLoadingBattleInfo] = useState(false);
+
+  const {
+    isConnecting: isBattleSocketConnecting,
+    isReconnecting: isBattleSocketReconnecting,
+    bothPlayersPresent: isBattleBothPresent,
+    opponentJoined: battleOpponentJoined,
+    isReady: isBattleReady,
+    countdown: battleCountdown,
+    startPayload: battleStartPayload,
+    opponentProgress: battleOpponentProgress,
+    finishedPayload: battleFinishedPayload,
+    error: battleSocketError,
+    sendReady: sendBattleReady,
+    submitAnswer: submitBattleAnswer,
+  } = useBattleSocket({
+    sessionToken,
+    battleId: activeBattleId,
+    onBattleStart: (payload) => {
+      setActiveBattleStart(payload);
+      setScreen('battle_live');
+    },
+    onBattleFinished: (payload) => {
+      setActiveBattleFinished(payload);
+      setScreen('battle_result');
+      void queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
+
   useEffect(() => {
     if (!sessionToken || !profile) {
       return;
     }
+
+    const initialBattleId = getBattleStartParam();
+    if (initialBattleId) {
+      let isMounted = true;
+      setIsLoadingBattleInfo(true);
+      getBattleInfo(sessionToken, initialBattleId)
+        .then(async (info) => {
+          if (!isMounted) {
+            return;
+          }
+          setActiveBattleId(info.battleId);
+          setActiveBattleInfo(info);
+          if (info.status === 'completed') {
+            setScreen('battle_result');
+          } else {
+            if (info.isJoinable && !info.isChallenger) {
+              try {
+                await joinBattle(sessionToken, info.battleId);
+                const refreshed = await getBattleInfo(sessionToken, info.battleId);
+                if (isMounted) {
+                  setActiveBattleInfo(refreshed);
+                }
+              } catch {
+                void 0;
+              }
+            }
+            setScreen('battle_lobby');
+          }
+        })
+        .catch((err) => {
+          if (!isMounted) {
+            return;
+          }
+          const message = err instanceof Error ? err.message : 'Failed to load battle';
+          setStartError(message);
+        })
+        .finally(() => {
+          if (isMounted) {
+            setIsLoadingBattleInfo(false);
+          }
+        });
+
+      return () => {
+        isMounted = false;
+      };
+    }
+
     const initialChallengeId = getChallengeStartParam();
     if (!initialChallengeId) {
       return;
@@ -211,6 +311,48 @@ export function App() {
     setScreen('results');
   };
 
+  const handleStartBattle = async () => {
+    if (!sessionToken) {
+      return;
+    }
+    setStartError(null);
+    setIsStartingBattle(true);
+    try {
+      const response = await createBattle(sessionToken);
+      setActiveBattleId(response.battleId);
+      const info = await getBattleInfo(sessionToken, response.battleId);
+      setActiveBattleInfo(info);
+      setScreen('battle_lobby');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create battle';
+      setStartError(message);
+    } finally {
+      setIsStartingBattle(false);
+    }
+  };
+
+  const handleBattleAgain = async () => {
+    if (!sessionToken) {
+      return;
+    }
+    setStartError(null);
+    setIsStartingBattle(true);
+    setActiveBattleStart(null);
+    setActiveBattleFinished(null);
+    try {
+      const response = await createBattle(sessionToken);
+      setActiveBattleId(response.battleId);
+      const info = await getBattleInfo(sessionToken, response.battleId);
+      setActiveBattleInfo(info);
+      setScreen('battle_lobby');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create battle';
+      setStartError(message);
+    } finally {
+      setIsStartingBattle(false);
+    }
+  };
+
   const handleBackToProfile = () => {
     setScreen('profile');
     setCurrentRun(null);
@@ -219,6 +361,10 @@ export function App() {
     setActiveChallengeId(null);
     setActiveChallengeInfo(null);
     setActiveRole(null);
+    setActiveBattleId(null);
+    setActiveBattleInfo(null);
+    setActiveBattleStart(null);
+    setActiveBattleFinished(null);
   };
 
   const handleOpenGlobalLeaderboard = () => {
@@ -247,6 +393,13 @@ export function App() {
         </div>
       )}
 
+      {isLoadingBattleInfo && (
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
+          <p className="text-xs font-medium text-tg-hint">Loading live battle...</p>
+        </div>
+      )}
+
       {!isLoading && error && <ErrorState message={error} onRetry={refetch} />}
 
       {!isLoading && !error && startError && (
@@ -264,18 +417,20 @@ export function App() {
         </div>
       )}
 
-      {!isLoading && !isLoadingChallengeInfo && !error && screen === 'profile' && profile && (
+      {!isLoading && !isLoadingChallengeInfo && !isLoadingBattleInfo && !error && screen === 'profile' && profile && (
         <ProfileCard
           profile={profile}
           dailyStatus={dailyStatus}
           onPlay={handleStartPractice}
           onStartDaily={handleStartDaily}
           onChallengeFriend={handleStartChallenge}
+          onBattleFriend={handleStartBattle}
           onViewLeaderboard={handleOpenGlobalLeaderboard}
           onViewDailyLeaderboard={handleOpenDailyLeaderboard}
           isStarting={isStarting}
           isStartingDaily={isStartingDaily}
           isStartingChallenge={isStartingChallenge}
+          isStartingBattle={isStartingBattle}
         />
       )}
 
@@ -296,6 +451,51 @@ export function App() {
           onRematch={handleRematch}
           onBackToProfile={handleBackToProfile}
           isStartingRematch={isStartingRematch}
+        />
+      )}
+
+      {!isLoading && !isLoadingBattleInfo && screen === 'battle_lobby' && activeBattleId && profile && (
+        <BattleLobbyScreen
+          battleId={activeBattleId}
+          battleInfo={activeBattleInfo}
+          currentUserId={profile.telegramUserId}
+          bothPlayersPresent={
+            isBattleBothPresent ||
+            Boolean(activeBattleInfo?.opponentUserId && activeBattleInfo.status !== 'waiting')
+          }
+          opponentJoinedPayload={battleOpponentJoined}
+          isReady={isBattleReady}
+          countdown={battleCountdown}
+          onReady={sendBattleReady}
+          onBack={handleBackToProfile}
+          isConnecting={isBattleSocketConnecting}
+          error={battleSocketError}
+        />
+      )}
+
+      {screen === 'battle_live' && (activeBattleStart || battleStartPayload) && profile && (
+        <LiveBattleScreen
+          battleStart={activeBattleStart || battleStartPayload!}
+          opponentDisplayName={
+            activeBattleInfo?.challengerUserId === profile.telegramUserId
+              ? battleOpponentJoined?.opponentDisplayName || activeBattleInfo?.opponentDisplayName || 'Opponent'
+              : activeBattleInfo?.challengerDisplayName || 'Host'
+          }
+          opponentProgress={battleOpponentProgress}
+          isReconnecting={isBattleSocketReconnecting}
+          onSubmitAnswer={submitBattleAnswer}
+        />
+      )}
+
+      {screen === 'battle_result' && activeBattleId && profile && (
+        <BattleResultScreen
+          battleId={activeBattleId}
+          finishedPayload={activeBattleFinished || battleFinishedPayload}
+          battleInfo={activeBattleInfo}
+          currentUserId={profile.telegramUserId}
+          onBattleAgain={handleBattleAgain}
+          onBackToProfile={handleBackToProfile}
+          isStartingBattleAgain={isStartingBattle}
         />
       )}
 

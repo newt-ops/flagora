@@ -12,6 +12,9 @@ import type {
   CreateChallengeResponse,
   AcceptChallengeResponse,
   ChallengeInfoResponse,
+  CreateBattleResponse,
+  BattleInfoResponse,
+  JoinBattleResponse,
 } from '@flagora/shared';
 
 const API_URL =
@@ -391,6 +394,86 @@ export async function rematchChallenge(
 
   if (!response.ok) {
     let message = `Failed to create rematch: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function createBattle(
+  sessionToken: string,
+): Promise<CreateBattleResponse> {
+  const response = await fetch(`${API_URL}/api/battles`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to create battle: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function getBattleInfo(
+  sessionToken: string,
+  battleId: string,
+): Promise<BattleInfoResponse> {
+  const response = await fetch(`${API_URL}/api/battles/${encodeURIComponent(battleId)}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to get battle: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function joinBattle(
+  sessionToken: string,
+  battleId: string,
+): Promise<JoinBattleResponse> {
+  const response = await fetch(`${API_URL}/api/battles/${encodeURIComponent(battleId)}/join`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to join battle: status ${response.status}`;
     try {
       const data = await response.json();
       if (data?.message) {

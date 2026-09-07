@@ -1,4 +1,4 @@
-import { Play, Flame, Trophy, Calendar, CheckCircle2, Swords } from 'lucide-react';
+import { Play, Flame, Trophy, Calendar, CheckCircle2, Swords, Zap } from 'lucide-react';
 import { type PlayerProfile, type DailyChallengeStatusResponse, getDisplayName } from '@flagora/shared';
 import { getProfileStreakDisplay } from './streakDisplayHelpers.js';
 import { getDailyResultSummary } from './dailyChallengeHelpers.js';
@@ -11,11 +11,13 @@ interface ProfileCardProps {
   onPlay?: () => void;
   onStartDaily?: () => void;
   onChallengeFriend?: () => void;
+  onBattleFriend?: () => void;
   onViewLeaderboard?: () => void;
   onViewDailyLeaderboard?: () => void;
   isStarting?: boolean;
   isStartingDaily?: boolean;
   isStartingChallenge?: boolean;
+  isStartingBattle?: boolean;
 }
 
 export function ProfileCard({
@@ -24,11 +26,13 @@ export function ProfileCard({
   onPlay,
   onStartDaily,
   onChallengeFriend,
+  onBattleFriend,
   onViewLeaderboard,
   onViewDailyLeaderboard,
   isStarting = false,
   isStartingDaily = false,
   isStartingChallenge = false,
+  isStartingBattle = false,
 }: ProfileCardProps) {
   const displayName = getDisplayName(profile);
   const initial = profile.firstName ? profile.firstName.charAt(0).toUpperCase() : 'P';
@@ -176,6 +180,18 @@ export function ProfileCard({
         >
           <Swords className={`h-4 w-4 ${isStartingChallenge ? 'animate-spin' : ''}`} />
           <span>{isStartingChallenge ? 'Creating Challenge...' : 'Challenge a Friend'}</span>
+        </button>
+      )}
+
+      {onBattleFriend && (
+        <button
+          type="button"
+          onClick={onBattleFriend}
+          disabled={isStartingBattle}
+          className="mt-2.5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 font-bold text-white shadow-md transition-transform hover:bg-violet-500 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+        >
+          <Zap className={`h-4 w-4 ${isStartingBattle ? 'animate-spin' : ''}`} />
+          <span>{isStartingBattle ? 'Creating Battle...' : 'Battle a Friend'}</span>
         </button>
       )}
 

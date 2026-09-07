@@ -14,7 +14,7 @@ export function getChallengeStartParam(
       searchParams.get('startapp') ||
       searchParams.get('tgWebAppStartParam') ||
       searchParams.get('start_param');
-    if (candidate) {
+    if (candidate && !candidate.startsWith('battle_')) {
       return candidate;
     }
   }
@@ -27,14 +27,14 @@ export function getChallengeStartParam(
       hashParams.get('tgWebAppStartParam') ||
       hashParams.get('startapp') ||
       hashParams.get('start_param');
-    if (candidate) {
+    if (candidate && !candidate.startsWith('battle_')) {
       return candidate;
     }
     const tgWebAppData = hashParams.get('tgWebAppData');
     if (tgWebAppData) {
       const dataParams = new URLSearchParams(tgWebAppData);
       const dataCandidate = dataParams.get('start_param');
-      if (dataCandidate) {
+      if (dataCandidate && !dataCandidate.startsWith('battle_')) {
         return dataCandidate;
       }
     }
@@ -50,7 +50,7 @@ export function getChallengeStartParam(
   if (rawInitData) {
     const dataParams = new URLSearchParams(rawInitData);
     const candidate = dataParams.get('start_param');
-    if (candidate) {
+    if (candidate && !candidate.startsWith('battle_')) {
       return candidate;
     }
   }
@@ -59,7 +59,7 @@ export function getChallengeStartParam(
     const unsafeParam = (
       window as unknown as { Telegram?: { WebApp?: { initDataUnsafe?: { start_param?: string } } } }
     ).Telegram?.WebApp?.initDataUnsafe?.start_param;
-    if (unsafeParam) {
+    if (unsafeParam && !unsafeParam.startsWith('battle_')) {
       return unsafeParam;
     }
   }
