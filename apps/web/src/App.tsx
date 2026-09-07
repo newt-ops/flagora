@@ -35,6 +35,10 @@ import { BattleLobbyScreen } from './components/BattleLobbyScreen.js';
 import { LiveBattleScreen } from './components/LiveBattleScreen.js';
 import { BattleResultScreen } from './components/BattleResultScreen.js';
 import { ErrorState } from './components/ErrorState.js';
+import {
+  initTelegramWebApp,
+  syncTelegramBackButton,
+} from './telegram/telegramWebApp.js';
 
 export function App() {
   const queryClient = useQueryClient();
@@ -377,8 +381,16 @@ export function App() {
     setScreen('leaderboard');
   };
 
+  useEffect(() => {
+    initTelegramWebApp();
+  }, []);
+
+  useEffect(() => {
+    return syncTelegramBackButton(screen !== 'profile', handleBackToProfile);
+  }, [screen]);
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-tg-bg px-4 py-8">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-tg-secondary-bg text-tg-text px-4 py-8">
       {isLoading && (
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-tg-button border-t-transparent" />

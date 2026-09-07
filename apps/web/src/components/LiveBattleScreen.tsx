@@ -114,14 +114,14 @@ export function LiveBattleScreen({
   return (
     <div className="relative flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
       {isReconnecting && (
-        <div className="fixed top-3 z-50 flex items-center gap-2 rounded-full bg-amber-500/90 px-4 py-1.5 text-xs font-bold text-slate-950 shadow-lg backdrop-blur-sm">
+        <div className="fixed top-3 z-50 flex items-center gap-2 rounded-full bg-amber-500/90 px-4 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur-sm">
           <WifiOff className="h-3.5 w-3.5 animate-pulse" />
           <span>Reconnecting to battle...</span>
         </div>
       )}
 
-      <div className="flex w-full flex-col gap-2 rounded-2xl bg-tg-secondary-bg p-3.5 shadow-sm">
-        <div className="grid grid-cols-2 gap-2 border-b border-slate-800/80 pb-2.5">
+      <div className="flex w-full flex-col gap-2 rounded-2xl bg-tg-section border border-tg-separator p-3.5 shadow-sm">
+        <div className="grid grid-cols-2 gap-2 border-b border-tg-separator pb-2.5">
           <div className="flex flex-col">
             <div className="flex items-center gap-1 text-[11px] font-semibold text-tg-hint">
               <span>You</span>
@@ -152,8 +152,8 @@ export function LiveBattleScreen({
                 <span
                   className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-black ${
                     opponentProgress.correct
-                      ? 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/40'
-                      : 'bg-rose-500/20 text-rose-400 ring-1 ring-rose-500/40'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                      : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
                   }`}
                 >
                   {opponentProgress.correct ? '+' : 'x'}
@@ -177,7 +177,7 @@ export function LiveBattleScreen({
             </span>
           </div>
 
-          <svg className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-tg-bg">
+          <svg className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-tg-secondary-bg">
             <rect
               x="0"
               y="0"
@@ -197,13 +197,13 @@ export function LiveBattleScreen({
       </div>
 
       {timeExpired ? (
-        <div className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl bg-tg-secondary-bg p-6 text-center shadow-md">
+        <div className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
           <Loader2 className="h-6 w-6 animate-spin text-violet-400" />
           <p className="text-sm font-bold text-tg-text">Time is up!</p>
           <p className="text-xs text-tg-hint">Waiting for final battle tally...</p>
         </div>
       ) : currentFlagIndex >= battleStart.flags.length ? (
-        <div className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl bg-tg-secondary-bg p-6 text-center shadow-md">
+        <div className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
           <Check className="h-8 w-8 text-emerald-400" />
           <p className="text-sm font-bold text-tg-text">All flags completed!</p>
           <p className="text-xs text-tg-hint">Waiting for opponent or timer to conclude...</p>
@@ -211,7 +211,7 @@ export function LiveBattleScreen({
       ) : (
         currentFlag && (
           <div className="flex w-full flex-col items-center gap-4">
-            <div className="flex aspect-[3/2] w-full items-center justify-center overflow-hidden rounded-2xl bg-tg-secondary-bg p-6 shadow-md ring-1 ring-slate-800">
+            <div className="flex aspect-[3/2] w-full items-center justify-center overflow-hidden rounded-2xl bg-tg-section p-6 shadow-sm border border-tg-separator">
               <span
                 className={`fi fi-${currentFlag.isoCode.toLowerCase()} text-8xl rounded-lg shadow-sm`}
               />
@@ -220,12 +220,12 @@ export function LiveBattleScreen({
             {feedback && (
               <div className="flex items-center gap-1.5 text-xs font-semibold">
                 {feedback.correct ? (
-                  <span className="flex items-center gap-1 text-emerald-400">
+                  <span className="flex items-center gap-1 text-emerald-500">
                     <Check className="h-3.5 w-3.5" />
                     <span>+{feedback.pointsThisFlag} pts</span>
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1 text-rose-400">
+                  <span className="flex items-center gap-1 text-rose-500">
                     <X className="h-3.5 w-3.5" />
                     <span>+0 pts</span>
                   </span>
@@ -236,7 +236,7 @@ export function LiveBattleScreen({
             <div className="grid w-full grid-cols-2 gap-2.5">
               {currentFlag.choices.map((choice: string) => {
                 const isSelected = selectedChoice === choice;
-                let buttonStyle = 'bg-tg-secondary-bg text-tg-text hover:brightness-110';
+                let buttonStyle = 'bg-tg-section text-tg-text border border-tg-separator hover:opacity-90';
 
                 if (isSelected) {
                   if (feedback) {
@@ -254,7 +254,7 @@ export function LiveBattleScreen({
                     type="button"
                     onClick={() => void handleSelectChoice(choice)}
                     disabled={isSubmitting || timeExpired}
-                    className={`flex min-h-14 items-center justify-center rounded-xl p-3 text-center text-sm font-medium transition-all active:scale-95 disabled:pointer-events-none ${buttonStyle}`}
+                    className={`flex min-h-14 items-center justify-center rounded-xl p-3 text-center text-sm font-medium transition-opacity duration-150 active:opacity-75 disabled:pointer-events-none ${buttonStyle}`}
                   >
                     <span className="line-clamp-2">{choice}</span>
                   </button>

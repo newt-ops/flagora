@@ -66,7 +66,7 @@ export function BattleLobbyScreen({
   return (
     <div className="relative flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
       {countdown !== null && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-2xl bg-slate-950/90 backdrop-blur-md">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-2xl bg-tg-bg/90 backdrop-blur-md">
           <p className="text-xs font-bold uppercase tracking-widest text-violet-400">
             Battle Starting In
           </p>
@@ -81,7 +81,7 @@ export function BattleLobbyScreen({
         <button
           type="button"
           onClick={onBack}
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-tg-secondary-bg text-tg-hint transition-colors hover:text-tg-text active:scale-95"
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-tg-section border border-tg-separator text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
           aria-label="Back"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -98,14 +98,14 @@ export function BattleLobbyScreen({
       </div>
 
       {error && (
-        <div className="w-full rounded-xl bg-rose-500/20 p-3 text-center text-xs font-semibold text-rose-400 ring-1 ring-rose-500/30">
+        <div className="w-full rounded-xl bg-rose-500/20 p-3 text-center text-xs font-semibold text-rose-400 border border-rose-500/30">
           {error}
         </div>
       )}
 
-      <div className="flex w-full flex-col items-center rounded-2xl bg-tg-secondary-bg p-5 text-center shadow-md ring-1 ring-slate-800">
+      <div className="flex w-full flex-col items-center rounded-2xl bg-tg-section border border-tg-separator p-5 text-center shadow-sm">
         <div className="grid w-full grid-cols-2 gap-3">
-          <div className="flex flex-col items-center rounded-xl bg-tg-bg p-4 ring-1 ring-slate-800">
+          <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg border border-tg-separator p-4">
             <div className="relative">
               {challengerPhoto ? (
                 <img
@@ -127,7 +127,7 @@ export function BattleLobbyScreen({
             </span>
           </div>
 
-          <div className="flex flex-col items-center rounded-xl bg-tg-bg p-4 ring-1 ring-slate-800">
+          <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg border border-tg-separator p-4">
             {hasOpponent ? (
               <>
                 <div className="relative">
@@ -152,11 +152,11 @@ export function BattleLobbyScreen({
               </>
             ) : (
               <div className="flex flex-col items-center justify-center py-2 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-slate-700 text-slate-500">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-dashed border-tg-separator text-tg-hint">
                   <User className="h-6 w-6" />
                 </div>
                 <p className="mt-2 text-xs font-semibold text-tg-hint">Waiting...</p>
-                <span className="mt-1 text-[10px] text-slate-500">Share invite link</span>
+                <span className="mt-1 text-[10px] text-tg-hint">Share invite link</span>
               </div>
             )}
           </div>
@@ -179,7 +179,7 @@ export function BattleLobbyScreen({
                 <button
                   type="button"
                   onClick={handleShare}
-                  className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-violet-600 px-3 text-xs font-bold text-white shadow transition-transform hover:bg-violet-500 active:scale-95"
+                  className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-violet-600 px-3 text-xs font-bold text-white shadow-sm transition-opacity hover:bg-violet-500 active:opacity-75"
                 >
                   <Share2 className="h-3.5 w-3.5" />
                   <span>Share Invite</span>
@@ -187,7 +187,7 @@ export function BattleLobbyScreen({
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-tg-bg px-3 text-xs font-bold text-tg-text ring-1 ring-slate-700 transition-transform hover:bg-tg-bg/80 active:scale-95"
+                  className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-tg-secondary-bg border border-tg-separator px-3 text-xs font-bold text-tg-text transition-opacity hover:opacity-90 active:opacity-75"
                 >
                   {copied ? (
                     <>
@@ -221,7 +221,7 @@ export function BattleLobbyScreen({
                 type="button"
                 onClick={onReady}
                 disabled={isReady}
-                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 font-bold text-white shadow-md transition-transform hover:bg-emerald-500 active:scale-95 disabled:pointer-events-none disabled:opacity-75"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 font-bold text-white shadow-sm transition-opacity hover:bg-emerald-500 active:opacity-75 disabled:pointer-events-none disabled:opacity-75"
               >
                 {isReady ? (
                   <>

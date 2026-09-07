@@ -3,22 +3,75 @@
 @tailwind utilities;
 
 :root {
-  --tg-theme-bg-color: #0f172a;
-  --tg-theme-secondary-bg-color: #1e293b;
-  --tg-theme-text-color: #f8fafc;
-  --tg-theme-hint-color: #94a3b8;
-  --tg-theme-link-color: #2481cc;
-  --tg-theme-button-color: #2481cc;
-  --tg-theme-button-text-color: #ffffff;
+  --bg-color: var(--tg-theme-bg-color, #ffffff);
+  --secondary-bg-color: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  --text-color: var(--tg-theme-text-color, #000000);
+  --hint-color: var(--tg-theme-hint-color, #707579);
+  --link-color: var(--tg-theme-link-color, #2481cc);
+  --button-color: var(--tg-theme-button-color, #2481cc);
+  --button-text-color: var(--tg-theme-button-text-color, #ffffff);
+  --header-bg-color: var(--tg-theme-header-bg-color, #ffffff);
+  --accent-text-color: var(--tg-theme-accent-text-color, #2481cc);
+  --section-bg-color: var(--tg-theme-section-bg-color, #ffffff);
+  --section-separator-color: var(--tg-theme-section-separator-color, #e0e0e0);
   --tg-safe-area-inset-top: env(safe-area-inset-top, 0px);
   --tg-safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 body {
-  background-color: var(--tg-theme-bg-color);
-  color: var(--tg-theme-text-color);
+  background-color: var(--secondary-bg-color);
+  color: var(--text-color);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   min-height: 100vh;
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tg-section {
+  background-color: var(--section-bg-color);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 0.5px solid var(--section-separator-color);
+}
+
+.tg-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  font-size: 15px;
+  border-bottom: 0.5px solid var(--section-separator-color);
+  transition: background-color 0.1s ease;
+}
+
+.tg-item:last-child {
+  border-bottom: none;
+}
+
+.tg-item:active {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.tg-item-hint {
+  color: var(--hint-color);
+  font-size: 13px;
+}
+
+.tg-button {
+  background-color: var(--button-color);
+  color: var(--button-text-color);
+  border: none;
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  width: 100%;
+  cursor: pointer;
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tg-button:active {
+  opacity: 0.85;
 }

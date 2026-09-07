@@ -35,7 +35,7 @@ export function HeadToHeadResultScreen({
 
   return (
     <div className="flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
-      <div className="flex w-full flex-col items-center rounded-2xl bg-tg-secondary-bg p-6 text-center shadow-md ring-1 ring-slate-800">
+      <div className="flex w-full flex-col items-center rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-400 ring-1 ring-indigo-500/20">
           <Trophy className="h-8 w-8" />
         </div>
@@ -47,10 +47,10 @@ export function HeadToHeadResultScreen({
 
         <div className="mt-6 grid w-full grid-cols-2 gap-3">
           <div
-            className={`flex flex-col items-center rounded-xl bg-tg-bg p-4 ring-1 transition-all ${
+            className={`flex flex-col items-center rounded-xl bg-tg-secondary-bg p-4 border transition-all ${
               challengerWon
-                ? 'ring-amber-500/50 shadow-md shadow-amber-500/10'
-                : 'ring-slate-800'
+                ? 'border-amber-500/50 shadow-sm'
+                : 'border-tg-separator'
             }`}
           >
             <div className="relative">
@@ -66,7 +66,7 @@ export function HeadToHeadResultScreen({
                 </div>
               )}
               {challengerWon && (
-                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-slate-950 ring-2 ring-tg-bg">
+                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-white ring-2 ring-tg-section">
                   <Trophy className="h-3 w-3" />
                 </span>
               )}
@@ -87,17 +87,17 @@ export function HeadToHeadResultScreen({
             </div>
 
             {challengerWon && (
-              <span className="mt-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-300 ring-1 ring-amber-500/30">
+              <span className="mt-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400 border border-amber-500/30">
                 Winner
               </span>
             )}
           </div>
 
           <div
-            className={`flex flex-col items-center rounded-xl bg-tg-bg p-4 ring-1 transition-all ${
+            className={`flex flex-col items-center rounded-xl bg-tg-secondary-bg p-4 border transition-all ${
               opponentWon
-                ? 'ring-amber-500/50 shadow-md shadow-amber-500/10'
-                : 'ring-slate-800'
+                ? 'border-amber-500/50 shadow-sm'
+                : 'border-tg-separator'
             }`}
           >
             <div className="relative">
@@ -113,7 +113,7 @@ export function HeadToHeadResultScreen({
                 </div>
               )}
               {opponentWon && (
-                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-slate-950 ring-2 ring-tg-bg">
+                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-white ring-2 ring-tg-section">
                   <Trophy className="h-3 w-3" />
                 </span>
               )}
@@ -134,7 +134,7 @@ export function HeadToHeadResultScreen({
             </div>
 
             {opponentWon && (
-              <span className="mt-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-300 ring-1 ring-amber-500/30">
+              <span className="mt-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400 border border-amber-500/30">
                 Winner
               </span>
             )}
@@ -147,7 +147,7 @@ export function HeadToHeadResultScreen({
           type="button"
           onClick={onRematch}
           disabled={isStartingRematch}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 font-bold text-white shadow transition-transform hover:bg-indigo-500 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 font-bold text-white shadow-sm transition-opacity hover:bg-indigo-500 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
         >
           {isStartingRematch ? (
             <RotateCcw className="h-4 w-4 animate-spin" />
@@ -160,7 +160,7 @@ export function HeadToHeadResultScreen({
         <button
           type="button"
           onClick={onBackToProfile}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg font-semibold text-tg-hint transition-colors hover:text-tg-text active:scale-95"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-section border border-tg-separator font-semibold text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
         >
           <User className="h-4 w-4" />
           <span>Back to Profile</span>

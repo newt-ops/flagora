@@ -92,7 +92,7 @@ export function BattleResultScreen({
 
   return (
     <div className="flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
-      <div className="flex w-full flex-col items-center rounded-2xl bg-tg-secondary-bg p-6 text-center shadow-md ring-1 ring-slate-800">
+      <div className="flex w-full flex-col items-center rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-400 ring-1 ring-violet-500/20">
           <Trophy className="h-8 w-8" />
         </div>
@@ -104,10 +104,10 @@ export function BattleResultScreen({
 
         <div className="mt-6 grid w-full grid-cols-2 gap-3">
           <div
-            className={`flex flex-col items-center rounded-xl bg-tg-bg p-4 ring-1 transition-all ${
+            className={`flex flex-col items-center rounded-xl bg-tg-secondary-bg border p-4 transition-all ${
               challengerWon
-                ? 'ring-amber-500/50 shadow-md shadow-amber-500/10'
-                : 'ring-slate-800'
+                ? 'border-amber-500/60 shadow-md shadow-amber-500/10'
+                : 'border-tg-separator'
             }`}
           >
             <div className="relative">
@@ -123,7 +123,7 @@ export function BattleResultScreen({
                 </div>
               )}
               {challengerWon && (
-                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-slate-950 ring-2 ring-tg-bg">
+                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-amber-950 ring-2 ring-tg-section">
                   <Trophy className="h-3 w-3" />
                 </span>
               )}
@@ -148,17 +148,17 @@ export function BattleResultScreen({
             </span>
 
             {challengerWon && (
-              <span className="mt-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-300 ring-1 ring-amber-500/30">
+              <span className="mt-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400 ring-1 ring-amber-500/30">
                 Winner
               </span>
             )}
           </div>
 
           <div
-            className={`flex flex-col items-center rounded-xl bg-tg-bg p-4 ring-1 transition-all ${
+            className={`flex flex-col items-center rounded-xl bg-tg-secondary-bg border p-4 transition-all ${
               opponentWon
-                ? 'ring-amber-500/50 shadow-md shadow-amber-500/10'
-                : 'ring-slate-800'
+                ? 'border-amber-500/60 shadow-md shadow-amber-500/10'
+                : 'border-tg-separator'
             }`}
           >
             <div className="relative">
@@ -174,7 +174,7 @@ export function BattleResultScreen({
                 </div>
               )}
               {opponentWon && (
-                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-slate-950 ring-2 ring-tg-bg">
+                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-amber-950 ring-2 ring-tg-section">
                   <Trophy className="h-3 w-3" />
                 </span>
               )}
@@ -199,7 +199,7 @@ export function BattleResultScreen({
             </span>
 
             {opponentWon && (
-              <span className="mt-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-300 ring-1 ring-amber-500/30">
+              <span className="mt-2 rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400 ring-1 ring-amber-500/30">
                 Winner
               </span>
             )}
@@ -211,7 +211,7 @@ export function BattleResultScreen({
             type="button"
             onClick={onBattleAgain}
             disabled={isStartingBattleAgain}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 font-bold text-white shadow-md transition-transform hover:bg-violet-500 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
           >
             <Swords className={`h-4 w-4 ${isStartingBattleAgain ? 'animate-spin' : ''}`} />
             <span>{isStartingBattleAgain ? 'Creating Battle...' : 'Battle Again'}</span>
@@ -220,7 +220,7 @@ export function BattleResultScreen({
           <button
             type="button"
             onClick={onBackToProfile}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-tg-bg text-sm font-semibold text-tg-hint transition-colors hover:text-tg-text active:scale-95"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg border border-tg-separator text-sm font-semibold text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Back to Profile</span>

@@ -153,7 +153,7 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
 
   return (
     <div className="flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
-      <div className="w-full rounded-2xl bg-tg-secondary-bg p-4 shadow-sm">
+      <div className="w-full rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-tg-hint">
             <span>Flag</span>
@@ -170,7 +170,7 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
               </div>
             )}
 
-            <div className="flex items-center gap-1 rounded-full bg-tg-bg px-2.5 py-0.5 text-xs font-bold text-tg-text">
+            <div className="flex items-center gap-1 rounded-full bg-tg-secondary-bg border border-tg-separator px-2.5 py-0.5 text-xs font-bold text-tg-text">
               <Award className="h-3.5 w-3.5 text-tg-button" />
               <span>{runningScore}</span>
             </div>
@@ -188,7 +188,7 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
             </span>
           </div>
 
-          <svg className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-tg-bg">
+          <svg className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-tg-secondary-bg">
             <rect
               x="0"
               y="0"
@@ -208,7 +208,7 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
       </div>
 
       {timeExpired && (
-        <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-rose-500/20 p-3 text-sm font-semibold text-rose-400">
+        <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-rose-500/20 p-3 text-sm font-semibold text-rose-400 border border-rose-500/30">
           <AlertCircle className="h-4 w-4" />
           <span>Time Expired! Wrapping up run...</span>
         </div>
@@ -216,7 +216,7 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
 
       {currentFlag && !timeExpired && (
         <div className="flex w-full flex-col items-center gap-4">
-          <div className="flex aspect-[3/2] w-full items-center justify-center overflow-hidden rounded-2xl bg-tg-secondary-bg p-6 shadow-md ring-1 ring-slate-800">
+          <div className="flex aspect-[3/2] w-full items-center justify-center overflow-hidden rounded-2xl bg-tg-section p-6 shadow-sm border border-tg-separator">
             <span
               className={`fi fi-${currentFlag.isoCode.toLowerCase()} text-8xl rounded-lg shadow-sm`}
             />
@@ -225,12 +225,12 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
           {feedback && (
             <div className="flex items-center gap-1.5 text-xs font-semibold">
               {feedback.correct ? (
-                <span className="flex items-center gap-1 text-emerald-400">
+                <span className="flex items-center gap-1 text-emerald-500">
                   <Check className="h-3.5 w-3.5" />
                   <span>+{feedback.pointsThisFlag} pts</span>
                 </span>
               ) : (
-                <span className="flex items-center gap-1 text-rose-400">
+                <span className="flex items-center gap-1 text-rose-500">
                   <X className="h-3.5 w-3.5" />
                   <span>+0 pts</span>
                 </span>
@@ -241,7 +241,7 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
           <div className="grid w-full grid-cols-2 gap-2.5">
             {currentFlag.choices.map((choice: string) => {
               const isSelected = selectedChoice === choice;
-              let buttonStyle = 'bg-tg-secondary-bg text-tg-text hover:brightness-110';
+              let buttonStyle = 'bg-tg-section text-tg-text border border-tg-separator hover:opacity-90';
 
               if (isSelected) {
                 if (feedback) {
@@ -259,7 +259,7 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
                   type="button"
                   onClick={() => void handleSelectChoice(choice)}
                   disabled={isSubmitting || timeExpired}
-                  className={`flex min-h-14 items-center justify-center rounded-xl p-3 text-center text-sm font-medium transition-all active:scale-95 disabled:pointer-events-none ${buttonStyle}`}
+                  className={`flex min-h-14 items-center justify-center rounded-xl p-3 text-center text-sm font-medium transition-opacity duration-150 active:opacity-75 disabled:pointer-events-none ${buttonStyle}`}
                 >
                   <span className="line-clamp-2">{choice}</span>
                 </button>

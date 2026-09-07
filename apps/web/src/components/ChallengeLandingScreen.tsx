@@ -29,7 +29,7 @@ export function ChallengeLandingScreen({
         <button
           type="button"
           onClick={onDismiss}
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-tg-secondary-bg text-tg-hint transition-colors hover:text-tg-text active:scale-95"
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-tg-section border border-tg-separator text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
           aria-label="Back to Profile"
         >
           <ArrowLeft className="h-5 w-5" />
@@ -43,7 +43,7 @@ export function ChallengeLandingScreen({
         <div className="h-10 w-10" />
       </div>
 
-      <div className="flex w-full flex-col items-center rounded-2xl bg-tg-secondary-bg p-6 text-center shadow-md ring-1 ring-slate-800">
+      <div className="flex w-full flex-col items-center rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
         {challengeInfo.challengerPhotoUrl ? (
           <img
             src={challengeInfo.challengerPhotoUrl}
@@ -51,7 +51,7 @@ export function ChallengeLandingScreen({
             className="h-20 w-20 rounded-full object-cover ring-2 ring-indigo-500"
           />
         ) : (
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-indigo-600 text-3xl font-semibold text-white shadow">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-indigo-600 text-3xl font-semibold text-white shadow-sm">
             {initial}
           </div>
         )}
@@ -64,7 +64,7 @@ export function ChallengeLandingScreen({
           <>
             <p className="mt-1 text-xs text-tg-hint">has challenged you to a flag quiz duel!</p>
 
-            <div className="mt-5 w-full rounded-xl bg-tg-bg p-4 ring-1 ring-indigo-500/20">
+            <div className="mt-5 w-full rounded-xl bg-tg-secondary-bg border border-indigo-500/30 p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-tg-hint">
                 Score to Beat
               </p>
@@ -82,7 +82,7 @@ export function ChallengeLandingScreen({
         )}
 
         {isSelf && (
-          <div className="mt-5 w-full rounded-xl bg-amber-500/10 p-4 text-left ring-1 ring-amber-500/20">
+          <div className="mt-5 w-full rounded-xl bg-amber-500/10 p-4 text-left border border-amber-500/30">
             <div className="flex items-center gap-2 text-amber-400">
               <Clock className="h-4 w-4" />
               <p className="text-xs font-bold uppercase tracking-wider">Waiting for Opponent</p>
@@ -98,7 +98,7 @@ export function ChallengeLandingScreen({
         )}
 
         {isExpired && (
-          <div className="mt-5 w-full rounded-xl bg-rose-500/10 p-4 text-left ring-1 ring-rose-500/20">
+          <div className="mt-5 w-full rounded-xl bg-rose-500/10 p-4 text-left border border-rose-500/30">
             <div className="flex items-center gap-2 text-rose-400">
               <AlertCircle className="h-4 w-4" />
               <p className="text-xs font-bold uppercase tracking-wider">Challenge Expired</p>
@@ -110,7 +110,7 @@ export function ChallengeLandingScreen({
         )}
 
         {isAlreadyTaken && (
-          <div className="mt-5 w-full rounded-xl bg-slate-800/60 p-4 text-left ring-1 ring-slate-700">
+          <div className="mt-5 w-full rounded-xl bg-tg-secondary-bg border border-tg-separator p-4 text-left">
             <div className="flex items-center gap-2 text-tg-hint">
               <AlertCircle className="h-4 w-4" />
               <p className="text-xs font-bold uppercase tracking-wider">Match In Progress</p>
@@ -128,7 +128,7 @@ export function ChallengeLandingScreen({
             type="button"
             onClick={onAccept}
             disabled={isAccepting}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 font-bold text-white shadow-md transition-transform hover:bg-indigo-500 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 font-bold text-white shadow-sm transition-opacity hover:bg-indigo-500 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
           >
             <Play className={`h-4 w-4 fill-current ${isAccepting ? 'animate-spin' : ''}`} />
             <span>{isAccepting ? 'Starting Match...' : 'Accept Challenge'}</span>
@@ -139,7 +139,7 @@ export function ChallengeLandingScreen({
           <button
             type="button"
             onClick={onShareChallenge}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 font-bold text-white shadow-md transition-transform hover:bg-indigo-500 active:scale-95"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 font-bold text-white shadow-sm transition-opacity hover:bg-indigo-500 active:opacity-75"
           >
             <Share2 className="h-4 w-4" />
             <span>Share Challenge</span>
@@ -149,7 +149,7 @@ export function ChallengeLandingScreen({
         <button
           type="button"
           onClick={onDismiss}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg font-semibold text-tg-hint transition-colors hover:text-tg-text active:scale-95"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-section border border-tg-separator font-semibold text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
         >
           <span>Back to Profile</span>
         </button>

@@ -45,7 +45,7 @@ export function LeaderboardScreen({
         <button
           type="button"
           onClick={onBack}
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-tg-secondary-bg text-tg-hint transition-colors hover:text-tg-text active:scale-95"
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-tg-section border border-tg-separator text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
           aria-label="Back to Profile"
         >
           <ArrowLeft className="h-5 w-5" />
@@ -59,13 +59,13 @@ export function LeaderboardScreen({
         <div className="h-10 w-10" />
       </div>
 
-      <div className="flex rounded-xl bg-tg-secondary-bg p-1">
+      <div className="flex rounded-xl bg-tg-secondary-bg border border-tg-separator p-1">
         <button
           type="button"
           onClick={() => setMode('global')}
           className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${
             mode === 'global'
-              ? 'bg-tg-bg text-tg-text shadow-sm ring-1 ring-slate-800'
+              ? 'bg-tg-section text-tg-text shadow-sm border border-tg-separator'
               : 'text-tg-hint hover:text-tg-text'
           }`}
         >
@@ -76,7 +76,7 @@ export function LeaderboardScreen({
           onClick={() => setMode('daily')}
           className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${
             mode === 'daily'
-              ? 'bg-tg-bg text-tg-text shadow-sm ring-1 ring-slate-800'
+              ? 'bg-tg-section text-tg-text shadow-sm border border-tg-separator'
               : 'text-tg-hint hover:text-tg-text'
           }`}
         >
@@ -89,19 +89,19 @@ export function LeaderboardScreen({
       </p>
 
       {isLoading && (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl bg-tg-secondary-bg p-8 text-center">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl bg-tg-section border border-tg-separator p-8 text-center shadow-sm">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-tg-button border-t-transparent" />
           <p className="text-xs font-medium text-tg-hint">Loading leaderboard...</p>
         </div>
       )}
 
       {!isLoading && error && (
-        <div className="flex flex-col items-center gap-3 rounded-2xl bg-tg-secondary-bg p-6 text-center">
+        <div className="flex flex-col items-center gap-3 rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
           <p className="text-sm font-semibold text-rose-400">{error}</p>
           <button
             type="button"
             onClick={refetch}
-            className="rounded-xl bg-tg-bg px-4 py-2 text-xs font-bold text-tg-text transition-colors hover:bg-slate-800"
+            className="rounded-xl bg-tg-secondary-bg border border-tg-separator px-4 py-2 text-xs font-bold text-tg-text transition-opacity hover:opacity-90 active:opacity-75"
           >
             Retry
           </button>
@@ -110,7 +110,7 @@ export function LeaderboardScreen({
 
       {!isLoading && !error && (
         <>
-          <div className="flex flex-col gap-2 overflow-hidden rounded-2xl bg-tg-secondary-bg p-3 shadow-md ring-1 ring-slate-800">
+          <div className="tg-section flex flex-col p-1.5 shadow-sm">
             {topEntries.length === 0 ? (
               <div className="flex flex-col items-center gap-2 p-6 text-center">
                 <Trophy className="h-8 w-8 text-tg-hint" />
@@ -131,8 +131,8 @@ export function LeaderboardScreen({
                     key={entry.telegramUserId}
                     className={`flex items-center justify-between rounded-xl px-3 py-2.5 transition-colors ${
                       isMe
-                        ? 'bg-tg-button/15 ring-1 ring-tg-button'
-                        : 'bg-tg-bg'
+                        ? 'bg-tg-button/15 border border-tg-button'
+                        : 'hover:bg-tg-secondary-bg/60'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 overflow-hidden">
@@ -148,7 +148,7 @@ export function LeaderboardScreen({
                         <img
                           src={entry.photoUrl}
                           alt={entry.displayName}
-                          className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-slate-700"
+                          className="h-8 w-8 shrink-0 rounded-full object-cover border border-tg-separator"
                         />
                       ) : (
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-tg-button text-xs font-bold text-tg-button-text">
@@ -183,7 +183,7 @@ export function LeaderboardScreen({
           </div>
 
           {showPinnedRow && myRank && (
-            <div className="flex items-center justify-between rounded-2xl bg-tg-secondary-bg p-3.5 shadow-md ring-1 ring-amber-500/40">
+            <div className="flex items-center justify-between rounded-2xl bg-tg-section p-3.5 shadow-sm border border-amber-500/40">
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20 text-xs font-extrabold text-amber-400 ring-1 ring-amber-500/30">
                   #{myRank.rank}
@@ -209,8 +209,8 @@ export function LeaderboardScreen({
           )}
 
           {isUnranked && (
-            <div className="flex flex-col items-center gap-2 rounded-2xl bg-tg-secondary-bg p-4 text-center ring-1 ring-slate-800">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-300">
+            <div className="flex flex-col items-center gap-2 rounded-2xl bg-tg-section border border-tg-separator p-4 text-center shadow-sm">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-400">
                 <Sparkles className="h-4 w-4 text-amber-400" />
                 <span>{mode === 'daily' ? 'Not Ranked Today' : 'Not Ranked Yet'}</span>
               </div>
@@ -226,7 +226,7 @@ export function LeaderboardScreen({
                   type="button"
                   onClick={onPlayDaily}
                   disabled={isStarting}
-                  className="mt-1 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text transition-transform hover:opacity-90 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+                  className="mt-1 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
                 >
                   <Play className={`h-4 w-4 fill-current ${isStarting ? 'animate-spin' : ''}`} />
                   <span>{isStarting ? 'Starting Challenge...' : 'Play Daily Challenge'}</span>
@@ -237,7 +237,7 @@ export function LeaderboardScreen({
                   type="button"
                   onClick={onPlay}
                   disabled={isStarting}
-                  className="mt-1 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text transition-transform hover:opacity-90 active:scale-95 disabled:pointer-events-none disabled:opacity-50"
+                  className="mt-1 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
                 >
                   <Play className={`h-4 w-4 fill-current ${isStarting ? 'animate-spin' : ''}`} />
                   <span>{isStarting ? 'Starting Run...' : 'Play to Rank'}</span>
@@ -251,7 +251,7 @@ export function LeaderboardScreen({
       <button
         type="button"
         onClick={onBack}
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg font-semibold text-tg-hint transition-colors hover:text-tg-text active:scale-95"
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-tg-section border border-tg-separator font-semibold text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
       >
         <ArrowLeft className="h-4 w-4" />
         <span>Back to Profile</span>
