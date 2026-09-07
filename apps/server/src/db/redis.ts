@@ -17,6 +17,11 @@ export async function initRedis(url: string): Promise<RedisClient> {
     lazyConnect: true,
     maxRetriesPerRequest: 1,
     retryStrategy: () => null,
+    connectTimeout: 5000,
+  });
+
+  client.on('error', () => {
+    void 0;
   });
 
   try {
@@ -25,7 +30,15 @@ export async function initRedis(url: string): Promise<RedisClient> {
     return redisClient;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown Redis connection error';
-    throw new Error(`Failed to connect to Redis: ${message}`);
+    process.stderr.write(`Warning: Failed to connect to Redis (${message}). Falling back to in-memory store.\n`);
+    try {
+      client.disconnect();
+    } catch {
+      void 0;
+    }
+    const { default: RedisMock } = await import('ioredis-mock');
+    redisClient = new RedisMock() as unknown as RedisClient;
+    return redisClient;
   }
 }
 

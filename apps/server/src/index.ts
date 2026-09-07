@@ -139,7 +139,7 @@ async function bootstrap() {
   let redis;
   try {
     redis = await initRedis(redisUrl!);
-    process.stdout.write('Connected to Redis successfully\n');
+    process.stdout.write('Redis initialized successfully\n');
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown Redis error';
     process.stderr.write(`Fatal: Failed to connect to Redis: ${message}\n`);
