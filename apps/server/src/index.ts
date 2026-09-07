@@ -46,6 +46,17 @@ import {
   ChallengeAlreadyAcceptedError,
   UnauthorizedChallengeAccessError,
 } from './challenge/challengeTypes.js';
+import {
+  createBattle,
+  getBattleInfo,
+  joinBattle,
+} from './battle/battleService.js';
+import {
+  BattleNotFoundError,
+  BattleExpiredError,
+  SelfBattleNotAllowedError,
+  BattleAlreadyJoinedError,
+} from './battle/battleTypes.js';
 
 dotenv.config();
 
@@ -104,6 +115,9 @@ async function bootstrap() {
 
   const authMiddleware = createTelegramAuthMiddleware(botToken!);
   const sessionMiddleware = createRequireSessionMiddleware(sessionSecret!);
+
+  const httpServer = http.createServer(app);
+  const io = initSocketServer(httpServer, sessionSecret!, db);
 
   app.post('/api/session', authMiddleware, async (req: AuthenticatedRequest, res) => {
     try {
@@ -419,8 +433,75 @@ async function bootstrap() {
     }
   });
 
-  const httpServer = http.createServer(app);
-  initSocketServer(httpServer, sessionSecret!);
+  app.post('/api/battles', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const battle = await createBattle(telegramUserId, db);
+      res.status(200).json(battle);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create battle';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.get('/api/battles/:id', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const id = String(req.params.id);
+      const battleInfo = await getBattleInfo(id, telegramUserId, db);
+      res.status(200).json(battleInfo);
+    } catch (error) {
+      if (error instanceof BattleNotFoundError) {
+        res.status(404).json({ error: 'Not found', message: error.message });
+        return;
+      }
+      const message = error instanceof Error ? error.message : 'Failed to get battle info';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.post('/api/battles/:id/join', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const id = String(req.params.id);
+      const result = await joinBattle(id, telegramUserId, db, io);
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof BattleNotFoundError) {
+        res.status(404).json({ error: 'Not found', message: error.message });
+        return;
+      }
+      if (error instanceof BattleExpiredError) {
+        res.status(400).json({ error: 'Battle expired', message: error.message });
+        return;
+      }
+      if (error instanceof SelfBattleNotAllowedError) {
+        res.status(400).json({ error: 'Self battle not allowed', message: error.message });
+        return;
+      }
+      if (error instanceof BattleAlreadyJoinedError) {
+        res.status(400).json({ error: 'Battle already joined', message: error.message });
+        return;
+      }
+      const message = error instanceof Error ? error.message : 'Failed to join battle';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
 
   httpServer.listen(port, () => {
     process.stdout.write(`Server listening on port ${port}\n`);

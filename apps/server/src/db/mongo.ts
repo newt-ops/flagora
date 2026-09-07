@@ -26,6 +26,8 @@ export async function initDatabase(uri: string): Promise<Db> {
   await database.collection('daily_challenge_attempts').createIndex({ telegramUserId: 1, date: 1 }, { unique: true });
   await database.collection('challenges').createIndex({ challengeId: 1 }, { unique: true });
   await database.collection('challenges').createIndex({ expiresAt: 1 });
+  await database.collection('battles').createIndex({ battleId: 1 }, { unique: true });
+  await database.collection('battles').createIndex({ expiresAt: 1 });
 
   return database;
 }
