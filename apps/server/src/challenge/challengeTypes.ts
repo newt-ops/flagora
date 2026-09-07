@@ -18,3 +18,24 @@ export class UnauthorizedChallengeAccessError extends Error {
     this.name = 'UnauthorizedChallengeAccessError';
   }
 }
+
+export class ChallengeAlreadyCompletedError extends Error {
+  constructor(message = 'Challenge is already completed') {
+    super(message);
+    this.name = 'ChallengeAlreadyCompletedError';
+  }
+}
+
+export class SelfChallengeNotAllowedError extends Error {
+  constructor(message = 'Cannot accept your own challenge') {
+    super(message);
+    this.name = 'SelfChallengeNotAllowedError';
+  }
+}
+
+export class ChallengeAlreadyAcceptedError extends Error {
+  constructor(message = 'Challenge has already been accepted by another player') {
+    super(message);
+    this.name = 'ChallengeAlreadyAcceptedError';
+  }
+}

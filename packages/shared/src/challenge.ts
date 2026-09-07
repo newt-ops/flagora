@@ -11,6 +11,8 @@ export interface ChallengeFlagItem {
 
 export type ChallengeStatus = 'pending' | 'completed' | 'expired';
 
+export type ChallengeWinner = 'challenger' | 'opponent' | 'tie';
+
 export interface Challenge {
   challengeId: string;
   challengerUserId: number;
@@ -21,6 +23,7 @@ export interface Challenge {
   opponentRunId: string | null;
   opponentScore: number | null;
   status: ChallengeStatus;
+  winner?: ChallengeWinner | null;
   createdAt: Date | string;
   expiresAt: Date | string;
   updatedAt: Date | string;
@@ -28,6 +31,26 @@ export interface Challenge {
 
 export interface CreateChallengeResponse extends StartRunResponse {
   challengeId: string;
+}
+
+export interface AcceptChallengeResponse extends StartRunResponse {
+  challengeId: string;
+}
+
+export interface ChallengeInfoResponse {
+  challengeId: string;
+  challengerUserId: number;
+  challengerDisplayName: string;
+  challengerPhotoUrl?: string | null;
+  challengerScore: number | null;
+  status: ChallengeStatus;
+  isOpen: boolean;
+  isChallenger: boolean;
+  isOpponent: boolean;
+  expiresAt: Date | string;
+  opponentUserId?: number | null;
+  opponentScore?: number | null;
+  winner?: ChallengeWinner | null;
 }
 
 export function getEffectiveChallengeStatus(

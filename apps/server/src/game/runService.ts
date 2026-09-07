@@ -18,6 +18,7 @@ import {
   type FinishRunResponse,
   type PlayerProfile,
   type Challenge,
+  type ChallengeWinner,
 } from '@flagora/shared';
 import { selectRunFlags, generateChoices } from './flagSelection.js';
 import {
@@ -312,15 +313,43 @@ export async function finishRun(
 
   if (isChallenge && run.challengeId) {
     const challengesCollection = db.collection<Challenge>('challenges');
-    await challengesCollection.updateOne(
-      { challengeId: run.challengeId, challengerRunId: run.runId },
-      {
-        $set: {
-          challengerScore: totalScore,
-          updatedAt: new Date(now),
-        },
-      },
-    );
+    const challenge = await challengesCollection.findOne({ challengeId: run.challengeId });
+    if (challenge) {
+      if (challenge.challengerRunId === run.runId) {
+        await challengesCollection.updateOne(
+          { challengeId: run.challengeId, challengerRunId: run.runId },
+          {
+            $set: {
+              challengerScore: totalScore,
+              updatedAt: new Date(now),
+            },
+          },
+        );
+      } else if (challenge.opponentRunId === run.runId) {
+        const opponentScore = totalScore;
+        const challengerScore = challenge.challengerScore ?? 0;
+        let winner: ChallengeWinner;
+        if (challengerScore > opponentScore) {
+          winner = 'challenger';
+        } else if (opponentScore > challengerScore) {
+          winner = 'opponent';
+        } else {
+          winner = 'tie';
+        }
+
+        await challengesCollection.updateOne(
+          { challengeId: run.challengeId, opponentRunId: run.runId },
+          {
+            $set: {
+              opponentScore,
+              status: 'completed',
+              winner,
+              updatedAt: new Date(now),
+            },
+          },
+        );
+      }
+    }
   }
 
   if (redis) {

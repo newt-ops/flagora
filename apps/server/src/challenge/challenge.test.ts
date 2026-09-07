@@ -10,7 +10,19 @@ import { initRedis, closeRedis } from '../db/redis.js';
 import { createRequireSessionMiddleware, type AuthenticatedSessionRequest } from '../session/requireSession.js';
 import { createSessionToken } from '../session/tokens.js';
 import { finishRun, submitAnswer, createRun } from '../game/runService.js';
-import { createChallenge, getChallenge } from './challengeService.js';
+import {
+  createChallenge,
+  getChallenge,
+  getChallengeInfo,
+  acceptChallenge,
+} from './challengeService.js';
+import {
+  ChallengeNotFoundError,
+  ChallengeExpiredError,
+  ChallengeAlreadyCompletedError,
+  SelfChallengeNotAllowedError,
+  ChallengeAlreadyAcceptedError,
+} from './challengeTypes.js';
 
 describe('challenge backend and rules', () => {
   let mongod: MongoMemoryServer;
@@ -50,6 +62,64 @@ describe('challenge backend and rules', () => {
         res.status(200).json(challenge);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to create challenge';
+        res.status(500).json({ error: 'Internal server error', message });
+      }
+    });
+
+    app.get('/api/challenges/:id', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+      try {
+        const telegramUserId = req.sessionUser?.telegramUserId;
+        if (!telegramUserId) {
+          res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+          return;
+        }
+
+        const id = String(req.params.id);
+        const info = await getChallengeInfo(id, telegramUserId, db);
+        res.status(200).json(info);
+      } catch (error) {
+        if (error instanceof ChallengeNotFoundError) {
+          res.status(404).json({ error: 'Not found', message: error.message });
+          return;
+        }
+        const message = error instanceof Error ? error.message : 'Failed to fetch challenge info';
+        res.status(500).json({ error: 'Internal server error', message });
+      }
+    });
+
+    app.post('/api/challenges/:id/accept', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+      try {
+        const telegramUserId = req.sessionUser?.telegramUserId;
+        if (!telegramUserId) {
+          res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+          return;
+        }
+
+        const id = String(req.params.id);
+        const run = await acceptChallenge(id, telegramUserId, db);
+        res.status(200).json(run);
+      } catch (error) {
+        if (error instanceof ChallengeNotFoundError) {
+          res.status(404).json({ error: 'Not found', message: error.message });
+          return;
+        }
+        if (error instanceof ChallengeExpiredError) {
+          res.status(400).json({ error: 'Challenge expired', message: error.message });
+          return;
+        }
+        if (error instanceof ChallengeAlreadyCompletedError) {
+          res.status(400).json({ error: 'Challenge completed', message: error.message });
+          return;
+        }
+        if (error instanceof SelfChallengeNotAllowedError) {
+          res.status(400).json({ error: 'Self challenge not allowed', message: error.message });
+          return;
+        }
+        if (error instanceof ChallengeAlreadyAcceptedError) {
+          res.status(400).json({ error: 'Challenge already accepted', message: error.message });
+          return;
+        }
+        const message = error instanceof Error ? error.message : 'Failed to accept challenge';
         res.status(500).json({ error: 'Internal server error', message });
       }
     });
@@ -274,5 +344,288 @@ describe('challenge backend and rules', () => {
 
     const globalScore = await redis.zscore('leaderboard:global', userId.toString());
     assert.equal(Number(globalScore), finish.totalScore);
+  });
+
+  it('returns challenge info before accepting with challenger display name and status', async () => {
+    const challengerId = 92001;
+    const opponentId = 92002;
+    await db.collection<PlayerProfile>('profiles').insertOne({
+      telegramUserId: challengerId,
+      username: 'flag_master',
+      firstName: 'Master',
+      lastName: 'Flags',
+      xp: 500,
+      level: 2,
+      coins: 100,
+      gamesPlayed: 5,
+      bestScore: 320,
+      currentStreak: 2,
+      longestStreak: 3,
+      lastPlayedDate: '2026-09-06',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const challenge = await createChallenge(challengerId, db);
+    const runDoc = await db.collection('runs').findOne({ runId: challenge.runId });
+    assert.ok(runDoc);
+    await submitAnswer(challenge.runId, challengerId, 0, runDoc.flags[0].isoCode, db);
+    await finishRun(challenge.runId, challengerId, db, redis);
+
+    const opponentToken = createSessionToken(opponentId, sessionSecret);
+    const resOpponent = await fetch(`${baseUrl}/api/challenges/${challenge.challengeId}`, {
+      headers: { Authorization: `Bearer ${opponentToken}` },
+    });
+    assert.equal(resOpponent.status, 200);
+    const opponentBody = await resOpponent.json();
+    assert.equal(opponentBody.challengeId, challenge.challengeId);
+    assert.equal(opponentBody.challengerDisplayName, '@flag_master');
+    assert.ok(opponentBody.challengerScore > 0);
+    assert.equal(opponentBody.status, 'pending');
+    assert.equal(opponentBody.isOpen, true);
+    assert.equal(opponentBody.isChallenger, false);
+    assert.equal(opponentBody.isOpponent, false);
+
+    const challengerToken = createSessionToken(challengerId, sessionSecret);
+    const resChallenger = await fetch(`${baseUrl}/api/challenges/${challenge.challengeId}`, {
+      headers: { Authorization: `Bearer ${challengerToken}` },
+    });
+    assert.equal(resChallenger.status, 200);
+    const challengerBody = await resChallenger.json();
+    assert.equal(challengerBody.isChallenger, true);
+    assert.equal(challengerBody.isOpponent, false);
+  });
+
+  it('returns 404 for nonexistent challenge and 200 with expired status for expired challenge', async () => {
+    const userId = 92003;
+    const token = createSessionToken(userId, sessionSecret);
+
+    const res404 = await fetch(`${baseUrl}/api/challenges/nonexistent-challenge-id`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    assert.equal(res404.status, 404);
+
+    const challenge = await createChallenge(92004, db);
+    await db.collection('challenges').updateOne(
+      { challengeId: challenge.challengeId },
+      { $set: { expiresAt: new Date(Date.now() - 1000) } },
+    );
+
+    const resExpired = await fetch(`${baseUrl}/api/challenges/${challenge.challengeId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    assert.equal(resExpired.status, 200);
+    const expiredBody = await resExpired.json();
+    assert.equal(expiredBody.status, 'expired');
+    assert.equal(expiredBody.isOpen, false);
+  });
+
+  it('rejects accepting own challenge, expired challenge, completed challenge, or duplicate acceptance', async () => {
+    const challengerId = 93001;
+    const opponent1 = 93002;
+    const opponent2 = 93003;
+
+    const challenge = await createChallenge(challengerId, db);
+
+    const challengerToken = createSessionToken(challengerId, sessionSecret);
+    const resSelf = await fetch(`${baseUrl}/api/challenges/${challenge.challengeId}/accept`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${challengerToken}` },
+    });
+    assert.equal(resSelf.status, 400);
+    const selfBody = await resSelf.json();
+    assert.equal(selfBody.error, 'Self challenge not allowed');
+
+    const expiredChallenge = await createChallenge(challengerId, db);
+    await db.collection('challenges').updateOne(
+      { challengeId: expiredChallenge.challengeId },
+      { $set: { expiresAt: new Date(Date.now() - 1000) } },
+    );
+    const opponentToken = createSessionToken(opponent1, sessionSecret);
+    const resExpired = await fetch(`${baseUrl}/api/challenges/${expiredChallenge.challengeId}/accept`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${opponentToken}` },
+    });
+    assert.equal(resExpired.status, 400);
+    const expiredBody = await resExpired.json();
+    assert.equal(expiredBody.error, 'Challenge expired');
+
+    const completedChallenge = await createChallenge(challengerId, db);
+    await db.collection('challenges').updateOne(
+      { challengeId: completedChallenge.challengeId },
+      { $set: { status: 'completed' } },
+    );
+    const resCompleted = await fetch(`${baseUrl}/api/challenges/${completedChallenge.challengeId}/accept`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${opponentToken}` },
+    });
+    assert.equal(resCompleted.status, 400);
+    const completedBody = await resCompleted.json();
+    assert.equal(completedBody.error, 'Challenge completed');
+
+    const validChallenge = await createChallenge(challengerId, db);
+    const resAccepted = await fetch(`${baseUrl}/api/challenges/${validChallenge.challengeId}/accept`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${opponentToken}` },
+    });
+    assert.equal(resAccepted.status, 200);
+
+    const opponent2Token = createSessionToken(opponent2, sessionSecret);
+    const resDuplicate = await fetch(`${baseUrl}/api/challenges/${validChallenge.challengeId}/accept`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${opponent2Token}` },
+    });
+    assert.equal(resDuplicate.status, 400);
+    const duplicateBody = await resDuplicate.json();
+    assert.equal(duplicateBody.error, 'Challenge already accepted');
+  });
+
+  it('accepts challenge delivering identical flags and choices, and determines winner correctly for challenger win, opponent win, and tie', async () => {
+    const challengerId = 94001;
+    const opponentId = 94002;
+
+    await db.collection<PlayerProfile>('profiles').insertOne({
+      telegramUserId: challengerId,
+      username: 'challenger_winner_test',
+      firstName: 'Challenger',
+      xp: 0,
+      level: 1,
+      coins: 0,
+      gamesPlayed: 0,
+      bestScore: 0,
+      currentStreak: 0,
+      longestStreak: 0,
+      lastPlayedDate: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    await db.collection<PlayerProfile>('profiles').insertOne({
+      telegramUserId: opponentId,
+      username: 'opponent_winner_test',
+      firstName: 'Opponent',
+      xp: 0,
+      level: 1,
+      coins: 0,
+      gamesPlayed: 0,
+      bestScore: 100,
+      currentStreak: 0,
+      longestStreak: 0,
+      lastPlayedDate: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const c1 = await createChallenge(challengerId, db);
+    const c1ChallengerRun = await db.collection('runs').findOne({ runId: c1.runId });
+    assert.ok(c1ChallengerRun);
+    for (let i = 0; i < 5; i++) {
+      await submitAnswer(c1.runId, challengerId, i, c1ChallengerRun.flags[i].isoCode, db);
+    }
+    const c1ChallengerFinish = await finishRun(c1.runId, challengerId, db, redis);
+
+    const opponentToken = createSessionToken(opponentId, sessionSecret);
+    const acceptRes1 = await fetch(`${baseUrl}/api/challenges/${c1.challengeId}/accept`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${opponentToken}` },
+    });
+    assert.equal(acceptRes1.status, 200);
+    const opponentRunData1 = await acceptRes1.json();
+
+    assert.equal(opponentRunData1.flags.length, c1.flags.length);
+    for (let i = 0; i < c1.flags.length; i++) {
+      assert.equal(opponentRunData1.flags[i].flagIndex, c1.flags[i].flagIndex);
+      assert.equal(opponentRunData1.flags[i].isoCode, c1.flags[i].isoCode);
+      assert.deepEqual(opponentRunData1.flags[i].choices, c1.flags[i].choices);
+      assert.equal((opponentRunData1.flags[i] as Record<string, unknown>).name, undefined);
+    }
+
+    const c1OpponentRun = await db.collection('runs').findOne({ runId: opponentRunData1.runId });
+    assert.ok(c1OpponentRun);
+    for (let i = 0; i < 2; i++) {
+      await submitAnswer(opponentRunData1.runId, opponentId, i, c1OpponentRun.flags[i].isoCode, db);
+    }
+    const c1OpponentFinish = await finishRun(opponentRunData1.runId, opponentId, db, redis);
+
+    assert.ok(c1ChallengerFinish.totalScore > c1OpponentFinish.totalScore);
+    const doc1 = await db.collection<Challenge>('challenges').findOne({ challengeId: c1.challengeId });
+    assert.ok(doc1);
+    assert.equal(doc1.status, 'completed');
+    assert.equal(doc1.winner, 'challenger');
+    assert.equal(doc1.opponentScore, c1OpponentFinish.totalScore);
+    assert.equal(doc1.challengerScore, c1ChallengerFinish.totalScore);
+
+    const opponentProfile = await db.collection<PlayerProfile>('profiles').findOne({ telegramUserId: opponentId });
+    assert.ok(opponentProfile);
+    assert.equal(opponentProfile.bestScore, 100);
+    assert.ok(opponentProfile.xp > 0);
+    assert.ok(opponentProfile.coins > 0);
+    assert.equal(opponentProfile.gamesPlayed, 1);
+
+    const c2 = await createChallenge(challengerId, db);
+    const c2ChallengerRun = await db.collection('runs').findOne({ runId: c2.runId });
+    assert.ok(c2ChallengerRun);
+    for (let i = 0; i < 2; i++) {
+      await submitAnswer(c2.runId, challengerId, i, c2ChallengerRun.flags[i].isoCode, db);
+    }
+    const c2ChallengerFinish = await finishRun(c2.runId, challengerId, db, redis);
+
+    const acceptRes2 = await fetch(`${baseUrl}/api/challenges/${c2.challengeId}/accept`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${opponentToken}` },
+    });
+    assert.equal(acceptRes2.status, 200);
+    const opponentRunData2 = await acceptRes2.json();
+    const c2OpponentRun = await db.collection('runs').findOne({ runId: opponentRunData2.runId });
+    assert.ok(c2OpponentRun);
+    for (let i = 0; i < 6; i++) {
+      await submitAnswer(opponentRunData2.runId, opponentId, i, c2OpponentRun.flags[i].isoCode, db);
+    }
+    const c2OpponentFinish = await finishRun(opponentRunData2.runId, opponentId, db, redis);
+
+    assert.ok(c2OpponentFinish.totalScore > c2ChallengerFinish.totalScore);
+    const doc2 = await db.collection<Challenge>('challenges').findOne({ challengeId: c2.challengeId });
+    assert.ok(doc2);
+    assert.equal(doc2.status, 'completed');
+    assert.equal(doc2.winner, 'opponent');
+
+    const c3 = await createChallenge(challengerId, db);
+    const c3ChallengerRun = await db.collection('runs').findOne({ runId: c3.runId });
+    assert.ok(c3ChallengerRun);
+    for (let i = 0; i < 4; i++) {
+      await submitAnswer(c3.runId, challengerId, i, c3ChallengerRun.flags[i].isoCode, db);
+    }
+    await finishRun(c3.runId, challengerId, db, redis);
+
+    const acceptRes3 = await fetch(`${baseUrl}/api/challenges/${c3.challengeId}/accept`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${opponentToken}` },
+    });
+    assert.equal(acceptRes3.status, 200);
+    const opponentRunData3 = await acceptRes3.json();
+    const c3OpponentRun = await db.collection('runs').findOne({ runId: opponentRunData3.runId });
+    assert.ok(c3OpponentRun);
+    for (let i = 0; i < 4; i++) {
+      await submitAnswer(opponentRunData3.runId, opponentId, i, c3OpponentRun.flags[i].isoCode, db);
+    }
+
+    await db.collection('runs').updateOne(
+      { runId: opponentRunData3.runId },
+      { $set: { startedAt: new Date(Date.now() - 70000), runningTotal: 400 } },
+    );
+    await db.collection('challenges').updateOne(
+      { challengeId: c3.challengeId },
+      { $set: { challengerScore: 400 } },
+    );
+
+    const opponentFinishTie = await finishRun(opponentRunData3.runId, opponentId, db, redis);
+    assert.equal(opponentFinishTie.totalScore, 400);
+
+    const doc3 = await db.collection<Challenge>('challenges').findOne({ challengeId: c3.challengeId });
+    assert.ok(doc3);
+    assert.equal(doc3.status, 'completed');
+    assert.equal(doc3.winner, 'tie');
+    assert.equal(doc3.challengerScore, 400);
+    assert.equal(doc3.opponentScore, 400);
   });
 });

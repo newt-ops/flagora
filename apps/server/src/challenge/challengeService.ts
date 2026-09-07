@@ -4,13 +4,24 @@ import {
   COUNTRIES,
   DEFAULT_RUN_TIER_MIX,
   getEffectiveChallengeStatus,
+  getDisplayName,
   type Challenge,
   type ChallengeFlagItem,
   type CreateChallengeResponse,
+  type AcceptChallengeResponse,
+  type ChallengeInfoResponse,
+  type PlayerProfile,
 } from '@flagora/shared';
 import { selectRunFlags, generateChoices } from '../game/flagSelection.js';
 import { createRun } from '../game/runService.js';
 import type { RunFlagItem } from '../game/runTypes.js';
+import {
+  ChallengeNotFoundError,
+  ChallengeExpiredError,
+  ChallengeAlreadyCompletedError,
+  SelfChallengeNotAllowedError,
+  ChallengeAlreadyAcceptedError,
+} from './challengeTypes.js';
 
 export async function createChallenge(
   challengerUserId: number,
@@ -104,4 +115,131 @@ export async function getChallenge(
   }
 
   return challenge;
+}
+
+export async function getChallengeInfo(
+  challengeId: string,
+  requestingUserId: number,
+  db: Db,
+): Promise<ChallengeInfoResponse> {
+  const challenge = await getChallenge(challengeId, db);
+  if (!challenge) {
+    throw new ChallengeNotFoundError();
+  }
+
+  const profilesCollection = db.collection<PlayerProfile>('profiles');
+  const challengerProfile = await profilesCollection.findOne({ telegramUserId: challenge.challengerUserId });
+  const challengerDisplayName = challengerProfile
+    ? getDisplayName(challengerProfile)
+    : `Player ${challenge.challengerUserId}`;
+
+  const isOpen = challenge.status === 'pending' && challenge.opponentUserId === null;
+  const isChallenger = requestingUserId === challenge.challengerUserId;
+  const isOpponent = Boolean(challenge.opponentUserId && requestingUserId === challenge.opponentUserId);
+
+  return {
+    challengeId: challenge.challengeId,
+    challengerUserId: challenge.challengerUserId,
+    challengerDisplayName,
+    challengerPhotoUrl: challengerProfile?.photoUrl ?? null,
+    challengerScore: challenge.challengerScore,
+    status: challenge.status,
+    isOpen,
+    isChallenger,
+    isOpponent,
+    expiresAt: challenge.expiresAt,
+    opponentUserId: challenge.opponentUserId,
+    opponentScore: challenge.opponentScore,
+    winner: challenge.winner ?? null,
+  };
+}
+
+export async function acceptChallenge(
+  challengeId: string,
+  opponentUserId: number,
+  db: Db,
+): Promise<AcceptChallengeResponse> {
+  const challenge = await getChallenge(challengeId, db);
+  if (!challenge) {
+    throw new ChallengeNotFoundError();
+  }
+
+  if (challenge.status === 'expired') {
+    throw new ChallengeExpiredError();
+  }
+
+  if (challenge.status === 'completed') {
+    throw new ChallengeAlreadyCompletedError();
+  }
+
+  if (challenge.challengerUserId === opponentUserId) {
+    throw new SelfChallengeNotAllowedError();
+  }
+
+  if (challenge.opponentUserId !== null) {
+    throw new ChallengeAlreadyAcceptedError();
+  }
+
+  const now = new Date();
+  const opponentRunId = crypto.randomUUID();
+  const collection = db.collection<Challenge>('challenges');
+
+  const claimResult = await collection.findOneAndUpdate(
+    {
+      challengeId,
+      status: 'pending',
+      opponentUserId: null,
+      challengerUserId: { $ne: opponentUserId },
+      expiresAt: { $gt: now },
+    },
+    {
+      $set: {
+        opponentUserId,
+        opponentRunId,
+        updatedAt: now,
+      },
+    },
+    { returnDocument: 'after' },
+  );
+
+  if (!claimResult) {
+    const refreshed = await getChallenge(challengeId, db);
+    if (!refreshed) {
+      throw new ChallengeNotFoundError();
+    }
+    if (refreshed.status === 'expired') {
+      throw new ChallengeExpiredError();
+    }
+    if (refreshed.status === 'completed') {
+      throw new ChallengeAlreadyCompletedError();
+    }
+    if (refreshed.challengerUserId === opponentUserId) {
+      throw new SelfChallengeNotAllowedError();
+    }
+    if (refreshed.opponentUserId !== null) {
+      throw new ChallengeAlreadyAcceptedError();
+    }
+    throw new ChallengeExpiredError();
+  }
+
+  const opponentFlags: RunFlagItem[] = challenge.flags.map((flag) => ({
+    flagIndex: flag.flagIndex,
+    isoCode: flag.isoCode,
+    name: flag.name,
+    tier: flag.tier,
+    choices: [...flag.choices],
+    answered: false,
+  }));
+
+  const run = await createRun(opponentUserId, db, {
+    runId: opponentRunId,
+    mode: 'challenge',
+    challengeId,
+    flags: opponentFlags,
+  });
+
+  return {
+    ...run,
+    challengeId,
+  };
 }

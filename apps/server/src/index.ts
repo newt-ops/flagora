@@ -29,7 +29,18 @@ import {
   getDailyLeaderboard,
 } from './daily/dailyService.js';
 import { DailyChallengeAlreadyAttemptedError } from './daily/dailyTypes.js';
-import { createChallenge } from './challenge/challengeService.js';
+import {
+  createChallenge,
+  getChallengeInfo,
+  acceptChallenge,
+} from './challenge/challengeService.js';
+import {
+  ChallengeNotFoundError,
+  ChallengeExpiredError,
+  ChallengeAlreadyCompletedError,
+  SelfChallengeNotAllowedError,
+  ChallengeAlreadyAcceptedError,
+} from './challenge/challengeTypes.js';
 
 dotenv.config();
 
@@ -312,6 +323,64 @@ async function bootstrap() {
       res.status(200).json(challenge);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create challenge';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.get('/api/challenges/:id', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const id = String(req.params.id);
+      const info = await getChallengeInfo(id, telegramUserId, db);
+      res.status(200).json(info);
+    } catch (error) {
+      if (error instanceof ChallengeNotFoundError) {
+        res.status(404).json({ error: 'Not found', message: error.message });
+        return;
+      }
+      const message = error instanceof Error ? error.message : 'Failed to fetch challenge info';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.post('/api/challenges/:id/accept', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const id = String(req.params.id);
+      const run = await acceptChallenge(id, telegramUserId, db);
+      res.status(200).json(run);
+    } catch (error) {
+      if (error instanceof ChallengeNotFoundError) {
+        res.status(404).json({ error: 'Not found', message: error.message });
+        return;
+      }
+      if (error instanceof ChallengeExpiredError) {
+        res.status(400).json({ error: 'Challenge expired', message: error.message });
+        return;
+      }
+      if (error instanceof ChallengeAlreadyCompletedError) {
+        res.status(400).json({ error: 'Challenge completed', message: error.message });
+        return;
+      }
+      if (error instanceof SelfChallengeNotAllowedError) {
+        res.status(400).json({ error: 'Self challenge not allowed', message: error.message });
+        return;
+      }
+      if (error instanceof ChallengeAlreadyAcceptedError) {
+        res.status(400).json({ error: 'Challenge already accepted', message: error.message });
+        return;
+      }
+      const message = error instanceof Error ? error.message : 'Failed to accept challenge';
       res.status(500).json({ error: 'Internal server error', message });
     }
   });
