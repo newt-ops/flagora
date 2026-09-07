@@ -17,6 +17,7 @@ import { seedFlags } from './game/seedFlags.js';
 import {
   getTopLeaderboard,
   getPlayerLeaderboardRank,
+  reconcileLeaderboard,
 } from './leaderboard/leaderboardService.js';
 import {
   RunNotFoundError,
@@ -150,6 +151,11 @@ async function bootstrap() {
     process.stderr.write(`Fatal: Failed to connect to Redis: ${message}\n`);
     process.exit(1);
   }
+
+  reconcileLeaderboard(db, redis).catch((error) => {
+    const message = error instanceof Error ? error.message : 'Reconciliation error';
+    process.stderr.write(`Warning: Failed to reconcile leaderboard: ${message}\n`);
+  });
 
   const authMiddleware = createTelegramAuthMiddleware(botToken!);
   const sessionMiddleware = createRequireSessionMiddleware(sessionSecret!);
@@ -306,7 +312,7 @@ async function bootstrap() {
         return;
       }
 
-      const rankInfo = await getPlayerLeaderboardRank(telegramUserId, redis);
+      const rankInfo = await getPlayerLeaderboardRank(telegramUserId, redis, undefined, db);
       res.status(200).json(rankInfo);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch player rank';

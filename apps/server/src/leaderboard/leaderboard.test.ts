@@ -293,4 +293,32 @@ describe('leaderboard backend and Redis integration', () => {
     assert.equal(meData.rank, 1);
     assert.equal(meData.bestScore, 950);
   });
+
+  it('falls back to MongoDB when Redis throws or is null', async () => {
+    const failingRedis = {
+      zrevrange: async () => {
+        throw new Error('Simulated Redis outage');
+      },
+      zrevrank: async () => {
+        throw new Error('Simulated Redis outage');
+      },
+      zscore: async () => {
+        throw new Error('Simulated Redis outage');
+      },
+    } as unknown as RedisClient;
+
+    const topFromMongo = await getTopLeaderboard(3, db, failingRedis);
+    assert.ok(topFromMongo.length > 0);
+    assert.equal(topFromMongo[0].rank, 1);
+    assert.equal(topFromMongo[0].bestScore, 950);
+
+    const meFromMongo = await getPlayerLeaderboardRank(6004, failingRedis, undefined, db);
+    assert.equal(meFromMongo.ranked, true);
+    assert.equal(meFromMongo.rank, 1);
+    assert.equal(meFromMongo.bestScore, 950);
+
+    const topNoRedis = await getTopLeaderboard(3, db, null);
+    assert.ok(topNoRedis.length > 0);
+    assert.equal(topNoRedis[0].rank, 1);
+  });
 });

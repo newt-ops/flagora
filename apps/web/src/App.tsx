@@ -35,6 +35,9 @@ import { BattleLobbyScreen } from './components/BattleLobbyScreen.js';
 import { LiveBattleScreen } from './components/LiveBattleScreen.js';
 import { BattleResultScreen } from './components/BattleResultScreen.js';
 import { ErrorState } from './components/ErrorState.js';
+import { PlayScreen } from './components/PlayScreen.js';
+import { BottomNav, type NavTab } from './components/BottomNav.js';
+import { PlaySkeleton, CardSkeleton } from './components/Skeletons.js';
 import {
   initTelegramWebApp,
   syncTelegramBackButton,
@@ -59,6 +62,7 @@ export function App() {
     | 'battle_result'
   >('profile');
   const [runMode, setRunMode] = useState<'practice' | 'daily' | 'challenge'>('practice');
+  const [activeTab, setActiveTab] = useState<NavTab>('play');
   const [activeRole, setActiveRole] = useState<'challenger' | 'opponent' | null>(null);
   const [leaderboardMode, setLeaderboardMode] = useState<'global' | 'daily'>('global');
   const [currentRun, setCurrentRun] = useState<StartRunResponse | null>(null);
@@ -359,6 +363,7 @@ export function App() {
 
   const handleBackToProfile = () => {
     setScreen('profile');
+    setActiveTab('play');
     setCurrentRun(null);
     setLastResult(null);
     setStartError(null);
@@ -373,12 +378,14 @@ export function App() {
 
   const handleOpenGlobalLeaderboard = () => {
     setLeaderboardMode('global');
-    setScreen('leaderboard');
+    setActiveTab('leaderboard');
+    setScreen('profile');
   };
 
   const handleOpenDailyLeaderboard = () => {
     setLeaderboardMode('daily');
-    setScreen('leaderboard');
+    setActiveTab('leaderboard');
+    setScreen('profile');
   };
 
   useEffect(() => {
@@ -390,32 +397,17 @@ export function App() {
   }, [screen]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-tg-secondary-bg text-tg-text px-4 py-8">
-      {isLoading && (
-        <div className="flex flex-col items-center gap-3 text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-tg-button border-t-transparent" />
-          <p className="text-xs font-medium text-tg-hint">Connecting to Flagora...</p>
-        </div>
-      )}
+    <main className="flex min-h-screen flex-col items-center justify-start bg-tg-secondary-bg text-tg-text px-4 py-6">
+      {isLoading && <PlaySkeleton />}
 
-      {isLoadingChallengeInfo && (
-        <div className="flex flex-col items-center gap-3 text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
-          <p className="text-xs font-medium text-tg-hint">Loading challenge...</p>
-        </div>
-      )}
+      {isLoadingChallengeInfo && <CardSkeleton message="Loading challenge..." />}
 
-      {isLoadingBattleInfo && (
-        <div className="flex flex-col items-center gap-3 text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" />
-          <p className="text-xs font-medium text-tg-hint">Loading live battle...</p>
-        </div>
-      )}
+      {isLoadingBattleInfo && <CardSkeleton message="Loading live battle..." />}
 
       {!isLoading && error && <ErrorState message={error} onRetry={refetch} />}
 
       {!isLoading && !error && startError && (
-        <div className="mb-4">
+        <div className="mb-4 w-full max-w-sm">
           <ErrorState
             message={startError}
             onRetry={
@@ -430,20 +422,52 @@ export function App() {
       )}
 
       {!isLoading && !isLoadingChallengeInfo && !isLoadingBattleInfo && !error && screen === 'profile' && profile && (
-        <ProfileCard
-          profile={profile}
-          dailyStatus={dailyStatus}
-          onPlay={handleStartPractice}
-          onStartDaily={handleStartDaily}
-          onChallengeFriend={handleStartChallenge}
-          onBattleFriend={handleStartBattle}
-          onViewLeaderboard={handleOpenGlobalLeaderboard}
-          onViewDailyLeaderboard={handleOpenDailyLeaderboard}
-          isStarting={isStarting}
-          isStartingDaily={isStartingDaily}
-          isStartingChallenge={isStartingChallenge}
-          isStartingBattle={isStartingBattle}
-        />
+        <>
+          {activeTab === 'play' && (
+            <PlayScreen
+              profile={profile}
+              dailyStatus={dailyStatus}
+              onPlayPractice={handleStartPractice}
+              onStartDaily={handleStartDaily}
+              onChallengeFriend={handleStartChallenge}
+              onBattleFriend={handleStartBattle}
+              onViewDailyLeaderboard={handleOpenDailyLeaderboard}
+              onNavigateToProfile={() => setActiveTab('profile')}
+              isStarting={isStarting}
+              isStartingDaily={isStartingDaily}
+              isStartingChallenge={isStartingChallenge}
+              isStartingBattle={isStartingBattle}
+            />
+          )}
+
+          {activeTab === 'leaderboard' && sessionToken && (
+            <div className="w-full max-w-sm pb-20">
+              <LeaderboardScreen
+                sessionToken={sessionToken}
+                currentUserId={profile.telegramUserId}
+                initialMode={leaderboardMode}
+                onBack={() => setActiveTab('play')}
+                showBackButton={false}
+                onPlay={handleStartPractice}
+                onPlayDaily={handleStartDaily}
+                isStarting={isStarting || isStartingDaily}
+                dailyAttempted={Boolean(dailyStatus?.attempted)}
+              />
+            </div>
+          )}
+
+          {activeTab === 'profile' && (
+            <div className="w-full max-w-sm pb-20">
+              <ProfileCard
+                profile={profile}
+                dailyStatus={dailyStatus}
+                showGameActions={false}
+              />
+            </div>
+          )}
+
+          <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+        </>
       )}
 
       {!isLoading && !isLoadingChallengeInfo && !error && screen === 'challenge_landing' && activeChallengeInfo && (

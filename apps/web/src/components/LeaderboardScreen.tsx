@@ -16,11 +16,12 @@ interface LeaderboardScreenProps {
   sessionToken: string;
   currentUserId: number;
   initialMode?: 'global' | 'daily';
-  onBack: () => void;
+  onBack?: () => void;
   onPlay?: () => void;
   onPlayDaily?: () => void;
   isStarting?: boolean;
   dailyAttempted?: boolean;
+  showBackButton?: boolean;
 }
 
 export function LeaderboardScreen({
@@ -32,6 +33,7 @@ export function LeaderboardScreen({
   onPlayDaily,
   isStarting = false,
   dailyAttempted = false,
+  showBackButton = true,
 }: LeaderboardScreenProps) {
   const [mode, setMode] = useState<'global' | 'daily'>(initialMode);
   const { topEntries, myRank, isLoading, error, refetch } = useLeaderboard(sessionToken, mode);
@@ -42,14 +44,18 @@ export function LeaderboardScreen({
   return (
     <div className="flex w-full max-w-sm flex-col gap-4 text-tg-text">
       <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-tg-section border border-tg-separator text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
-          aria-label="Back to Profile"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
+        {showBackButton && onBack ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-tg-section border border-tg-separator text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
+            aria-label="Back"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+        ) : (
+          <div className="h-10 w-10" />
+        )}
 
         <div className="flex items-center gap-2">
           <Trophy className="h-5 w-5 text-amber-400" />
@@ -89,9 +95,23 @@ export function LeaderboardScreen({
       </p>
 
       {isLoading && (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl bg-tg-section border border-tg-separator p-8 text-center shadow-sm">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-tg-button border-t-transparent" />
-          <p className="text-xs font-medium text-tg-hint">Loading leaderboard...</p>
+        <div className="tg-section flex flex-col p-1.5 shadow-sm animate-pulse">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between rounded-xl px-3 py-2.5"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="h-7 w-7 rounded-lg bg-tg-secondary-bg" />
+                <div className="h-8 w-8 rounded-full bg-tg-secondary-bg" />
+                <div className="flex flex-col gap-1">
+                  <div className="h-3.5 w-24 rounded bg-tg-secondary-bg" />
+                  <div className="h-2.5 w-12 rounded bg-tg-secondary-bg" />
+                </div>
+              </div>
+              <div className="h-4 w-12 rounded bg-tg-secondary-bg" />
+            </div>
+          ))}
         </div>
       )}
 
