@@ -13,6 +13,7 @@ import {
 } from './session/requireSession.js';
 import { createSessionToken } from './session/tokens.js';
 import { createRun, submitAnswer, finishRun } from './game/runService.js';
+import { seedFlags } from './game/seedFlags.js';
 import {
   getTopLeaderboard,
   getPlayerLeaderboardRank,
@@ -97,9 +98,11 @@ async function bootstrap() {
   try {
     db = await initDatabase(mongoUri!);
     process.stdout.write('Connected to MongoDB successfully\n');
+    const seedResult = await seedFlags(db);
+    process.stdout.write(`Seeded flags collection (${seedResult.total} total flags)\n`);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown database error';
-    process.stderr.write(`Fatal: Failed to connect to MongoDB: ${message}\n`);
+    process.stderr.write(`Fatal: Failed to connect or initialize MongoDB: ${message}\n`);
     process.exit(1);
   }
 

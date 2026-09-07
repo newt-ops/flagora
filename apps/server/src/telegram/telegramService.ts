@@ -105,8 +105,9 @@ export async function notifyChallengeCompletion(
     const opponentScore = challenge.opponentScore ?? 0;
     const winner = challenge.winner ?? 'tie';
 
-    const botUsername =
-      overrides?.botUsername ?? process.env.TELEGRAM_BOT_USERNAME ?? 'FlagoraBot';
+    const rawUsername =
+      overrides?.botUsername ?? process.env.TELEGRAM_BOT_USERNAME ?? process.env.BOT_USERNAME ?? 'flagora_bot';
+    const botUsername = rawUsername.replace(/^@/, '');
     const deepLink = getChallengeDeepLink(challenge.challengeId, botUsername);
 
     let challengerText = '';
@@ -162,8 +163,9 @@ export async function notifyRematchInvitation(
       ? getDisplayName(requesterProfile)
       : `Player ${requesterUserId}`;
 
-    const botUsername =
-      overrides?.botUsername ?? process.env.TELEGRAM_BOT_USERNAME ?? 'FlagoraBot';
+    const rawUsername =
+      overrides?.botUsername ?? process.env.TELEGRAM_BOT_USERNAME ?? process.env.BOT_USERNAME ?? 'flagora_bot';
+    const botUsername = rawUsername.replace(/^@/, '');
     const deepLink = getChallengeDeepLink(newChallengeId, botUsername);
 
     const message = `${requesterName} has challenged you to a rematch! Tap below to play.`;

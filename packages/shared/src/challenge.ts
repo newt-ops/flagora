@@ -71,7 +71,7 @@ export function getEffectiveChallengeStatus(
 
 export function getChallengeDeepLink(
   challengeId: string,
-  botUsername: string = 'FlagoraBot',
+  botUsername: string = 'flagora_bot',
 ): string {
   const cleanUsername = botUsername.replace(/^@/, '');
   return `https://t.me/${cleanUsername}?startapp=${encodeURIComponent(challengeId)}`;

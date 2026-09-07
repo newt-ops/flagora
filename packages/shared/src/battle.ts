@@ -83,7 +83,7 @@ export function getEffectiveBattleStatus(
 
 export function getBattleDeepLink(
   battleId: string,
-  botUsername: string = 'FlagoraBot',
+  botUsername: string = 'flagora_bot',
 ): string {
   const cleanUsername = botUsername.replace(/^@/, '');
   return `https://t.me/${cleanUsername}?startapp=${encodeURIComponent(`battle_${battleId}`)}`;

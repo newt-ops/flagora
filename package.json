@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "pnpm --parallel -r run dev",
     "build": "pnpm -r run build",
+    "build:server": "pnpm --filter @flagora/shared build && pnpm --filter @flagora/server build",
+    "build:web": "pnpm --filter @flagora/shared build && pnpm --filter @flagora/web build",
+    "start": "pnpm --filter @flagora/server start",
     "lint": "eslint .",
     "format": "prettier --check .",
     "format:fix": "prettier --write ."
