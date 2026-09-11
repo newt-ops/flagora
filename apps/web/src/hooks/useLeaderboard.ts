@@ -1,11 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
-import { getLeaderboardTop, getLeaderboardMe, getDailyLeaderboard } from '../api/client.js';
+import {
+  getLeaderboardTop,
+  getLeaderboardMe,
+  getDailyLeaderboard,
+  fetchRankedLeaderboard,
+} from '../api/client.js';
 
 export function useLeaderboard(
   sessionToken: string | null,
-  mode: 'global' | 'daily' = 'global',
+  mode: 'global' | 'daily' | 'ranked' = 'global',
 ) {
   const isGlobal = mode === 'global';
+  const isDaily = mode === 'daily';
+  const isRanked = mode === 'ranked';
 
   const topQuery = useQuery({
     queryKey: ['leaderboard', 'top', sessionToken],
@@ -24,7 +31,14 @@ export function useLeaderboard(
   const dailyQuery = useQuery({
     queryKey: ['leaderboard', 'daily', sessionToken],
     queryFn: () => getDailyLeaderboard(sessionToken!),
-    enabled: Boolean(sessionToken) && !isGlobal,
+    enabled: Boolean(sessionToken) && isDaily,
+    staleTime: 10_000,
+  });
+
+  const rankedQuery = useQuery({
+    queryKey: ['leaderboard', 'ranked', sessionToken],
+    queryFn: () => fetchRankedLeaderboard(sessionToken!),
+    enabled: Boolean(sessionToken) && isRanked,
     staleTime: 10_000,
   });
 
@@ -37,6 +51,7 @@ export function useLeaderboard(
     return {
       topEntries: topQuery.data ?? [],
       myRank: meQuery.data ?? null,
+      season: null,
       isLoading,
       error,
       refetch: () => {
@@ -46,16 +61,33 @@ export function useLeaderboard(
     };
   }
 
-  const isLoading = dailyQuery.isLoading;
-  const error = dailyQuery.error instanceof Error ? dailyQuery.error.message : null;
+  if (isDaily) {
+    const isLoading = dailyQuery.isLoading;
+    const error = dailyQuery.error instanceof Error ? dailyQuery.error.message : null;
+
+    return {
+      topEntries: dailyQuery.data?.top ?? [],
+      myRank: dailyQuery.data?.me ?? null,
+      season: null,
+      isLoading,
+      error,
+      refetch: () => {
+        void dailyQuery.refetch();
+      },
+    };
+  }
+
+  const isLoading = rankedQuery.isLoading;
+  const error = rankedQuery.error instanceof Error ? rankedQuery.error.message : null;
 
   return {
-    topEntries: dailyQuery.data?.top ?? [],
-    myRank: dailyQuery.data?.me ?? null,
+    topEntries: rankedQuery.data?.top ?? [],
+    myRank: rankedQuery.data?.me ?? null,
+    season: rankedQuery.data?.season ?? null,
     isLoading,
     error,
     refetch: () => {
-      void dailyQuery.refetch();
+      void rankedQuery.refetch();
     },
   };
 }

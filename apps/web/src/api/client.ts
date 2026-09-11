@@ -20,6 +20,11 @@ import type {
   BonusCoinsRedeemSuccessResponse,
   StreakSaveIntentSuccessResponse,
   StreakSaveRedeemSuccessResponse,
+  ShopCatalogResponse,
+  PurchaseResponse,
+  EquipResponse,
+  RankStatusResponse,
+  RankedLeaderboardResponse,
 } from '@flagora/shared';
 
 const API_URL =
@@ -693,3 +698,135 @@ export async function redeemStreakSave(
 
   return response.json();
 }
+
+export async function fetchShopCatalog(sessionToken: string): Promise<ShopCatalogResponse> {
+  const response = await fetch(`${API_URL}/api/shop/catalog`, {
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to fetch shop catalog: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function purchaseCosmeticItem(
+  sessionToken: string,
+  itemId: string,
+): Promise<PurchaseResponse> {
+  const response = await fetch(`${API_URL}/api/shop/purchase`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${sessionToken}`,
+    },
+    body: JSON.stringify({ itemId }),
+  });
+
+  if (!response.ok) {
+    let message = `Failed to purchase item: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function equipCosmeticItem(
+  sessionToken: string,
+  itemId: string,
+): Promise<EquipResponse> {
+  const response = await fetch(`${API_URL}/api/shop/equip`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${sessionToken}`,
+    },
+    body: JSON.stringify({ itemId }),
+  });
+
+  if (!response.ok) {
+    let message = `Failed to equip item: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function fetchRankStatus(sessionToken: string): Promise<RankStatusResponse> {
+  const response = await fetch(`${API_URL}/api/rank/status`, {
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to fetch rank status: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function fetchRankedLeaderboard(
+  sessionToken: string,
+  limit?: number,
+): Promise<RankedLeaderboardResponse> {
+  const url = limit ? `${API_URL}/api/rank/leaderboard?limit=${limit}` : `${API_URL}/api/rank/leaderboard`;
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to fetch ranked leaderboard: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+

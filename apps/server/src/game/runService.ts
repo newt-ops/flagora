@@ -4,7 +4,6 @@ import type { Redis as RedisClient } from 'ioredis';
 import { updateLeaderboardScore, getDailyLeaderboardKey } from '../leaderboard/leaderboardService.js';
 import { notifyChallengeCompletion } from '../telegram/telegramService.js';
 import {
-  COUNTRIES,
   DEFAULT_RUN_TIER_MIX,
   SCORING_CONFIG,
   calculateLevel,
@@ -17,12 +16,13 @@ import {
   type Challenge,
   type ChallengeWinner,
   type Continent,
-  getCountriesByContinent,
 } from '@flagora/shared';
 import { selectRunFlags, generateChoices } from './flagSelection.js';
+import { getCachedFlags, getCachedFlagsByContinent } from './flagCache.js';
 import { scoreAnswer, finalizeRun } from './runScoringService.js';
 import type { TypedSocketServer } from '../multiplayer/socketTypes.js';
 import { checkAndFinalizeBattle } from '../battle/battleService.js';
+import { evaluateBadges } from '../badge/badgeService.js';
 import {
   type GameRun,
   type RunFlagItem,
@@ -53,17 +53,17 @@ export async function createRun(
 ): Promise<StartRunResponse> {
   const collection = db.collection<GameRun>('runs');
   await collection.createIndex({ runId: 1 }, { unique: true });
-  await collection.createIndex({ telegramUserId: 1 });
+  await collection.createIndex({ telegramUserId: 1, createdAt: -1 });
 
   const mode = options?.mode ?? 'practice';
-  const countryPool = getCountriesByContinent(options?.continent);
+  const countryPool = getCachedFlagsByContinent(options?.continent);
   const targetCount = options?.flagCount ?? 10;
-  const flagsPool = countryPool.length >= targetCount ? countryPool : COUNTRIES;
+  const flagsPool = countryPool.length >= targetCount ? countryPool : getCachedFlags();
 
   const flags: RunFlagItem[] =
     options?.flags ??
     selectRunFlags(DEFAULT_RUN_TIER_MIX, [], flagsPool, targetCount).map((flag, index) => {
-      const choices = generateChoices(flag, flagsPool.length >= 4 ? flagsPool : COUNTRIES);
+      const choices = generateChoices(flag, flagsPool.length >= 4 ? flagsPool : getCachedFlags());
       return {
         flagIndex: index,
         isoCode: flag.isoCode,
@@ -311,6 +311,49 @@ export async function finishRun(
         },
       );
     }
+  }
+
+  try {
+    await evaluateBadges(
+      telegramUserId,
+      {
+        type: 'run_finished',
+        run: claimResult ?? run,
+        finalScore: {
+          totalScore,
+          correctCount,
+          timeUsedMs,
+          maxCombo: run.maxCombo,
+          leftoverBonus,
+          xpEarned,
+          coinsEarned,
+          newXp,
+          newCoins,
+          newLevel,
+          leveledUp,
+          currentStreak: streakResult.currentStreak,
+          longestStreak: streakResult.longestStreak,
+          streakChange: streakResult.streakChange,
+          bestScore,
+          isNewBest,
+        },
+      },
+      db,
+      new Date(now),
+    );
+
+    await evaluateBadges(
+      telegramUserId,
+      {
+        type: 'streak_updated',
+        currentStreak: streakResult.currentStreak,
+        longestStreak: streakResult.longestStreak,
+      },
+      db,
+      new Date(now),
+    );
+  } catch {
+    void 0;
   }
 
   if (isChallenge && run.challengeId) {

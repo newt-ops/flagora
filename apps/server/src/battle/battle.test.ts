@@ -14,6 +14,7 @@ import type {
   JoinBattleResponse,
 } from '@flagora/shared';
 import { createRequireSessionMiddleware } from '../session/requireSession.js';
+import { ensureIndexes } from '../db/mongo.js';
 import { createSessionToken } from '../session/tokens.js';
 import { initSocketServer } from '../multiplayer/socketServer.js';
 import type {
@@ -77,9 +78,7 @@ describe('battle invite, view, join and room presence', () => {
     await mongoClient.connect();
     db = mongoClient.db();
 
-    await db.collection('profiles').createIndex({ telegramUserId: 1 }, { unique: true });
-    await db.collection('battles').createIndex({ battleId: 1 }, { unique: true });
-    await db.collection('battles').createIndex({ expiresAt: 1 });
+    await ensureIndexes(db);
 
     const app = express();
     app.use(express.json());

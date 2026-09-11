@@ -15,16 +15,21 @@ import type {
   PlayerProfile,
   DailyChallengeStatusResponse,
   StreakStatusResponse,
+  RankStatusResponse,
 } from '@flagora/shared';
 import { getDisplayName } from '@flagora/shared';
 import { getDailyResultSummary } from './dailyChallengeHelpers.js';
 import { CustomGameModal, type CustomGameConfig } from './CustomGameModal.js';
 import { StreakSaveBanner } from './StreakSaveBanner.js';
+import { getAvatarFrameClass } from './cosmeticHelpers.js';
+import { formatSeasonName, getTierBadgeColors, getTierIcon } from './rankHelpers.js';
+import { TierBadge } from './TierBadge.js';
 
 interface PlayScreenProps {
   profile: PlayerProfile;
   dailyStatus?: DailyChallengeStatusResponse | null;
   streakStatus?: StreakStatusResponse | null;
+  rankStatus?: RankStatusResponse | null;
   sessionToken?: string | null;
   onPlayPractice: () => void;
   onStartDaily: () => void;
@@ -45,6 +50,7 @@ export function PlayScreen({
   profile,
   dailyStatus,
   streakStatus,
+  rankStatus,
   sessionToken,
   onPlayPractice,
   onStartDaily,
@@ -65,6 +71,13 @@ export function PlayScreen({
   const firstName = profile.firstName || displayName;
   const initial = profile.firstName ? profile.firstName.charAt(0).toUpperCase() : 'P';
   const dailySummary = getDailyResultSummary(dailyStatus?.result ?? null);
+  const frameClass = getAvatarFrameClass(profile.equipped?.avatarFrame);
+
+  const currentTier = rankStatus?.tier ?? 'Bronze';
+  const currentRating = rankStatus?.battleRating ?? 0;
+  const seasonName = formatSeasonName(rankStatus?.season);
+  const tierColors = getTierBadgeColors(currentTier);
+  const TierIcon = getTierIcon(currentTier);
 
   return (
     <div className="flex w-full max-w-sm flex-col gap-4 text-tg-text pb-20">
@@ -84,10 +97,16 @@ export function PlayScreen({
             <img
               src={profile.photoUrl}
               alt={firstName}
-              className="h-12 w-12 rounded-full object-cover ring-2 ring-tg-button"
+              className={`h-12 w-12 rounded-full object-cover bg-tg-section ${
+                frameClass ? frameClass : 'ring-2 ring-tg-button'
+              }`}
             />
           ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text">
+            <div
+              className={`flex h-12 w-12 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${
+                frameClass ? frameClass : ''
+              }`}
+            >
               {initial}
             </div>
           )}
@@ -95,6 +114,7 @@ export function PlayScreen({
             <h1 className="text-base font-bold text-tg-text">{firstName}</h1>
             <div className="flex items-center gap-2 text-xs text-tg-hint">
               <span>Level {profile.level}</span>
+              <TierBadge tier={currentTier} size="xs" />
               {profile.username && (
                 <span>• @{profile.username.replace(/^@/, '')}</span>
               )}
@@ -112,6 +132,45 @@ export function PlayScreen({
             <Flame className="h-3.5 w-3.5 fill-current text-tg-button" />
             <span>{profile.currentStreak}</span>
           </div>
+        </div>
+      </div>
+
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onNavigateToProfile}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            onNavigateToProfile();
+          }
+        }}
+        data-testid="play-rank-tier-banner"
+        className={`flex cursor-pointer items-center justify-between rounded-2xl border px-4 py-2.5 transition-all hover:opacity-95 active:scale-[0.99] ${tierColors.bg} ${tierColors.border}`}
+      >
+        <div className="flex items-center gap-2.5">
+          <div
+            className={`flex h-8 w-8 items-center justify-center rounded-lg border ${tierColors.badge}`}
+          >
+            <TierIcon className="h-4 w-4 fill-current" />
+          </div>
+          <div className="flex items-center gap-2 text-left">
+            <span className={`text-xs font-extrabold ${tierColors.text}`}>
+              {currentTier} Tier
+            </span>
+            <span className="text-xs font-bold text-tg-text">
+              {currentRating.toLocaleString()} <span className="text-[10px] font-medium text-tg-hint">Rating</span>
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <span
+            data-testid="play-season-identifier"
+            className="text-[11px] font-semibold text-tg-hint"
+          >
+            {seasonName}
+          </span>
+          <span className="text-[10px] text-tg-hint">›</span>
         </div>
       </div>
 

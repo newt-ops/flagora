@@ -1,5 +1,6 @@
 import type { CountryFlag, RunTierMix, Continent } from '@flagora/shared';
-import { COUNTRIES, DEFAULT_RUN_TIER_MIX, getCountriesByContinent } from '@flagora/shared';
+import { DEFAULT_RUN_TIER_MIX } from '@flagora/shared';
+import { getCachedFlags, getCachedFlagsByContinent } from './flagCache.js';
 
 function shuffleArray<T>(array: T[]): T[] {
   const copy = [...array];
@@ -15,7 +16,7 @@ function shuffleArray<T>(array: T[]): T[] {
 export function selectRunFlags(
   tierMix: RunTierMix = DEFAULT_RUN_TIER_MIX,
   excludeIsoCodes: string[] = [],
-  allFlags: CountryFlag[] = COUNTRIES,
+  allFlags: CountryFlag[] = getCachedFlags(),
   targetCount?: number,
 ): CountryFlag[] {
   const excludeSet = new Set(excludeIsoCodes);
@@ -85,7 +86,7 @@ export function selectRunFlags(
 
 export function generateChoices(
   correctFlag: CountryFlag,
-  distractorPool: CountryFlag[] = COUNTRIES,
+  distractorPool: CountryFlag[] = getCachedFlags(),
 ): string[] {
   const sameTierCandidates = distractorPool.filter(
     (f) =>
@@ -106,7 +107,7 @@ export function generateChoices(
     const pool =
       fallbackCandidates.length >= 3
         ? fallbackCandidates
-        : COUNTRIES.filter(
+        : getCachedFlags().filter(
             (f) => f.isoCode !== correctFlag.isoCode && f.name !== correctFlag.name,
           );
     selectedDistractors = shuffleArray(pool)
@@ -123,12 +124,12 @@ export function selectFlagsForRun(options?: {
   flagCount?: number;
   excludeIsoCodes?: string[];
 }): CountryFlag[] {
-  const pool = getCountriesByContinent(options?.continent);
+  const pool = getCachedFlagsByContinent(options?.continent);
   const targetCount = options?.flagCount ?? 10;
   return selectRunFlags(
     DEFAULT_RUN_TIER_MIX,
     options?.excludeIsoCodes ?? [],
-    pool.length >= targetCount ? pool : COUNTRIES,
+    pool.length >= targetCount ? pool : getCachedFlags(),
     targetCount,
   );
 }

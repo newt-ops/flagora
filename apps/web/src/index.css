@@ -92,3 +92,69 @@ body {
 .tg-button:active {
   opacity: 0.85;
 }
+
+.avatar-frame-neon-cyan {
+  border: 2px solid #06b6d4;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+}
+
+.avatar-frame-amber-gold {
+  border: 2px solid #f59e0b;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.6);
+}
+
+.avatar-frame-emerald-pulse {
+  border: 2px solid #10b981;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.65);
+}
+
+.avatar-frame-violet-royal {
+  border: 3px solid #8b5cf6;
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.7);
+}
+
+.avatar-frame-crimson-blaze {
+  border: 3px solid #ef4444;
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.75);
+}
+
+.cosmetic-theme-midnight-ocean {
+  background: linear-gradient(135deg, #0f172a 0%, #0e7490 100%);
+}
+
+.cosmetic-theme-sunset-dusk {
+  background: linear-gradient(135deg, #4c0519 0%, #9a3412 100%);
+}
+
+.cosmetic-theme-cyber-grid {
+  background: linear-gradient(135deg, #18181b 0%, #3b0764 100%);
+}
+
+.cosmetic-theme-forest-canopy {
+  background: linear-gradient(135deg, #052e16 0%, #166534 100%);
+}
+
+.cosmetic-theme-golden-nebula {
+  background: linear-gradient(135deg, #422006 0%, #78350f 100%);
+}
+
+.cosmetic-banner-aurora-borealis {
+  background: linear-gradient(90deg, #064e3b 0%, #0284c7 100%);
+}
+
+.cosmetic-banner-volcanic-ash {
+  background: linear-gradient(90deg, #1c1917 0%, #7f1d1d 100%);
+}
+
+.cosmetic-banner-cosmic-purple {
+  background: linear-gradient(90deg, #2e1065 0%, #701a75 100%);
+}
+
+.cosmetic-banner-solar-flare {
+  background: linear-gradient(90deg, #7c2d12 0%, #d97706 100%);
+}
+
+.cosmetic-banner-diamond-frost {
+  background: linear-gradient(90deg, #1e293b 0%, #64748b 100%);
+}
+

@@ -2,7 +2,6 @@ import crypto from 'node:crypto';
 import type { Db } from 'mongodb';
 import type { Redis as RedisClient } from 'ioredis';
 import {
-  COUNTRIES,
   DEFAULT_RUN_TIER_MIX,
   getUtcDateString,
   type DailyChallengeDefinition,
@@ -12,6 +11,7 @@ import {
   type StartRunResponse,
 } from '@flagora/shared';
 import { selectRunFlags, generateChoices } from '../game/flagSelection.js';
+import { getCachedFlags } from '../game/flagCache.js';
 import { createRun } from '../game/runService.js';
 import type { GameRun, RunFlagItem } from '../game/runTypes.js';
 import {
@@ -36,9 +36,10 @@ export async function getOrCreateDailyDefinition(
     return existing;
   }
 
-  const selectedFlags = selectRunFlags(DEFAULT_RUN_TIER_MIX, [], COUNTRIES);
+  const flagsPool = getCachedFlags();
+  const selectedFlags = selectRunFlags(DEFAULT_RUN_TIER_MIX, [], flagsPool);
   const flags: DailyChallengeFlagItem[] = selectedFlags.map((flag, index) => {
-    const tierPeers = COUNTRIES.filter((f) => f.tier === flag.tier);
+    const tierPeers = flagsPool.filter((f) => f.tier === flag.tier);
     const choices = generateChoices(flag, tierPeers);
     return {
       flagIndex: index,

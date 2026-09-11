@@ -12,12 +12,15 @@
   },
   "dependencies": {
     "@flagora/shared": "workspace:*",
+    "@socket.io/redis-adapter": "^8.3.0",
+    "bullmq": "^6.3.4",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "ioredis": "^5.11.1",
     "ioredis-mock": "^8.13.1",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.13.0",
+    "rate-limiter-flexible": "^11.2.0",
     "socket.io": "^4.8.3",
     "zod": "^3.24.2"
   },

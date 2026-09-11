@@ -6,6 +6,7 @@ import { createTelegramAuthMiddleware } from './auth/middleware.js';
 import type { AuthenticatedRequest } from './auth/types.js';
 import { initDatabase } from './db/mongo.js';
 import { initRedis } from './db/redis.js';
+import { initNotificationQueue, closeNotificationQueue } from './notifications/notificationQueue.js';
 import { findOrCreatePlayerProfile, getPlayerProfileByUserId } from './profile/profileService.js';
 import {
   createRequireSessionMiddleware,
@@ -14,6 +15,22 @@ import {
 import { createSessionToken } from './session/tokens.js';
 import { createRun, submitAnswer, finishRun } from './game/runService.js';
 import { seedFlags } from './game/seedFlags.js';
+import { initFlagCache, reloadFlagCache } from './game/flagCache.js';
+import { initCosmeticCache, reloadCosmeticCache } from './shop/cosmeticCache.js';
+import { seedCosmetics } from './shop/seedCosmetics.js';
+import {
+  getShopCatalog,
+  purchaseCosmeticItem,
+  equipCosmeticItem,
+} from './shop/shopService.js';
+import {
+  CosmeticItemNotFoundError,
+  ItemAlreadyOwnedError,
+  InsufficientCoinsError,
+  ItemNotOwnedError,
+} from './shop/shopTypes.js';
+import { getRankStatus, getRankedLeaderboard } from './rank/rankService.js';
+import { getPlayerBadges, initBadgeCollection } from './badge/badgeService.js';
 import {
   getTopLeaderboard,
   getPlayerLeaderboardRank,
@@ -82,6 +99,7 @@ import {
   InvalidRewardTokenError,
 } from './rewards/index.js';
 import { getDisplayName, type PlayerProfile } from '@flagora/shared';
+import { rateLimit } from './middleware/rateLimit.js';
 
 dotenv.config();
 
@@ -124,6 +142,11 @@ async function bootstrap() {
     process.stdout.write('Connected to MongoDB successfully\n');
     const seedResult = await seedFlags(db);
     process.stdout.write(`Seeded flags collection (${seedResult.total} total flags)\n`);
+    await initFlagCache(db);
+    const cosmeticSeedResult = await seedCosmetics(db);
+    process.stdout.write(`Seeded cosmetics collection (${cosmeticSeedResult.total} total cosmetics)\n`);
+    await initCosmeticCache(db);
+    await initBadgeCollection(db);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown database error';
     process.stderr.write(`Fatal: Failed to connect or initialize MongoDB: ${message}\n`);
@@ -140,6 +163,14 @@ async function bootstrap() {
     process.exit(1);
   }
 
+  try {
+    await initNotificationQueue({ redisUrl: redisUrl! });
+    process.stdout.write('Notification queue initialized successfully\n');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown Queue error';
+    process.stderr.write(`Warning: Failed to initialize notification queue: ${message}\n`);
+  }
+
   reconcileLeaderboard(db, redis).catch((error) => {
     const message = error instanceof Error ? error.message : 'Reconciliation error';
     process.stderr.write(`Warning: Failed to reconcile leaderboard: ${message}\n`);
@@ -149,9 +180,9 @@ async function bootstrap() {
   const sessionMiddleware = createRequireSessionMiddleware(sessionSecret!);
 
   const httpServer = http.createServer(app);
-  const io = initSocketServer(httpServer, sessionSecret!, db);
+  const io = initSocketServer(httpServer, sessionSecret!, db, { redis });
 
-  app.post('/api/session', authMiddleware, async (req: AuthenticatedRequest, res) => {
+  app.post('/api/session', rateLimit({ endpoint: 'session', limit: 30, windowSeconds: 60 }), authMiddleware, async (req: AuthenticatedRequest, res) => {
     try {
       const user = req.telegramUser;
       if (!user) {
@@ -190,7 +221,7 @@ async function bootstrap() {
     }
   });
 
-  app.post('/api/runs/start', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.post('/api/runs/start', sessionMiddleware, rateLimit({ endpoint: 'run_start', limit: 30, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -214,7 +245,7 @@ async function bootstrap() {
     }
   });
 
-  app.post('/api/runs/:id/answer', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.post('/api/runs/:id/answer', sessionMiddleware, rateLimit({ endpoint: 'run_answer', limit: 60, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -262,7 +293,7 @@ async function bootstrap() {
     }
   });
 
-  app.post('/api/runs/:id/finish', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.post('/api/runs/:id/finish', sessionMiddleware, rateLimit({ endpoint: 'run_finish', limit: 30, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -316,7 +347,7 @@ async function bootstrap() {
     }
   });
 
-  app.post('/api/daily/start', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.post('/api/daily/start', sessionMiddleware, rateLimit({ endpoint: 'daily_start', limit: 30, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -370,7 +401,7 @@ async function bootstrap() {
     }
   });
 
-  app.post('/api/challenges', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.post('/api/challenges', sessionMiddleware, rateLimit({ endpoint: 'challenge_create', limit: 30, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -407,7 +438,7 @@ async function bootstrap() {
     }
   });
 
-  app.post('/api/challenges/:id/accept', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.post('/api/challenges/:id/accept', sessionMiddleware, rateLimit({ endpoint: 'challenge_accept', limit: 30, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -444,7 +475,7 @@ async function bootstrap() {
     }
   });
 
-  app.post('/api/challenges/:id/rematch', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.post('/api/challenges/:id/rematch', sessionMiddleware, rateLimit({ endpoint: 'challenge_rematch', limit: 30, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -473,7 +504,7 @@ async function bootstrap() {
     }
   });
 
-  app.post('/api/battles', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.post('/api/battles', sessionMiddleware, rateLimit({ endpoint: 'battle_create', limit: 30, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -510,7 +541,7 @@ async function bootstrap() {
     }
   });
 
-  app.post('/api/battles/:id/join', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.post('/api/battles/:id/join', sessionMiddleware, rateLimit({ endpoint: 'battle_join', limit: 30, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -519,7 +550,7 @@ async function bootstrap() {
       }
 
       const id = String(req.params.id);
-      const result = await joinBattle(id, telegramUserId, db, io);
+      const result = await joinBattle(id, telegramUserId, db, io, redis);
       res.status(200).json(result);
     } catch (error) {
       if (error instanceof BattleNotFoundError) {
@@ -546,6 +577,7 @@ async function bootstrap() {
   app.post(
     '/api/rewards/bonus-coins/intent',
     sessionMiddleware,
+    rateLimit({ endpoint: 'reward_intent', limit: 20, windowSeconds: 60 }),
     async (req: AuthenticatedSessionRequest, res) => {
       try {
         const telegramUserId = req.sessionUser?.telegramUserId;
@@ -577,6 +609,7 @@ async function bootstrap() {
   app.post(
     '/api/rewards/bonus-coins/redeem',
     sessionMiddleware,
+    rateLimit({ endpoint: 'reward_redeem', limit: 20, windowSeconds: 60 }),
     async (req: AuthenticatedSessionRequest, res) => {
       try {
         const telegramUserId = req.sessionUser?.telegramUserId;
@@ -647,6 +680,7 @@ async function bootstrap() {
   app.post(
     '/api/rewards/streak-save/intent',
     sessionMiddleware,
+    rateLimit({ endpoint: 'reward_intent', limit: 20, windowSeconds: 60 }),
     async (req: AuthenticatedSessionRequest, res) => {
       try {
         const telegramUserId = req.sessionUser?.telegramUserId;
@@ -682,6 +716,7 @@ async function bootstrap() {
   app.post(
     '/api/rewards/streak-save/redeem',
     sessionMiddleware,
+    rateLimit({ endpoint: 'reward_redeem', limit: 20, windowSeconds: 60 }),
     async (req: AuthenticatedSessionRequest, res) => {
       try {
         const telegramUserId = req.sessionUser?.telegramUserId;
@@ -732,6 +767,171 @@ async function bootstrap() {
       }
     },
   );
+
+  app.post('/api/admin/flags/reload', async (req, res) => {
+    try {
+      const adminSecret = process.env.ADMIN_SECRET;
+      if (adminSecret && req.headers['x-admin-secret'] !== adminSecret) {
+        res.status(403).json({ error: 'Forbidden', message: 'Invalid admin secret' });
+        return;
+      }
+      const result = await reloadFlagCache(db);
+      res.status(200).json({ ok: true, count: result.count });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to reload flag cache';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.get('/api/shop/catalog', sessionMiddleware, rateLimit({ endpoint: 'shop_catalog', limit: 120, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const catalog = await getShopCatalog(telegramUserId, db);
+      res.status(200).json(catalog);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch shop catalog';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.post('/api/shop/purchase', sessionMiddleware, rateLimit({ endpoint: 'shop_purchase', limit: 30, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const { itemId } = req.body ?? {};
+      if (!itemId || typeof itemId !== 'string') {
+        res.status(400).json({ error: 'Bad request', message: 'itemId (string) is required' });
+        return;
+      }
+
+      const result = await purchaseCosmeticItem(telegramUserId, itemId, db);
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof CosmeticItemNotFoundError) {
+        res.status(400).json({ error: 'Bad request', message: error.message });
+        return;
+      }
+      if (error instanceof ItemAlreadyOwnedError) {
+        res.status(400).json({ error: 'Already owned', message: error.message });
+        return;
+      }
+      if (error instanceof InsufficientCoinsError) {
+        res.status(400).json({
+          error: 'Insufficient coins',
+          message: error.message,
+          required: error.required,
+          available: error.available,
+        });
+        return;
+      }
+      const message = error instanceof Error ? error.message : 'Failed to purchase cosmetic item';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.post('/api/shop/equip', sessionMiddleware, rateLimit({ endpoint: 'shop_equip', limit: 60, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const { itemId } = req.body ?? {};
+      if (!itemId || typeof itemId !== 'string') {
+        res.status(400).json({ error: 'Bad request', message: 'itemId (string) is required' });
+        return;
+      }
+
+      const result = await equipCosmeticItem(telegramUserId, itemId, db);
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof CosmeticItemNotFoundError) {
+        res.status(400).json({ error: 'Bad request', message: error.message });
+        return;
+      }
+      if (error instanceof ItemNotOwnedError) {
+        res.status(400).json({ error: 'Not owned', message: error.message });
+        return;
+      }
+      const message = error instanceof Error ? error.message : 'Failed to equip cosmetic item';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.get('/api/rank/status', sessionMiddleware, rateLimit({ endpoint: 'rank_status', limit: 120, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const status = await getRankStatus(telegramUserId, db, redis);
+      res.status(200).json(status);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch rank status';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.get('/api/rank/leaderboard', sessionMiddleware, rateLimit({ endpoint: 'rank_leaderboard', limit: 60, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const rawLimit = Number(req.query.limit);
+      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 50;
+      const result = await getRankedLeaderboard(telegramUserId, db, redis, limit);
+      res.status(200).json(result);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch ranked leaderboard';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.get('/api/badges/me', sessionMiddleware, rateLimit({ endpoint: 'badges_me', limit: 120, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const badges = await getPlayerBadges(telegramUserId, db);
+      res.status(200).json({ badges });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch badges';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.post('/api/admin/shop/reload', async (req, res) => {
+    try {
+      const adminSecret = process.env.ADMIN_SECRET;
+      if (adminSecret && req.headers['x-admin-secret'] !== adminSecret) {
+        res.status(403).json({ error: 'Forbidden', message: 'Invalid admin secret' });
+        return;
+      }
+      const result = await reloadCosmeticCache(db);
+      res.status(200).json({ ok: true, count: result.count });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to reload cosmetic cache';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
 
   app.post('/api/telegram/webhook', async (req, res) => {
     res.status(200).json({ ok: true });
@@ -951,6 +1151,13 @@ async function bootstrap() {
   httpServer.listen(port, () => {
     process.stdout.write(`Server listening on port ${port}\n`);
   });
+
+  const shutdown = async () => {
+    await closeNotificationQueue();
+    process.exit(0);
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 }
 
 bootstrap().catch((error) => {

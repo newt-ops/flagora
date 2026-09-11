@@ -10,7 +10,12 @@
     "start": "pnpm --filter @flagora/server start",
     "lint": "eslint .",
     "format": "prettier --check .",
-    "format:fix": "prettier --write ."
+    "format:fix": "prettier --write .",
+    "load:gameplay": "k6 run load-tests/gameplay-loop.js",
+    "load:leaderboards": "k6 run load-tests/leaderboards.js",
+    "load:rewards": "k6 run load-tests/reward-flow.js",
+    "load:battles": "k6 run load-tests/battles.js",
+    "test:load-smoke": "pnpm --filter @flagora/server exec tsx --test ../../load-tests/smoke.test.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

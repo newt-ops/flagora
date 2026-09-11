@@ -1,7 +1,6 @@
 import crypto from 'node:crypto';
 import type { Db } from 'mongodb';
 import {
-  COUNTRIES,
   DEFAULT_RUN_TIER_MIX,
   getEffectiveChallengeStatus,
   getDisplayName,
@@ -13,6 +12,7 @@ import {
   type PlayerProfile,
 } from '@flagora/shared';
 import { selectRunFlags, generateChoices } from '../game/flagSelection.js';
+import { getCachedFlags } from '../game/flagCache.js';
 import { createRun } from '../game/runService.js';
 import type { RunFlagItem } from '../game/runTypes.js';
 import {
@@ -35,11 +35,20 @@ export async function createChallenge(
 ): Promise<CreateChallengeResponse> {
   const collection = db.collection<Challenge>('challenges');
   await collection.createIndex({ challengeId: 1 }, { unique: true });
-  await collection.createIndex({ expiresAt: 1 });
+  await collection.createIndex({ challengerUserId: 1 });
+  await collection.createIndex({ opponentUserId: 1 });
+  await collection.createIndex(
+    { expiresAt: 1 },
+    {
+      expireAfterSeconds: 0,
+      partialFilterExpression: { status: { $in: ['pending', 'expired'] } },
+    },
+  );
 
-  const selected = selectRunFlags(DEFAULT_RUN_TIER_MIX, [], COUNTRIES);
+  const flagsPool = getCachedFlags();
+  const selected = selectRunFlags(DEFAULT_RUN_TIER_MIX, [], flagsPool);
   const runFlags: RunFlagItem[] = selected.map((flag, index) => {
-    const tierPeers = COUNTRIES.filter((f) => f.tier === flag.tier);
+    const tierPeers = flagsPool.filter((f) => f.tier === flag.tier);
     const choices = generateChoices(flag, tierPeers);
     return {
       flagIndex: index,

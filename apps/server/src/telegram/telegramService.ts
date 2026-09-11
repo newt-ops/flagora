@@ -7,6 +7,7 @@ import {
   type PlayerProfile,
   type BattleSession,
 } from '@flagora/shared';
+import { enqueueTelegramNotification } from '../notifications/notificationQueue.js';
 
 export interface InlineKeyboardButton {
   text: string;
@@ -233,7 +234,7 @@ export async function notifyChallengeCompletion(
     }
 
     await Promise.all([
-      sendTelegramMessage({
+      enqueueTelegramNotification({
         chatId: challenge.challengerUserId,
         text: challengerText,
         parseMode: 'HTML',
@@ -242,7 +243,7 @@ export async function notifyChallengeCompletion(
         botToken: overrides?.botToken,
         apiBaseUrl: overrides?.apiBaseUrl,
       }),
-      sendTelegramMessage({
+      enqueueTelegramNotification({
         chatId: challenge.opponentUserId,
         text: opponentText,
         parseMode: 'HTML',
@@ -280,7 +281,7 @@ export async function notifyRematchInvitation(
 
     const message = `${requesterName} has challenged you to a rematch! Tap below to play.\n\n<a href="${deepLink}">Accept Rematch</a>`;
 
-    await sendTelegramMessage({
+    await enqueueTelegramNotification({
       chatId: targetUserId,
       text: message,
       parseMode: 'HTML',
@@ -343,7 +344,7 @@ export async function notifyBattleCompletion(
     }
 
     await Promise.all([
-      sendTelegramMessage({
+      enqueueTelegramNotification({
         chatId: battle.challengerUserId,
         text: challengerText,
         parseMode: 'HTML',
@@ -352,7 +353,7 @@ export async function notifyBattleCompletion(
         botToken: overrides?.botToken,
         apiBaseUrl: overrides?.apiBaseUrl,
       }),
-      sendTelegramMessage({
+      enqueueTelegramNotification({
         chatId: battle.opponentUserId,
         text: opponentText,
         parseMode: 'HTML',
@@ -394,7 +395,7 @@ export async function notifyOpponentReady(
 
     const message = `⚡ <b>${readyName}</b> is ready for your Live Battle!\nTap below to start the countdown: <a href="${deepLink}">Launch Battle</a>`;
 
-    await sendTelegramMessage({
+    await enqueueTelegramNotification({
       chatId: targetUserId,
       text: message,
       parseMode: 'HTML',
@@ -417,7 +418,7 @@ export async function notifyReferralReward(
 ): Promise<void> {
   try {
     const message = `🎉 <b>New Referral Reward!</b>\n<b>${invitedName}</b> joined Flagora with your invite link.\nYou earned <b>+100 Coins</b>! 🪙`;
-    await sendTelegramMessage({
+    await enqueueTelegramNotification({
       chatId: referrerUserId,
       text: message,
       parseMode: 'HTML',

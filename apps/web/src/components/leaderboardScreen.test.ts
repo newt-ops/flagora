@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import type { LeaderboardEntry, LeaderboardMeResponse } from '@flagora/shared';
+import { getRankedTier, type LeaderboardEntry, type LeaderboardMeResponse } from '@flagora/shared';
 import {
   shouldShowPinnedMyRank,
   isUnrankedPlayer,
@@ -103,6 +103,17 @@ describe('leaderboard helpers', () => {
     it('returns neutral styles for rank 4 and beyond', () => {
       assert.equal(getRankBadgeClass(4), 'bg-tg-bg text-tg-hint');
       assert.equal(getRankBadgeClass(50), 'bg-tg-bg text-tg-hint');
+    });
+  });
+
+  describe('ranked leaderboard tier resolution', () => {
+    it('accurately resolves ranked tiers from leaderboard entry scores', () => {
+      assert.equal(getRankedTier(2100), 'Legend');
+      assert.equal(getRankedTier(1600), 'Diamond');
+      assert.equal(getRankedTier(1100), 'Platinum');
+      assert.equal(getRankedTier(750), 'Gold');
+      assert.equal(getRankedTier(450), 'Silver');
+      assert.equal(getRankedTier(150), 'Bronze');
     });
   });
 });

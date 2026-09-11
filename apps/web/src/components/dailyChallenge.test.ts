@@ -90,5 +90,18 @@ describe('daily challenge helpers', () => {
       assert.equal(getLeaderboardTitle('global'), 'Global Leaderboard');
       assert.equal(getLeaderboardSubtitle('global'), 'Ranked by all-time best score');
     });
+
+    it('returns ranked titles and seasonal subtitles for ranked mode', () => {
+      assert.equal(getLeaderboardTitle('ranked'), 'Ranked Ladder');
+      assert.equal(
+        getLeaderboardSubtitle('ranked', '2026-09'),
+        'September 2026 Season • Ranked by Battle Rating',
+      );
+      assert.match(
+        getLeaderboardSubtitle('ranked', null),
+        /Season • Ranked by Battle Rating/,
+      );
+    });
   });
 });
+

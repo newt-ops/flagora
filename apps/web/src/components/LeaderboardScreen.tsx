@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trophy, ArrowLeft, Play, Sparkles } from 'lucide-react';
+import { Trophy, ArrowLeft, Play, Sparkles, Zap } from 'lucide-react';
 import { useLeaderboard } from '../hooks/useLeaderboard.js';
 import {
   shouldShowPinnedMyRank,
@@ -10,18 +10,22 @@ import {
   getLeaderboardTitle,
   getLeaderboardSubtitle,
 } from './dailyChallengeHelpers.js';
-import type { LeaderboardEntry } from '@flagora/shared';
+import { getAvatarFrameClass } from './cosmeticHelpers.js';
+import { getRankedTier, type LeaderboardEntry } from '@flagora/shared';
+import { TierBadge } from './TierBadge.js';
 
 interface LeaderboardScreenProps {
   sessionToken: string;
   currentUserId: number;
-  initialMode?: 'global' | 'daily';
+  initialMode?: 'global' | 'daily' | 'ranked';
   onBack?: () => void;
   onPlay?: () => void;
   onPlayDaily?: () => void;
+  onBattleLive?: () => void;
   isStarting?: boolean;
   dailyAttempted?: boolean;
   showBackButton?: boolean;
+  userAvatarFrame?: string | null;
 }
 
 export function LeaderboardScreen({
@@ -31,12 +35,14 @@ export function LeaderboardScreen({
   onBack,
   onPlay,
   onPlayDaily,
+  onBattleLive,
   isStarting = false,
   dailyAttempted = false,
   showBackButton = true,
+  userAvatarFrame,
 }: LeaderboardScreenProps) {
-  const [mode, setMode] = useState<'global' | 'daily'>(initialMode);
-  const { topEntries, myRank, isLoading, error, refetch } = useLeaderboard(sessionToken, mode);
+  const [mode, setMode] = useState<'global' | 'daily' | 'ranked'>(initialMode);
+  const { topEntries, myRank, season, isLoading, error, refetch } = useLeaderboard(sessionToken, mode);
 
   const showPinnedRow = shouldShowPinnedMyRank(myRank, topEntries, currentUserId);
   const isUnranked = isUnrankedPlayer(myRank);
@@ -86,12 +92,23 @@ export function LeaderboardScreen({
               : 'text-tg-hint hover:text-tg-text'
           }`}
         >
-          Daily Challenge
+          Daily
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('ranked')}
+          className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${
+            mode === 'ranked'
+              ? 'bg-tg-section text-tg-text shadow-sm border border-tg-separator'
+              : 'text-tg-hint hover:text-tg-text'
+          }`}
+        >
+          Ranked
         </button>
       </div>
 
       <p className="text-center text-xs text-tg-hint">
-        {getLeaderboardSubtitle(mode)}
+        {getLeaderboardSubtitle(mode, season)}
       </p>
 
       {isLoading && (
@@ -138,6 +155,8 @@ export function LeaderboardScreen({
                 <p className="text-xs text-tg-hint">
                   {mode === 'daily'
                     ? 'Be the first player to complete today’s challenge!'
+                    : mode === 'ranked'
+                    ? 'Be the first player to rank on this season’s ladder!'
                     : 'Be the first player to rank on Flagora!'}
                 </p>
               </div>
@@ -145,6 +164,8 @@ export function LeaderboardScreen({
               topEntries.map((entry: LeaderboardEntry) => {
                 const isMe = entry.telegramUserId === currentUserId;
                 const initial = entry.displayName.replace(/^@/, '').charAt(0).toUpperCase() || 'P';
+                const frameClass = isMe ? getAvatarFrameClass(userAvatarFrame) : '';
+                const tier = mode === 'ranked' ? getRankedTier(entry.bestScore) : null;
 
                 return (
                   <div
@@ -168,10 +189,16 @@ export function LeaderboardScreen({
                         <img
                           src={entry.photoUrl}
                           alt={entry.displayName}
-                          className="h-8 w-8 shrink-0 rounded-full object-cover border border-tg-separator"
+                          className={`h-8 w-8 shrink-0 rounded-full object-cover bg-tg-section ${
+                            frameClass ? frameClass : 'border border-tg-separator'
+                          }`}
                         />
                       ) : (
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-tg-button text-xs font-bold text-tg-button-text">
+                        <div
+                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-tg-button text-xs font-bold text-tg-button-text ${
+                            frameClass ? frameClass : ''
+                          }`}
+                        >
                           {initial}
                         </div>
                       )}
@@ -181,6 +208,7 @@ export function LeaderboardScreen({
                           <span className="truncate text-sm font-semibold text-tg-text">
                             {entry.displayName}
                           </span>
+                          {tier && <TierBadge tier={tier} size="xs" />}
                           {isMe && (
                             <span className="shrink-0 rounded-full bg-tg-button/15 px-2 py-0.2 text-[10px] font-bold text-tg-button">
                               You
@@ -194,7 +222,9 @@ export function LeaderboardScreen({
                       <span className="text-sm font-extrabold text-tg-text">
                         {entry.bestScore.toLocaleString()}
                       </span>
-                      <span className="ml-1 text-xs text-tg-hint">pts</span>
+                      <span className="ml-1 text-xs text-tg-hint">
+                        {mode === 'ranked' ? 'RR' : 'pts'}
+                      </span>
                     </div>
                   </div>
                 );
@@ -211,6 +241,9 @@ export function LeaderboardScreen({
                 <div className="text-left">
                   <div className="flex items-center gap-1.5">
                     <p className="text-sm font-bold text-tg-text">Your Standing</p>
+                    {mode === 'ranked' && (
+                      <TierBadge tier={getRankedTier(myRank.bestScore)} size="xs" />
+                    )}
                     <span className="rounded-full bg-tg-button/15 px-2 py-0.2 text-[10px] font-bold text-tg-button">
                       You
                     </span>
@@ -223,7 +256,9 @@ export function LeaderboardScreen({
                 <span className="text-sm font-extrabold text-tg-text">
                   {myRank.bestScore.toLocaleString()}
                 </span>
-                <span className="ml-1 text-xs text-tg-hint">pts</span>
+                <span className="ml-1 text-xs text-tg-hint">
+                  {mode === 'ranked' ? 'RR' : 'pts'}
+                </span>
               </div>
             </div>
           )}
@@ -232,13 +267,21 @@ export function LeaderboardScreen({
             <div className="flex flex-col items-center gap-2 rounded-2xl bg-tg-section border border-tg-separator p-4 text-center shadow-sm">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-tg-button">
                 <Sparkles className="h-4 w-4 text-tg-button" />
-                <span>{mode === 'daily' ? 'Not Ranked Today' : 'Not Ranked Yet'}</span>
+                <span>
+                  {mode === 'daily'
+                    ? 'Not Ranked Today'
+                    : mode === 'ranked'
+                    ? 'Not Ranked This Season'
+                    : 'Not Ranked Yet'}
+                </span>
               </div>
               <p className="text-xs text-tg-hint">
                 {mode === 'daily'
                   ? dailyAttempted
                     ? 'You have already completed today’s challenge.'
                     : 'Complete today’s daily challenge to record your score on the daily leaderboard!'
+                  : mode === 'ranked'
+                  ? 'Play live 1v1 battles to earn rating points and claim your tier on the seasonal ladder!'
                   : 'Play a run to record your score and claim your position on the leaderboard!'}
               </p>
               {mode === 'daily' && !dailyAttempted && onPlayDaily && (
@@ -261,6 +304,17 @@ export function LeaderboardScreen({
                 >
                   <Play className={`h-4 w-4 fill-current ${isStarting ? 'animate-spin' : ''}`} />
                   <span>{isStarting ? 'Starting Run...' : 'Play to Rank'}</span>
+                </button>
+              )}
+              {mode === 'ranked' && (onBattleLive || onPlay) && (
+                <button
+                  type="button"
+                  onClick={onBattleLive || onPlay}
+                  disabled={isStarting}
+                  className="mt-1 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
+                >
+                  <Zap className={`h-4 w-4 ${isStarting ? 'animate-spin' : ''}`} />
+                  <span>{isStarting ? 'Entering Arena...' : 'Battle to Rank'}</span>
                 </button>
               )}
             </div>

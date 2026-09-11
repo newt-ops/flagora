@@ -1,6 +1,8 @@
 import type { Server as HttpServer } from 'node:http';
 import { Server as SocketIOServer } from 'socket.io';
 import type { Db } from 'mongodb';
+import type { Redis as RedisClient } from 'ioredis';
+import { createAdapter } from '@socket.io/redis-adapter';
 import type { BattleSession } from '@flagora/shared';
 import { createSocketAuthMiddleware } from './socketAuth.js';
 import type {
@@ -27,9 +29,18 @@ import {
   InvalidFlagIndexError,
   TimeExpiredError,
 } from '../game/runTypes.js';
+import { getRedis } from '../db/redis.js';
+import {
+  addBattlePresence,
+  removeBattlePresence,
+  areBothPlayersPresent,
+  markPlayerReady,
+  acquireCountdownLock,
+} from '../battle/battlePresence.js';
 
 export interface SocketServerOptions {
   countdownDelayMs?: number;
+  redis?: RedisClient | null;
 }
 
 export function initSocketServer(
@@ -50,12 +61,26 @@ export function initSocketServer(
     },
   });
 
-  const readyPlayersByBattle = new Map<string, Set<number>>();
+  let redisClient: RedisClient | null = options?.redis ?? null;
+  if (!redisClient) {
+    try {
+      redisClient = getRedis();
+    } catch {
+      redisClient = null;
+    }
+  }
+
+  if (redisClient) {
+    const pubClient = redisClient;
+    const subClient = pubClient.duplicate();
+    io.adapter(createAdapter(pubClient, subClient));
+  }
 
   io.use(createSocketAuthMiddleware(sessionSecret));
 
   io.on('connection', (socket) => {
     const userId = socket.data.telegramUserId;
+    const joinedBattles = new Set<string>();
     process.stdout.write(`[Socket] Client connected: socket ID ${socket.id}, user ID ${userId}\n`);
 
     socket.on('ping', (callback) => {
@@ -108,18 +133,20 @@ export function initSocketServer(
 
       const roomName = `battle:${battleId}`;
       await socket.join(roomName);
+      joinedBattles.add(battleId);
+      await addBattlePresence(redisClient, battleId, userId, socket.id);
       process.stdout.write(`[Socket] User ${userId} joined room ${roomName}\n`);
 
       callback?.({ success: true, battleId });
 
-      const sockets = await io.in(roomName).fetchSockets();
-      const presentUserIds = new Set(sockets.map((s) => s.data.telegramUserId));
+      const bothPresent = await areBothPlayersPresent(
+        redisClient,
+        battleId,
+        battle.challengerUserId,
+        battle.opponentUserId,
+      );
 
-      if (
-        presentUserIds.has(battle.challengerUserId) &&
-        battle.opponentUserId !== null &&
-        presentUserIds.has(battle.opponentUserId)
-      ) {
+      if (bothPresent) {
         io.to(roomName).emit('bothPlayersPresent', { battleId });
       }
     });
@@ -166,61 +193,55 @@ export function initSocketServer(
         return;
       }
 
-      let readySet = readyPlayersByBattle.get(battleId);
-      if (!readySet) {
-        readySet = new Set<number>();
-        readyPlayersByBattle.set(battleId, readySet);
-      }
-      readySet.add(userId);
-      const readyCount = readySet.size;
+      const readyState = await markPlayerReady(
+        redisClient,
+        battleId,
+        userId,
+        battle.challengerUserId,
+        battle.opponentUserId,
+      );
 
-      callback?.({ success: true, battleId, readyCount });
+      callback?.({ success: true, battleId, readyCount: readyState.readyCount });
 
       const roomName = `battle:${battleId}`;
-      const challengerReady = readySet.has(battle.challengerUserId);
-      const opponentReady =
-        battle.opponentUserId !== null && readySet.has(battle.opponentUserId);
-
       io.to(roomName).emit('battlePlayerReady', {
         battleId,
         userId,
-        readyCount,
-        challengerReady,
-        opponentReady,
+        readyCount: readyState.readyCount,
+        challengerReady: readyState.challengerReady,
+        opponentReady: readyState.opponentReady,
       });
 
       void notifyOpponentReady(battleId, userId, db);
 
-      if (
-        battle.opponentUserId !== null &&
-        readySet.has(battle.challengerUserId) &&
-        readySet.has(battle.opponentUserId)
-      ) {
-        readyPlayersByBattle.delete(battleId);
-        io.to(roomName).emit('battleCountdown', { battleId, countdownSeconds: 3 });
+      if (readyState.bothReady) {
+        const canStartCountdown = await acquireCountdownLock(redisClient, battleId);
+        if (canStartCountdown) {
+          io.to(roomName).emit('battleCountdown', { battleId, countdownSeconds: 3 });
 
-        let tick = 2;
-        const intervalId = setInterval(() => {
-          if (tick > 0) {
-            io.to(roomName).emit('battleCountdown', { battleId, countdownSeconds: tick });
-            tick--;
-          } else {
+          let tick = 2;
+          const intervalId = setInterval(() => {
+            if (tick > 0) {
+              io.to(roomName).emit('battleCountdown', { battleId, countdownSeconds: tick });
+              tick--;
+            } else {
+              clearInterval(intervalId);
+            }
+          }, 1000);
+          intervalId.unref?.();
+
+          const delay = options?.countdownDelayMs ?? 3000;
+          const timerId = setTimeout(async () => {
             clearInterval(intervalId);
-          }
-        }, 1000);
-        intervalId.unref?.();
-
-        const delay = options?.countdownDelayMs ?? 3000;
-        const timerId = setTimeout(async () => {
-          clearInterval(intervalId);
-          try {
-            await startBattleSession(battleId, db, io);
-          } catch (error) {
-            const errorMsg = error instanceof Error ? error.message : 'Failed to start battle';
-            io.to(roomName).emit('battleError', { message: errorMsg, battleId });
-          }
-        }, delay);
-        timerId.unref?.();
+            try {
+              await startBattleSession(battleId, db, io);
+            } catch (error) {
+              const errorMsg = error instanceof Error ? error.message : 'Failed to start battle';
+              io.to(roomName).emit('battleError', { message: errorMsg, battleId });
+            }
+          }, delay);
+          timerId.unref?.();
+        }
       }
     });
 
@@ -333,6 +354,9 @@ export function initSocketServer(
     });
 
     socket.on('disconnect', (reason) => {
+      for (const battleId of joinedBattles) {
+        void removeBattlePresence(redisClient, battleId, userId, socket.id);
+      }
       process.stdout.write(
         `[Socket] Client disconnected: socket ID ${socket.id}, reason: ${reason}\n`,
       );

@@ -69,6 +69,15 @@ export async function findOrCreatePlayerProfile(
     lastPlayedDate: null,
     referredBy: null,
     referralCount: 0,
+    ownedItemIds: [],
+    equipped: {
+      avatarFrame: null,
+      flagTheme: null,
+      profileBanner: null,
+    },
+    battleRating: 0,
+    currentSeason: null,
+    tier4CorrectCount: 0,
     createdAt: now,
     updatedAt: now,
   };

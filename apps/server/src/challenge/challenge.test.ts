@@ -7,6 +7,7 @@ import { MongoClient, type Db } from 'mongodb';
 import type { Redis as RedisClient } from 'ioredis';
 import type { PlayerProfile, Challenge } from '@flagora/shared';
 import { initRedis, closeRedis } from '../db/redis.js';
+import { ensureIndexes } from '../db/mongo.js';
 import { createRequireSessionMiddleware, type AuthenticatedSessionRequest } from '../session/requireSession.js';
 import { createSessionToken } from '../session/tokens.js';
 import { finishRun, submitAnswer, createRun } from '../game/runService.js';
@@ -45,6 +46,16 @@ describe('challenge backend and rules', () => {
   let sentTelegramMessages: CapturedTelegramMessage[] = [];
   let shouldFailTelegramApi = false;
   const sessionSecret = 'test-secret-challenge-key-32';
+
+  async function waitForMessages(count: number, timeoutMs = 2000): Promise<void> {
+    const start = Date.now();
+    while (sentTelegramMessages.length < count) {
+      if (Date.now() - start > timeoutMs) {
+        throw new Error(`Timed out waiting for ${count} telegram messages, received ${sentTelegramMessages.length}`);
+      }
+      await new Promise((r) => setTimeout(r, 10));
+    }
+  }
 
   before(async () => {
     mockTelegramServer = http.createServer((req, res) => {
@@ -99,10 +110,7 @@ describe('challenge backend and rules', () => {
     await mongoClient.connect();
     db = mongoClient.db('test-challenge');
 
-    await db.collection('profiles').createIndex({ telegramUserId: 1 }, { unique: true });
-    await db.collection('runs').createIndex({ runId: 1 }, { unique: true });
-    await db.collection('challenges').createIndex({ challengeId: 1 }, { unique: true });
-    await db.collection('challenges').createIndex({ expiresAt: 1 });
+    await ensureIndexes(db);
 
     redis = await initRedis('memory');
 
@@ -650,6 +658,7 @@ describe('challenge backend and rules', () => {
     assert.equal(doc1.status, 'completed');
     assert.equal(doc1.winner, 'challenger');
 
+    await waitForMessages(2);
     assert.equal(sentTelegramMessages.length, 2);
     const challengerMsg = sentTelegramMessages.find((m) => m.chatId === challengerId);
     const opponentMsg = sentTelegramMessages.find((m) => m.chatId === opponentId);
@@ -687,6 +696,7 @@ describe('challenge backend and rules', () => {
     const c2OpponentFinish = await finishRun(opponentRunData2.runId, opponentId, db, redis);
 
     assert.ok(c2OpponentFinish.totalScore > c2ChallengerFinish.totalScore);
+    await waitForMessages(2);
     assert.equal(sentTelegramMessages.length, 2);
     const c2ChallengerMsg = sentTelegramMessages.find((m) => m.chatId === challengerId);
     const c2OpponentMsg = sentTelegramMessages.find((m) => m.chatId === opponentId);
@@ -735,6 +745,7 @@ describe('challenge backend and rules', () => {
     assert.equal(doc3.challengerScore, 400);
     assert.equal(doc3.opponentScore, 400);
 
+    await waitForMessages(2);
     assert.equal(sentTelegramMessages.length, 2);
     const c3ChallengerMsg = sentTelegramMessages.find((m) => m.chatId === challengerId);
     const c3OpponentMsg = sentTelegramMessages.find((m) => m.chatId === opponentId);
@@ -861,6 +872,7 @@ describe('challenge backend and rules', () => {
     assert.equal(newChallengeDoc.opponentUserId, null);
     assert.equal(newChallengeDoc.status, 'pending');
 
+    await waitForMessages(1);
     assert.equal(sentTelegramMessages.length, 1);
     const rematchInvite = sentTelegramMessages[0];
     assert.equal(rematchInvite.chatId, playerA);

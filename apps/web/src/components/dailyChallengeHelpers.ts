@@ -1,4 +1,5 @@
 import type { DailyChallengeStatusResponse, FinishRunResponse } from '@flagora/shared';
+import { formatSeasonName } from './rankHelpers.js';
 
 export function isDailyAttempted(status: DailyChallengeStatusResponse | null): boolean {
   return Boolean(status && status.attempted);
@@ -28,12 +29,23 @@ export function getDailyResultSummary(result: FinishRunResponse | null): {
   };
 }
 
-export function getLeaderboardTitle(mode: 'global' | 'daily'): string {
-  return mode === 'daily' ? 'Daily Leaderboard' : 'Global Leaderboard';
+export function getLeaderboardTitle(mode: 'global' | 'daily' | 'ranked'): string {
+  if (mode === 'daily') {
+    return 'Daily Leaderboard';
+  }
+  if (mode === 'ranked') {
+    return 'Ranked Ladder';
+  }
+  return 'Global Leaderboard';
 }
 
-export function getLeaderboardSubtitle(mode: 'global' | 'daily'): string {
-  return mode === 'daily'
-    ? "Ranked by today's challenge score"
-    : 'Ranked by all-time best score';
+export function getLeaderboardSubtitle(mode: 'global' | 'daily' | 'ranked', season?: string | null): string {
+  if (mode === 'daily') {
+    return "Ranked by today's challenge score";
+  }
+  if (mode === 'ranked') {
+    const formatted = formatSeasonName(season);
+    return `${formatted} Season • Ranked by Battle Rating`;
+  }
+  return 'Ranked by all-time best score';
 }

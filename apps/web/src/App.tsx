@@ -14,6 +14,7 @@ import { useGameRun } from './hooks/useGameRun.js';
 import { useDailyChallenge } from './hooks/useDailyChallenge.js';
 import { useStreakStatus } from './hooks/useStreakStatus.js';
 import { useBattleSocket } from './hooks/useBattleSocket.js';
+import { useRank } from './hooks/useRank.js';
 import {
   createChallenge,
   getChallengeInfo,
@@ -37,6 +38,7 @@ import { LiveBattleScreen } from './components/LiveBattleScreen.js';
 import { BattleResultScreen } from './components/BattleResultScreen.js';
 import { ErrorState } from './components/ErrorState.js';
 import { PlayScreen } from './components/PlayScreen.js';
+import { ShopScreen } from './components/ShopScreen.js';
 import { BottomNav, type NavTab } from './components/BottomNav.js';
 import { PlaySkeleton, CardSkeleton } from './components/Skeletons.js';
 import {
@@ -51,6 +53,7 @@ export function App() {
   const { startRun, isStarting } = useGameRun();
   const { dailyStatus, startDaily, isStartingDaily } = useDailyChallenge(sessionToken);
   const { streakStatus, refetchStreakStatus } = useStreakStatus(sessionToken);
+  const { rankStatus, refetchRank } = useRank(sessionToken);
 
   const [screen, setScreen] = useState<
     | 'profile'
@@ -66,7 +69,7 @@ export function App() {
   const [runMode, setRunMode] = useState<'practice' | 'daily' | 'challenge' | 'custom'>('practice');
   const [activeTab, setActiveTab] = useState<NavTab>('play');
   const [activeRole, setActiveRole] = useState<'challenger' | 'opponent' | null>(null);
-  const [leaderboardMode, setLeaderboardMode] = useState<'global' | 'daily'>('global');
+  const [leaderboardMode, setLeaderboardMode] = useState<'global' | 'daily' | 'ranked'>('global');
   const [currentRun, setCurrentRun] = useState<StartRunResponse | null>(null);
   const [lastResult, setLastResult] = useState<FinishRunResponse | null>(null);
   const [activeChallengeId, setActiveChallengeId] = useState<string | null>(null);
@@ -109,6 +112,8 @@ export function App() {
       setActiveBattleFinished(payload);
       setScreen('battle_result');
       void queryClient.invalidateQueries({ queryKey: ['profile'] });
+      void queryClient.invalidateQueries({ queryKey: ['rank', 'status'] });
+      void queryClient.invalidateQueries({ queryKey: ['leaderboard', 'ranked'] });
     },
   });
 
@@ -129,6 +134,8 @@ export function App() {
         });
         setScreen('battle_result');
         void queryClient.invalidateQueries({ queryKey: ['profile'] });
+        void queryClient.invalidateQueries({ queryKey: ['rank', 'status'] });
+        void queryClient.invalidateQueries({ queryKey: ['leaderboard', 'ranked'] });
       }
     } catch {
       void 0;
@@ -442,8 +449,8 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    return syncTelegramBackButton(screen !== 'profile', handleBackToProfile);
-  }, [screen]);
+    return syncTelegramBackButton(screen !== 'profile' || activeTab !== 'play', handleBackToProfile);
+  }, [screen, activeTab]);
 
   return (
     <main
@@ -479,6 +486,7 @@ export function App() {
               profile={profile}
               dailyStatus={dailyStatus}
               streakStatus={streakStatus}
+              rankStatus={rankStatus}
               sessionToken={sessionToken}
               onPlayPractice={handleStartPractice}
               onStartCustomGame={handleStartPractice}
@@ -487,7 +495,10 @@ export function App() {
               onBattleFriend={handleStartBattle}
               onViewDailyLeaderboard={handleOpenDailyLeaderboard}
               onNavigateToProfile={() => setActiveTab('profile')}
-              onRefetchProfile={refetch}
+              onRefetchProfile={() => {
+                refetch();
+                refetchRank();
+              }}
               onRefetchStreakStatus={refetchStreakStatus}
               isStarting={isStarting}
               isStartingDaily={isStartingDaily}
@@ -506,8 +517,20 @@ export function App() {
                 showBackButton={false}
                 onPlay={handleStartPractice}
                 onPlayDaily={handleStartDaily}
+                onBattleLive={handleStartBattle}
                 isStarting={isStarting || isStartingDaily}
                 dailyAttempted={Boolean(dailyStatus?.attempted)}
+                userAvatarFrame={profile.equipped?.avatarFrame}
+              />
+            </div>
+          )}
+
+          {activeTab === 'shop' && (
+            <div className="w-full max-w-sm pb-20">
+              <ShopScreen
+                profile={profile}
+                sessionToken={sessionToken}
+                onRefetchProfile={refetch}
               />
             </div>
           )}
@@ -518,8 +541,12 @@ export function App() {
                 profile={profile}
                 dailyStatus={dailyStatus}
                 streakStatus={streakStatus}
+                rankStatus={rankStatus}
                 sessionToken={sessionToken}
-                onRefetchProfile={refetch}
+                onRefetchProfile={() => {
+                  refetch();
+                  refetchRank();
+                }}
                 onRefetchStreakStatus={refetchStreakStatus}
                 showGameActions={false}
               />
@@ -547,6 +574,7 @@ export function App() {
           onRematch={handleRematch}
           onBackToProfile={handleBackToProfile}
           isStartingRematch={isStartingRematch}
+          userAvatarFrame={profile.equipped?.avatarFrame}
         />
       )}
 
@@ -574,6 +602,7 @@ export function App() {
           onBack={handleBackToProfile}
           isConnecting={isBattleSocketConnecting}
           error={battleSocketError}
+          userAvatarFrame={profile.equipped?.avatarFrame}
         />
       )}
 
@@ -589,6 +618,7 @@ export function App() {
           isReconnecting={isBattleSocketReconnecting}
           onSubmitAnswer={submitBattleAnswer}
           onCheckFinished={checkBattleFinishedFallback}
+          flagTheme={profile.equipped?.flagTheme}
         />
       )}
 
@@ -601,6 +631,7 @@ export function App() {
           onBattleAgain={handleBattleAgain}
           onBackToProfile={handleBackToProfile}
           isStartingBattleAgain={isStartingBattle}
+          userAvatarFrame={profile.equipped?.avatarFrame}
         />
       )}
 
@@ -609,6 +640,7 @@ export function App() {
           run={currentRun}
           sessionToken={sessionToken}
           onFinish={handleFinishGame}
+          flagTheme={profile?.equipped?.flagTheme}
         />
       )}
 
@@ -634,8 +666,10 @@ export function App() {
           onBack={() => setScreen('profile')}
           onPlay={handleStartPractice}
           onPlayDaily={handleStartDaily}
+          onBattleLive={handleStartBattle}
           isStarting={isStarting || isStartingDaily}
           dailyAttempted={Boolean(dailyStatus?.attempted)}
+          userAvatarFrame={profile.equipped?.avatarFrame}
         />
       )}
     </main>

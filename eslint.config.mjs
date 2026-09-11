@@ -74,6 +74,24 @@ export default tseslint.config(
     },
   },
   {
+    files: ['load-tests/**/*.{js,ts}'],
+    plugins: {
+      'custom-rules': banSourceCommentsPlugin,
+    },
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        __VU: 'readonly',
+        __ENV: 'readonly',
+        __ITER: 'readonly',
+      },
+    },
+    rules: {
+      'no-inline-comments': 'error',
+      'custom-rules/no-comments': 'error',
+    },
+  },
+  {
     files: ['apps/**/src/**/*.{ts,tsx}', 'packages/**/src/**/*.{ts,tsx}'],
     plugins: {
       'custom-rules': banSourceCommentsPlugin,

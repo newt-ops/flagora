@@ -24,6 +24,8 @@ import {
   UnauthorizedBattleAccessError,
   BattleNotInProgressError,
 } from './battleTypes.js';
+import { getRedis } from '../db/redis.js';
+import { areBothPlayersPresent } from './battlePresence.js';
 import type {
   TypedSocketServer,
   BattleStartPayload,
@@ -41,6 +43,7 @@ import {
 } from '../game/runTypes.js';
 import { scoreAnswer } from '../game/runScoringService.js';
 import { notifyBattleCompletion } from '../telegram/telegramService.js';
+import { processBattleRatingUpdate } from '../rank/rankService.js';
 
 export async function createBattle(
   challengerUserId: number,
@@ -162,6 +165,28 @@ export async function checkAndFinalizeBattle(
         ? getDisplayName(opponentProfile)
         : 'Player';
 
+      const challengerOutcome =
+        winner === 'challenger' ? 'win' : winner === 'opponent' ? 'loss' : 'tie';
+      const opponentOutcome =
+        winner === 'opponent' ? 'win' : winner === 'challenger' ? 'loss' : 'tie';
+
+      const [challengerRankUpdate, opponentRankUpdate] = await Promise.all([
+        processBattleRatingUpdate(
+          battle.challengerUserId,
+          challengerOutcome,
+          db,
+          redis,
+          completedAt,
+        ),
+        processBattleRatingUpdate(
+          battle.opponentUserId!,
+          opponentOutcome,
+          db,
+          redis,
+          completedAt,
+        ),
+      ]);
+
       const challengerResult: BattleParticipantResult = {
         userId: battle.challengerUserId,
         displayName: challengerDisplayName,
@@ -169,6 +194,9 @@ export async function checkAndFinalizeBattle(
         score: challengerScore,
         correctCount: challengerRun.flags.filter((f) => f.correct).length,
         totalFlags: challengerRun.flags.length,
+        ratingDelta: challengerRankUpdate.ratingDelta,
+        newRating: challengerRankUpdate.newRating,
+        tier: challengerRankUpdate.tier,
       };
 
       const opponentResult: BattleParticipantResult = {
@@ -178,6 +206,9 @@ export async function checkAndFinalizeBattle(
         score: opponentScore,
         correctCount: opponentRun.flags.filter((f) => f.correct).length,
         totalFlags: opponentRun.flags.length,
+        ratingDelta: opponentRankUpdate.ratingDelta,
+        newRating: opponentRankUpdate.newRating,
+        tier: opponentRankUpdate.tier,
       };
 
       if (io) {
@@ -324,6 +355,7 @@ export async function joinBattle(
   opponentUserId: number,
   db: Db,
   io?: TypedSocketServer,
+  redis?: RedisClient,
 ): Promise<JoinBattleResponse> {
   const battle = await db.collection<BattleSession>('battles').findOne({ battleId });
   if (!battle) {
@@ -395,10 +427,30 @@ export async function joinBattle(
       opponentPhotoUrl,
     });
 
-    const sockets = await io.in(roomName).fetchSockets();
-    const presentUserIds = new Set(sockets.map((s) => s.data.telegramUserId));
-    if (presentUserIds.has(battle.challengerUserId) && presentUserIds.has(opponentUserId)) {
+    let redisClient: RedisClient | null = redis ?? null;
+    if (!redisClient) {
+      try {
+        redisClient = getRedis();
+      } catch {
+        redisClient = null;
+      }
+    }
+
+    const bothPresent = await areBothPlayersPresent(
+      redisClient,
+      battleId,
+      battle.challengerUserId,
+      opponentUserId,
+    );
+
+    if (bothPresent) {
       io.to(roomName).emit('bothPlayersPresent', { battleId });
+    } else if (!redisClient) {
+      const sockets = await io.in(roomName).fetchSockets();
+      const presentUserIds = new Set(sockets.map((s) => s.data.telegramUserId));
+      if (presentUserIds.has(battle.challengerUserId) && presentUserIds.has(opponentUserId)) {
+        io.to(roomName).emit('bothPlayersPresent', { battleId });
+      }
     }
   }
 

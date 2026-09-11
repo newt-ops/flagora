@@ -20,6 +20,7 @@ import {
   type PlayerProfile,
   type DailyChallengeStatusResponse,
   type StreakStatusResponse,
+  type RankStatusResponse,
   getDisplayName,
 } from '@flagora/shared';
 import { getProfileStreakDisplay } from './streakDisplayHelpers.js';
@@ -27,6 +28,8 @@ import { getDailyResultSummary } from './dailyChallengeHelpers.js';
 import { StreakSaveBanner } from './StreakSaveBanner.js';
 import { useBonusCoinsAd } from '../hooks/useBonusCoinsAd.js';
 import { getBonusAdsButtonText } from './rewardUiHelpers.js';
+import { getAvatarFrameClass, getProfileBannerClass } from './cosmeticHelpers.js';
+import { formatSeasonName, getTierBadgeColors, getTierIcon } from './rankHelpers.js';
 
 export { getDisplayName };
 
@@ -34,6 +37,7 @@ interface ProfileCardProps {
   profile: PlayerProfile;
   dailyStatus?: DailyChallengeStatusResponse | null;
   streakStatus?: StreakStatusResponse | null;
+  rankStatus?: RankStatusResponse | null;
   sessionToken?: string | null;
   onPlay?: () => void;
   onStartDaily?: () => void;
@@ -54,6 +58,7 @@ export function ProfileCard({
   profile,
   dailyStatus,
   streakStatus,
+  rankStatus,
   sessionToken,
   onPlay,
   onStartDaily,
@@ -74,6 +79,15 @@ export function ProfileCard({
   const initial = profile.firstName ? profile.firstName.charAt(0).toUpperCase() : 'P';
   const streakInfo = getProfileStreakDisplay(profile.currentStreak, profile.longestStreak);
   const dailySummary = getDailyResultSummary(dailyStatus?.result ?? null);
+  const frameClass = getAvatarFrameClass(profile.equipped?.avatarFrame);
+  const bannerClass = getProfileBannerClass(profile.equipped?.profileBanner);
+
+  const currentTier = rankStatus?.tier ?? 'Bronze';
+  const currentRating = rankStatus?.battleRating ?? 0;
+  const currentRank = rankStatus?.rank ?? null;
+  const seasonName = formatSeasonName(rankStatus?.season);
+  const tierColors = getTierBadgeColors(currentTier);
+  const TierIcon = getTierIcon(currentTier);
 
   const {
     isWatchingAd,
@@ -125,16 +139,27 @@ export function ProfileCard({
   };
 
   return (
-    <div className="w-full max-w-sm rounded-2xl bg-tg-section border border-tg-separator p-6 text-tg-text shadow-sm">
-      <div className="flex flex-col items-center text-center">
+    <div
+      className={`relative w-full max-w-sm rounded-2xl bg-tg-section border border-tg-separator text-tg-text shadow-sm overflow-hidden ${
+        bannerClass ? 'pt-0' : 'p-6'
+      }`}
+    >
+      {bannerClass && <div className={`h-20 w-full ${bannerClass} opacity-90`} />}
+      <div className={`flex flex-col items-center text-center ${bannerClass ? '-mt-10 px-6 pb-6' : ''}`}>
         {profile.photoUrl ? (
           <img
             src={profile.photoUrl}
             alt={displayName}
-            className="h-20 w-20 rounded-full object-cover ring-2 ring-tg-button"
+            className={`h-20 w-20 rounded-full object-cover bg-tg-section ${
+              frameClass ? frameClass : 'ring-2 ring-tg-button'
+            }`}
           />
         ) : (
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-tg-button text-3xl font-semibold text-tg-button-text">
+          <div
+            className={`flex h-20 w-20 items-center justify-center rounded-full bg-tg-button text-3xl font-semibold text-tg-button-text ${
+              frameClass ? frameClass : ''
+            }`}
+          >
             {initial}
           </div>
         )}
@@ -179,6 +204,52 @@ export function ProfileCard({
           />
         </div>
       )}
+
+      <div
+        data-testid="profile-rank-card"
+        className={`mt-3 flex flex-col rounded-xl border p-3.5 transition-all ${tierColors.bg} ${tierColors.border}`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-xl border ${tierColors.badge}`}
+            >
+              <TierIcon className="h-5 w-5 fill-current" />
+            </div>
+            <div className="text-left">
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-extrabold ${tierColors.text}`}>
+                  {currentTier} Tier
+                </span>
+                {currentRank ? (
+                  <span className="rounded-full bg-tg-section/70 border border-tg-separator px-2 py-0.5 text-[10px] font-extrabold text-tg-text">
+                    #{currentRank}
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-tg-section/40 px-2 py-0.5 text-[10px] font-semibold text-tg-hint">
+                    Unranked
+                  </span>
+                )}
+              </div>
+              <p className="text-xs font-bold text-tg-text">
+                {currentRating.toLocaleString()} <span className="text-[11px] font-medium text-tg-hint">Rating</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-end text-right">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-tg-hint">
+              Season
+            </span>
+            <span
+              data-testid="profile-season-identifier"
+              className="text-xs font-bold text-tg-text"
+            >
+              {seasonName}
+            </span>
+          </div>
+        </div>
+      </div>
 
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg border border-tg-separator p-3 text-center">

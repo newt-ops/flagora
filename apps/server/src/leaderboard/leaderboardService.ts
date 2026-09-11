@@ -96,6 +96,24 @@ export async function getTopLeaderboard(
         });
       }
     }
+
+    if (key.startsWith('leaderboard:ranked:')) {
+      const season = key.replace('leaderboard:ranked:', '');
+      const profiles = await db
+        .collection<PlayerProfile>('profiles')
+        .find({ currentSeason: season, battleRating: { $gt: 0 } })
+        .sort({ battleRating: -1 })
+        .limit(clampedLimit)
+        .toArray();
+
+      return profiles.map((profile, index) => ({
+        rank: index + 1,
+        telegramUserId: profile.telegramUserId,
+        displayName: getDisplayName(profile),
+        photoUrl: profile.photoUrl ?? null,
+        bestScore: profile.battleRating ?? 0,
+      }));
+    }
   }
 
   if (parsed.length === 0) {
@@ -200,6 +218,28 @@ export async function getPlayerLeaderboardRank(
         ranked: true,
         rank: higherCount + 1,
         bestScore: userRun.totalScore,
+      };
+    }
+  }
+
+  if (db && redisFailed && key.startsWith('leaderboard:ranked:')) {
+    const season = key.replace('leaderboard:ranked:', '');
+    const profile = await db
+      .collection<PlayerProfile>('profiles')
+      .findOne({ telegramUserId, currentSeason: season });
+
+    if (profile && (profile.battleRating ?? 0) > 0) {
+      const higherCount = await db
+        .collection<PlayerProfile>('profiles')
+        .countDocuments({
+          currentSeason: season,
+          battleRating: { $gt: profile.battleRating },
+        });
+
+      return {
+        ranked: true,
+        rank: higherCount + 1,
+        bestScore: profile.battleRating ?? 0,
       };
     }
   }

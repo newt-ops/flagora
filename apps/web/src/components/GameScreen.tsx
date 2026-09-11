@@ -8,14 +8,16 @@ import {
 import { useGameRun } from '../hooks/useGameRun.js';
 import { triggerHaptic } from '../telegram/haptics.js';
 import { TimeExpiredApiError } from '../api/client.js';
+import { getFlagThemeClass } from './cosmeticHelpers.js';
 
 interface GameScreenProps {
   run: StartRunResponse;
   sessionToken: string;
   onFinish: (result: FinishRunResponse) => void;
+  flagTheme?: string | null;
 }
 
-export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
+export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScreenProps) {
   const { answerRun, finishRun } = useGameRun();
 
   const [currentFlagIndex, setCurrentFlagIndex] = useState(0);
@@ -150,9 +152,14 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
   const timerSeconds = Math.ceil(timeLeftMs / 1000);
   const timerPercentage = Math.min(100, Math.max(0, (timeLeftMs / run.runDurationMs) * 100));
   const comboMultiplier = calculateComboMultiplier(comboCount);
+  const themeClass = getFlagThemeClass(flagTheme);
 
   return (
-    <div className="flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
+    <div
+      className={`flex w-full max-w-sm flex-col items-center gap-4 text-tg-text transition-colors duration-300 ${
+        themeClass ? `rounded-3xl p-3 shadow-xl ${themeClass}` : ''
+      }`}
+    >
       <div className="w-full rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-tg-hint">

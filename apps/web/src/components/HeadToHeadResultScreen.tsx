@@ -5,6 +5,7 @@ import {
   getPerspectiveHeading,
   getInitials,
 } from './challengeViewHelpers.js';
+import { getAvatarFrameClass } from './cosmeticHelpers.js';
 
 interface HeadToHeadResultScreenProps {
   challengeInfo: ChallengeInfoResponse;
@@ -12,6 +13,7 @@ interface HeadToHeadResultScreenProps {
   onRematch: () => void;
   onBackToProfile: () => void;
   isStartingRematch?: boolean;
+  userAvatarFrame?: string | null;
 }
 
 export function HeadToHeadResultScreen({
@@ -20,6 +22,7 @@ export function HeadToHeadResultScreen({
   onRematch,
   onBackToProfile,
   isStartingRematch = false,
+  userAvatarFrame,
 }: HeadToHeadResultScreenProps) {
   const perspective = getChallengeViewerPerspective(challengeInfo, currentUserId);
   const heading = getPerspectiveHeading(perspective, challengeInfo.challengerDisplayName);
@@ -32,6 +35,10 @@ export function HeadToHeadResultScreen({
 
   const challengerInitial = getInitials(challengeInfo.challengerDisplayName);
   const opponentInitial = getInitials(challengeInfo.opponentDisplayName ?? 'Opponent');
+
+  const viewerFrame = getAvatarFrameClass(userAvatarFrame);
+  const challengerFrame = isChallengerViewer ? viewerFrame : '';
+  const opponentFrame = isOpponentViewer ? viewerFrame : '';
 
   return (
     <div className="flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
@@ -58,10 +65,10 @@ export function HeadToHeadResultScreen({
                 <img
                   src={challengeInfo.challengerPhotoUrl}
                   alt={challengeInfo.challengerDisplayName}
-                  className="h-14 w-14 rounded-full object-cover ring-2 ring-tg-button"
+                  className={`h-14 w-14 rounded-full object-cover ${challengerFrame || 'ring-2 ring-tg-button'}`}
                 />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text">
+                <div className={`flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${challengerFrame}`}>
                   {challengerInitial}
                 </div>
               )}
@@ -105,10 +112,10 @@ export function HeadToHeadResultScreen({
                 <img
                   src={challengeInfo.opponentPhotoUrl}
                   alt={challengeInfo.opponentDisplayName ?? 'Opponent'}
-                  className="h-14 w-14 rounded-full object-cover ring-2 ring-tg-button"
+                  className={`h-14 w-14 rounded-full object-cover ${opponentFrame || 'ring-2 ring-tg-button'}`}
                 />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text">
+                <div className={`flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${opponentFrame}`}>
                   {opponentInitial}
                 </div>
               )}

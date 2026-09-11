@@ -77,3 +77,17 @@ Check code formatting:
 ```bash
 pnpm format
 ```
+
+## Deployment & Scaling
+
+Flagora is architected for horizontal scaling across multiple instances behind Render's load balancer using `@socket.io/redis-adapter`, Redis-backed battle presence tracking, BullMQ job queues, and stateless sessions.
+
+For instructions on configuring multiple instances and shared environment variables on Render, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
+## Load Testing
+
+Flagora includes a comprehensive k6 load testing suite in `load-tests/` that exercises core gameplay, high-concurrency leaderboard reads, reward claims (rate limits & daily caps), and live multiplayer WebSocket battles.
+
+For documentation on running load tests and target SLA thresholds, see [load-tests/README.md](load-tests/README.md).
+
+

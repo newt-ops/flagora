@@ -1,5 +1,6 @@
 import type { Db } from 'mongodb';
 import { COUNTRIES, type CountryFlag } from '@flagora/shared';
+import { reloadFlagCache } from './flagCache.js';
 
 export interface SeedResult {
   upserted: number;
@@ -22,6 +23,7 @@ export async function seedFlags(db: Db): Promise<SeedResult> {
 
   const result = await collection.bulkWrite(operations);
   const total = await collection.countDocuments();
+  await reloadFlagCache(db);
 
   return {
     upserted: result.upsertedCount,

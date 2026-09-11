@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Swords, Share2, Copy, Check, ArrowLeft, Loader2, User, Zap } from 'lucide-react';
 import type { BattleInfoResponse, OpponentJoinedPayload } from '@flagora/shared';
 import { shareBattle, copyBattleLink, getInitials } from './battleHelpers.js';
+import { getAvatarFrameClass } from './cosmeticHelpers.js';
 
 interface BattleLobbyScreenProps {
   battleId: string;
@@ -16,6 +17,7 @@ interface BattleLobbyScreenProps {
   onBack: () => void;
   isConnecting?: boolean;
   error?: string | null;
+  userAvatarFrame?: string | null;
 }
 
 export function BattleLobbyScreen({
@@ -31,6 +33,7 @@ export function BattleLobbyScreen({
   onBack,
   isConnecting = false,
   error = null,
+  userAvatarFrame,
 }: BattleLobbyScreenProps) {
   const [copied, setCopied] = useState(false);
 
@@ -64,6 +67,8 @@ export function BattleLobbyScreen({
   const challengerPhoto = battleInfo?.challengerPhotoUrl || null;
   const challengerInitial = getInitials(challengerName);
   const opponentInitial = getInitials(opponentDisplayName);
+  const challengerFrame = isChallenger ? getAvatarFrameClass(userAvatarFrame) : '';
+  const opponentFrame = !isChallenger ? getAvatarFrameClass(userAvatarFrame) : '';
 
   const totalFlags = battleInfo?.totalFlags ?? 10;
   const durationSeconds = battleInfo?.durationSeconds ?? 60;
@@ -132,10 +137,16 @@ export function BattleLobbyScreen({
                 <img
                   src={challengerPhoto}
                   alt={challengerName}
-                  className="h-14 w-14 rounded-full object-cover ring-2 ring-tg-button"
+                  className={`h-14 w-14 rounded-full object-cover bg-tg-section ${
+                    challengerFrame ? challengerFrame : 'ring-2 ring-tg-button'
+                  }`}
                 />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text">
+                <div
+                  className={`flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${
+                    challengerFrame ? challengerFrame : ''
+                  }`}
+                >
                   {challengerInitial}
                 </div>
               )}
@@ -165,10 +176,16 @@ export function BattleLobbyScreen({
                     <img
                       src={opponentPhotoUrl}
                       alt={opponentDisplayName || 'Opponent'}
-                      className="h-14 w-14 rounded-full object-cover ring-2 ring-tg-button"
+                      className={`h-14 w-14 rounded-full object-cover bg-tg-section ${
+                        opponentFrame ? opponentFrame : 'ring-2 ring-tg-button'
+                      }`}
                     />
                   ) : (
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text">
+                    <div
+                      className={`flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${
+                        opponentFrame ? opponentFrame : ''
+                      }`}
+                    >
                       {opponentInitial}
                     </div>
                   )}

@@ -21,15 +21,71 @@ export async function initDatabase(uri: string): Promise<Db> {
   await client.connect();
   database = client.db();
 
-  await database.collection('profiles').createIndex({ telegramUserId: 1 }, { unique: true });
-  await database.collection('daily_challenge_definitions').createIndex({ date: 1 }, { unique: true });
-  await database.collection('daily_challenge_attempts').createIndex({ telegramUserId: 1, date: 1 }, { unique: true });
-  await database.collection('challenges').createIndex({ challengeId: 1 }, { unique: true });
-  await database.collection('challenges').createIndex({ expiresAt: 1 });
-  await database.collection('battles').createIndex({ battleId: 1 }, { unique: true });
-  await database.collection('battles').createIndex({ expiresAt: 1 });
+  await ensureIndexes(database);
 
   return database;
+}
+
+export async function ensureIndexes(db: Db): Promise<void> {
+  await db.collection('profiles').createIndex({ telegramUserId: 1 }, { unique: true });
+  await db.collection('profiles').createIndex({ bestScore: -1 });
+
+  await db.collection('runs').createIndex({ runId: 1 }, { unique: true });
+  await db.collection('runs').createIndex({ telegramUserId: 1, createdAt: -1 });
+
+  await db.collection('challenges').createIndex({ challengeId: 1 }, { unique: true });
+  await db.collection('challenges').createIndex({ challengerUserId: 1 });
+  await db.collection('challenges').createIndex({ opponentUserId: 1 });
+
+  try {
+    const existingChallengeIndexes = await db.collection('challenges').indexes();
+    const legacyExpiresAt = existingChallengeIndexes.find(
+      (idx) => idx.name === 'expiresAt_1' && idx.expireAfterSeconds === undefined,
+    );
+    if (legacyExpiresAt) {
+      await db.collection('challenges').dropIndex('expiresAt_1');
+    }
+  } catch {
+    void 0;
+  }
+
+  await db.collection('challenges').createIndex(
+    { expiresAt: 1 },
+    {
+      expireAfterSeconds: 0,
+      partialFilterExpression: { status: { $in: ['pending', 'expired'] } },
+    },
+  );
+
+  await db.collection('battles').createIndex({ battleId: 1 }, { unique: true });
+  await db.collection('battles').createIndex({ challengerUserId: 1 });
+  await db.collection('battles').createIndex({ opponentUserId: 1 });
+
+  try {
+    const existingBattleIndexes = await db.collection('battles').indexes();
+    const legacyExpiresAt = existingBattleIndexes.find(
+      (idx) => idx.name === 'expiresAt_1' && idx.expireAfterSeconds === undefined,
+    );
+    if (legacyExpiresAt) {
+      await db.collection('battles').dropIndex('expiresAt_1');
+    }
+  } catch {
+    void 0;
+  }
+
+  await db.collection('battles').createIndex(
+    { expiresAt: 1 },
+    {
+      expireAfterSeconds: 0,
+      partialFilterExpression: { status: { $in: ['waiting', 'expired'] } },
+    },
+  );
+
+  await db.collection('daily_challenge_definitions').createIndex({ date: 1 }, { unique: true });
+  await db.collection('daily_challenge_attempts').createIndex({ telegramUserId: 1, date: 1 }, { unique: true });
+
+  await db.collection('flags').createIndex({ isoCode: 1 }, { unique: true });
+  await db.collection('flags').createIndex({ tier: 1 });
 }
 
 export function getDatabase(): Db {

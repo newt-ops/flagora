@@ -7,6 +7,7 @@ import {
   type SubmitAnswerResponse,
 } from '@flagora/shared';
 import { triggerHaptic } from '../telegram/haptics.js';
+import { getFlagThemeClass } from './cosmeticHelpers.js';
 
 interface LiveBattleScreenProps {
   battleStart: BattleStartPayload;
@@ -15,6 +16,7 @@ interface LiveBattleScreenProps {
   isReconnecting: boolean;
   onSubmitAnswer: (flagIndex: number, selectedIsoCode: string) => Promise<SubmitAnswerResponse>;
   onCheckFinished?: () => void;
+  flagTheme?: string | null;
 }
 
 export function LiveBattleScreen({
@@ -24,6 +26,7 @@ export function LiveBattleScreen({
   isReconnecting,
   onSubmitAnswer,
   onCheckFinished,
+  flagTheme,
 }: LiveBattleScreenProps) {
   const [currentFlagIndex, setCurrentFlagIndex] = useState(0);
   const [runningScore, setRunningScore] = useState(0);
@@ -112,9 +115,14 @@ export function LiveBattleScreen({
     Math.max(0, (timeLeftMs / battleStart.runDurationMs) * 100),
   );
   const comboMultiplier = calculateComboMultiplier(comboCount);
+  const themeClass = getFlagThemeClass(flagTheme);
 
   return (
-    <div className="relative flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
+    <div
+      className={`relative flex w-full max-w-sm flex-col items-center gap-4 text-tg-text transition-colors duration-300 ${
+        themeClass ? `rounded-3xl p-3 shadow-xl ${themeClass}` : ''
+      }`}
+    >
       {isReconnecting && (
         <div
           className="fixed top-[calc(var(--app-safe-top,0px)+0.75rem)] z-50 flex items-center gap-2 rounded-full bg-tg-button/90 px-4 py-1.5 text-xs font-bold text-tg-button-text shadow-lg backdrop-blur-sm"

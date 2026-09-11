@@ -1,10 +1,13 @@
-import { Trophy, Swords, ArrowLeft } from 'lucide-react';
+import { Trophy, Swords, ArrowLeft, Sparkles } from 'lucide-react';
 import type { BattleFinishedPayload, BattleInfoResponse } from '@flagora/shared';
 import {
   getBattleViewerPerspective,
   getBattlePerspectiveHeading,
   getInitials,
 } from './battleHelpers.js';
+import { getAvatarFrameClass } from './cosmeticHelpers.js';
+import { getRatingDeltaDisplay, checkTierPromotion } from './rankHelpers.js';
+import { TierBadge } from './TierBadge.js';
 
 interface BattleResultScreenProps {
   battleId: string;
@@ -14,6 +17,7 @@ interface BattleResultScreenProps {
   onBattleAgain: () => void;
   onBackToProfile: () => void;
   isStartingBattleAgain?: boolean;
+  userAvatarFrame?: string | null;
 }
 
 export function BattleResultScreen({
@@ -23,6 +27,7 @@ export function BattleResultScreen({
   onBattleAgain,
   onBackToProfile,
   isStartingBattleAgain = false,
+  userAvatarFrame,
 }: BattleResultScreenProps) {
   const winner = finishedPayload?.winner || battleInfo?.winner || null;
   const challengerUserId =
@@ -87,11 +92,51 @@ export function BattleResultScreen({
     battleInfo?.opponentResult?.totalFlags ??
     10;
 
+  const challengerResult =
+    finishedPayload?.challengerResult || battleInfo?.challengerResult || null;
+  const opponentResult =
+    finishedPayload?.opponentResult || battleInfo?.opponentResult || null;
+
+  const viewerResult = isChallengerViewer
+    ? challengerResult
+    : isOpponentViewer
+    ? opponentResult
+    : null;
+
+  const viewerDelta = viewerResult?.ratingDelta !== undefined
+    ? getRatingDeltaDisplay(viewerResult.ratingDelta)
+    : null;
+
+  const challengerDelta = challengerResult?.ratingDelta !== undefined
+    ? getRatingDeltaDisplay(challengerResult.ratingDelta)
+    : null;
+
+  const opponentDelta = opponentResult?.ratingDelta !== undefined
+    ? getRatingDeltaDisplay(opponentResult.ratingDelta)
+    : null;
+
+  const promotionMoment = checkTierPromotion(
+    viewerResult?.newRating,
+    viewerResult?.ratingDelta,
+  );
+
   const challengerInitial = getInitials(challengerName);
   const opponentInitial = getInitials(opponentName);
+  const challengerFrame = isChallengerViewer ? getAvatarFrameClass(userAvatarFrame) : '';
+  const opponentFrame = isOpponentViewer ? getAvatarFrameClass(userAvatarFrame) : '';
 
   return (
     <div className="flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
+      {promotionMoment.isPromoted && promotionMoment.newTier && (
+        <div
+          data-testid="battle-promotion-banner"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-tg-button/15 p-3.5 text-sm font-bold text-tg-button ring-1 ring-tg-button/30"
+        >
+          <Sparkles className="h-4 w-4 text-tg-button" />
+          <span>Promoted to {promotionMoment.newTier}!</span>
+        </div>
+      )}
+
       <div className="flex w-full flex-col items-center rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20">
           <Trophy className="h-8 w-8" />
@@ -101,6 +146,24 @@ export function BattleResultScreen({
           {heading.title}
         </h2>
         <p className="mt-1 text-xs text-tg-hint">{heading.subtitle}</p>
+
+        {viewerResult && viewerDelta && (
+          <div
+            data-testid="battle-rating-change"
+            className="mt-3.5 flex items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg border border-tg-separator px-3.5 py-1.5 text-xs font-semibold"
+          >
+            <span className="text-tg-hint">Rating:</span>
+            <span className="font-bold text-tg-text">
+              {viewerResult.newRating !== undefined ? viewerResult.newRating.toLocaleString() : '—'}
+            </span>
+            <span className={`font-bold ${viewerDelta.colorClass}`}>
+              ({viewerDelta.text})
+            </span>
+            {viewerResult.tier && (
+              <TierBadge tier={viewerResult.tier} size="xs" />
+            )}
+          </div>
+        )}
 
         <div className="mt-6 grid w-full grid-cols-2 gap-3">
           <div
@@ -115,10 +178,16 @@ export function BattleResultScreen({
                 <img
                   src={challengerPhoto}
                   alt={challengerName}
-                  className="h-14 w-14 rounded-full object-cover ring-2 ring-tg-button"
+                  className={`h-14 w-14 rounded-full object-cover bg-tg-section ${
+                    challengerFrame ? challengerFrame : 'ring-2 ring-tg-button'
+                  }`}
                 />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text">
+                <div
+                  className={`flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${
+                    challengerFrame ? challengerFrame : ''
+                  }`}
+                >
                   {challengerInitial}
                 </div>
               )}
@@ -147,6 +216,18 @@ export function BattleResultScreen({
               {challengerCorrect}/{challengerTotal} correct
             </span>
 
+            {challengerDelta && (
+              <div className="mt-1.5 flex items-center gap-1 text-xs">
+                <span className={`font-bold ${challengerDelta.colorClass}`}>
+                  {challengerDelta.text}
+                </span>
+                <span className="text-[10px] text-tg-hint">RR</span>
+                {challengerResult?.tier && (
+                  <TierBadge tier={challengerResult.tier} size="xs" showLabel={false} />
+                )}
+              </div>
+            )}
+
             {challengerWon && (
               <span className="mt-2 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-bold text-tg-button border border-tg-button/30">
                 Winner
@@ -166,10 +247,16 @@ export function BattleResultScreen({
                 <img
                   src={opponentPhoto}
                   alt={opponentName}
-                  className="h-14 w-14 rounded-full object-cover ring-2 ring-tg-button"
+                  className={`h-14 w-14 rounded-full object-cover bg-tg-section ${
+                    opponentFrame ? opponentFrame : 'ring-2 ring-tg-button'
+                  }`}
                 />
               ) : (
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text">
+                <div
+                  className={`flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${
+                    opponentFrame ? opponentFrame : ''
+                  }`}
+                >
                   {opponentInitial}
                 </div>
               )}
@@ -197,6 +284,18 @@ export function BattleResultScreen({
             <span className="mt-1 text-[11px] text-tg-hint">
               {opponentCorrect}/{opponentTotal} correct
             </span>
+
+            {opponentDelta && (
+              <div className="mt-1.5 flex items-center gap-1 text-xs">
+                <span className={`font-bold ${opponentDelta.colorClass}`}>
+                  {opponentDelta.text}
+                </span>
+                <span className="text-[10px] text-tg-hint">RR</span>
+                {opponentResult?.tier && (
+                  <TierBadge tier={opponentResult.tier} size="xs" showLabel={false} />
+                )}
+              </div>
+            )}
 
             {opponentWon && (
               <span className="mt-2 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-bold text-tg-button border border-tg-button/30">

@@ -1,3 +1,5 @@
+import type { RankedTier } from './rank.js';
+
 export type BattleStatus = 'waiting' | 'ready' | 'in_progress' | 'completed' | 'expired';
 
 export type BattleWinner = 'challenger' | 'opponent' | 'tie';
@@ -34,6 +36,9 @@ export interface BattleParticipantResult {
   score: number;
   correctCount: number;
   totalFlags: number;
+  ratingDelta?: number;
+  newRating?: number;
+  tier?: RankedTier;
 }
 
 export interface BattleInfoResponse {
