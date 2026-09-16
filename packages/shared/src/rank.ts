@@ -1,4 +1,5 @@
 import type { LeaderboardEntry, LeaderboardMeResponse } from './leaderboard.js';
+import type { PlayerBadgeResponseItem } from './badge.js';
 
 export type RankedTier =
   | 'Bronze'
@@ -77,6 +78,7 @@ export interface RankStatusResponse {
   battleRating: number;
   tier: RankedTier;
   rank: number | null;
+  newBadges?: PlayerBadgeResponseItem[];
 }
 
 export interface RankedLeaderboardResponse {

@@ -6,10 +6,12 @@ import {
   type SeasonResult,
   type RankStatusResponse,
   type RankedLeaderboardResponse,
+  type PlayerBadgeResponseItem,
   getRankedTier,
   RATING_DELTAS,
   getUtcSeasonString,
   getRankedLeaderboardKey,
+  getBadgeDefinition,
 } from '@flagora/shared';
 import {
   getTopLeaderboard,
@@ -102,8 +104,9 @@ export async function ensureCurrentSeason(
       { upsert: true },
     );
 
+    let newBadges: PlayerBadgeResponseItem[] = [];
     if (finalRank !== null && finalRank > 0 && finalRank <= 100) {
-      await evaluateBadges(
+      const awarded = await evaluateBadges(
         profile.telegramUserId,
         {
           type: 'season_archived',
@@ -113,6 +116,16 @@ export async function ensureCurrentSeason(
         db,
         now,
       );
+      newBadges = awarded.map((b) => {
+        const def = getBadgeDefinition(b.badgeId);
+        return {
+          badgeId: b.badgeId,
+          name: def?.name ?? b.badgeId,
+          description: def?.description ?? '',
+          earnedAt: b.earnedAt,
+          season: b.season ?? null,
+        };
+      });
     }
 
     await db.collection<PlayerProfile>('profiles').updateOne(
@@ -126,12 +139,16 @@ export async function ensureCurrentSeason(
       },
     );
 
-    return {
+    const updated = {
       ...profile,
       battleRating: 0,
       currentSeason,
       updatedAt: now,
     };
+    if (newBadges.length > 0) {
+      (updated as PlayerProfile & { newBadges?: PlayerBadgeResponseItem[] }).newBadges = newBadges;
+    }
+    return updated;
   }
 
   await db.collection<PlayerProfile>('profiles').updateOne(
@@ -256,11 +273,14 @@ export async function getRankStatus(
     db,
   );
 
+  const newBadges = (profile as PlayerProfile & { newBadges?: PlayerBadgeResponseItem[] }).newBadges;
+
   return {
     season,
     battleRating: rating,
     tier,
     rank: rankInfo.ranked ? rankInfo.rank : null,
+    ...(newBadges && newBadges.length > 0 ? { newBadges } : {}),
   };
 }
 

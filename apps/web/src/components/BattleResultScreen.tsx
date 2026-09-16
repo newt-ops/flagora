@@ -1,4 +1,4 @@
-import { Trophy, Swords, ArrowLeft, Sparkles } from 'lucide-react';
+import { Trophy, Swords, ArrowLeft, Sparkles, Award } from 'lucide-react';
 import type { BattleFinishedPayload, BattleInfoResponse } from '@flagora/shared';
 import {
   getBattleViewerPerspective,
@@ -134,6 +134,21 @@ export function BattleResultScreen({
         >
           <Sparkles className="h-4 w-4 text-tg-button" />
           <span>Promoted to {promotionMoment.newTier}!</span>
+        </div>
+      )}
+
+      {viewerResult?.newBadges && viewerResult.newBadges.length > 0 && (
+        <div className="flex w-full flex-col gap-2">
+          {viewerResult.newBadges.map((badge) => (
+            <div
+              key={badge.badgeId}
+              data-testid="battle-badge-unlock-banner"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-tg-button/15 p-3.5 text-sm font-bold text-tg-button ring-1 ring-tg-button/30"
+            >
+              <Award className="h-4 w-4 text-tg-button" />
+              <span>Badge Unlocked: {badge.name}!</span>
+            </div>
+          ))}
         </div>
       )}
 

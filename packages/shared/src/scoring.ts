@@ -54,12 +54,14 @@ export interface StartRunResponse {
 }
 
 import type { StreakChange } from './streak.js';
+import type { PlayerBadgeResponseItem } from './badge.js';
 
 export interface AnswerRunResponse {
   correct: boolean;
   comboCount: number;
   pointsThisFlag: number;
   runningTotal: number;
+  isTier4?: boolean;
 }
 
 export interface FinishRunResponse {
@@ -79,4 +81,5 @@ export interface FinishRunResponse {
   currentStreak: number;
   longestStreak: number;
   streakChange: StreakChange;
+  newBadges?: PlayerBadgeResponseItem[];
 }

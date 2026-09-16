@@ -15,6 +15,7 @@ import { useDailyChallenge } from './hooks/useDailyChallenge.js';
 import { useStreakStatus } from './hooks/useStreakStatus.js';
 import { useBattleSocket } from './hooks/useBattleSocket.js';
 import { useRank } from './hooks/useRank.js';
+import { useBadges } from './hooks/useBadges.js';
 import {
   createChallenge,
   getChallengeInfo,
@@ -54,6 +55,7 @@ export function App() {
   const { dailyStatus, startDaily, isStartingDaily } = useDailyChallenge(sessionToken);
   const { streakStatus, refetchStreakStatus } = useStreakStatus(sessionToken);
   const { rankStatus, refetchRank } = useRank(sessionToken);
+  const { badges, isLoadingBadges } = useBadges(sessionToken);
 
   const [screen, setScreen] = useState<
     | 'profile'
@@ -114,6 +116,7 @@ export function App() {
       void queryClient.invalidateQueries({ queryKey: ['profile'] });
       void queryClient.invalidateQueries({ queryKey: ['rank', 'status'] });
       void queryClient.invalidateQueries({ queryKey: ['leaderboard', 'ranked'] });
+      void queryClient.invalidateQueries({ queryKey: ['badges', 'me'] });
     },
   });
 
@@ -136,6 +139,7 @@ export function App() {
         void queryClient.invalidateQueries({ queryKey: ['profile'] });
         void queryClient.invalidateQueries({ queryKey: ['rank', 'status'] });
         void queryClient.invalidateQueries({ queryKey: ['leaderboard', 'ranked'] });
+        void queryClient.invalidateQueries({ queryKey: ['badges', 'me'] });
       }
     } catch {
       void 0;
@@ -360,6 +364,7 @@ export function App() {
     void queryClient.invalidateQueries({ queryKey: ['profile'] });
     void queryClient.invalidateQueries({ queryKey: ['leaderboard'] });
     void queryClient.invalidateQueries({ queryKey: ['daily', 'status'] });
+    void queryClient.invalidateQueries({ queryKey: ['badges', 'me'] });
 
     if (runMode === 'challenge' && activeChallengeId && activeRole === 'opponent' && sessionToken) {
       try {
@@ -542,10 +547,13 @@ export function App() {
                 dailyStatus={dailyStatus}
                 streakStatus={streakStatus}
                 rankStatus={rankStatus}
+                badges={badges}
+                isLoadingBadges={isLoadingBadges}
                 sessionToken={sessionToken}
                 onRefetchProfile={() => {
                   refetch();
                   refetchRank();
+                  void queryClient.invalidateQueries({ queryKey: ['badges', 'me'] });
                 }}
                 onRefetchStreakStatus={refetchStreakStatus}
                 showGameActions={false}

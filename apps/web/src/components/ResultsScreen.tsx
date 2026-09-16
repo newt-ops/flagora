@@ -10,6 +10,7 @@ import {
   Coins,
   Flame,
   Share2,
+  Award,
 } from 'lucide-react';
 import type { FinishRunResponse } from '@flagora/shared';
 import { getStreakBadgeText } from './streakDisplayHelpers.js';
@@ -50,6 +51,21 @@ export function ResultsScreen({
         <div className="flex w-full items-center justify-center gap-2 rounded-2xl bg-tg-button/15 p-3.5 text-sm font-bold text-tg-button ring-1 ring-tg-button/30">
           <Sparkles className="h-4 w-4 text-tg-button" />
           <span>Level Up! You reached Level {result.newLevel}</span>
+        </div>
+      )}
+
+      {result.newBadges && result.newBadges.length > 0 && (
+        <div className="flex w-full flex-col gap-2">
+          {result.newBadges.map((badge) => (
+            <div
+              key={badge.badgeId}
+              data-testid="badge-unlock-banner"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-tg-button/15 p-3.5 text-sm font-bold text-tg-button ring-1 ring-tg-button/30"
+            >
+              <Award className="h-4 w-4 text-tg-button" />
+              <span>Badge Unlocked: {badge.name}!</span>
+            </div>
+          ))}
         </div>
       )}
 

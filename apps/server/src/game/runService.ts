@@ -16,6 +16,8 @@ import {
   type Challenge,
   type ChallengeWinner,
   type Continent,
+  type PlayerBadgeResponseItem,
+  getBadgeDefinition,
 } from '@flagora/shared';
 import { selectRunFlags, generateChoices } from './flagSelection.js';
 import { getCachedFlags, getCachedFlagsByContinent } from './flagCache.js';
@@ -188,6 +190,7 @@ export async function submitAnswer(
     comboCount: scored.newCombo,
     pointsThisFlag: scored.pointsThisFlag,
     runningTotal: scored.newRunningTotal,
+    isTier4: flag.tier === 4,
   };
 }
 
@@ -313,8 +316,9 @@ export async function finishRun(
     }
   }
 
+  const newlyAwardedBadges: PlayerBadgeResponseItem[] = [];
   try {
-    await evaluateBadges(
+    const runBadges = await evaluateBadges(
       telegramUserId,
       {
         type: 'run_finished',
@@ -342,7 +346,7 @@ export async function finishRun(
       new Date(now),
     );
 
-    await evaluateBadges(
+    const streakBadges = await evaluateBadges(
       telegramUserId,
       {
         type: 'streak_updated',
@@ -352,6 +356,18 @@ export async function finishRun(
       db,
       new Date(now),
     );
+
+    const allAwarded = [...runBadges, ...streakBadges];
+    for (const b of allAwarded) {
+      const def = getBadgeDefinition(b.badgeId);
+      newlyAwardedBadges.push({
+        badgeId: b.badgeId,
+        name: def?.name ?? b.badgeId,
+        description: def?.description ?? '',
+        earnedAt: b.earnedAt,
+        season: b.season ?? null,
+      });
+    }
   } catch {
     void 0;
   }
@@ -434,6 +450,7 @@ export async function finishRun(
     currentStreak: streakResult.currentStreak,
     longestStreak: streakResult.longestStreak,
     streakChange: streakResult.streakChange,
+    ...(newlyAwardedBadges.length > 0 ? { newBadges: newlyAwardedBadges } : {}),
   };
 
   await collection.updateOne(

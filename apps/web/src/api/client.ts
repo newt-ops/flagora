@@ -25,6 +25,7 @@ import type {
   EquipResponse,
   RankStatusResponse,
   RankedLeaderboardResponse,
+  BadgesMeResponse,
 } from '@flagora/shared';
 
 const API_URL =
@@ -816,6 +817,31 @@ export async function fetchRankedLeaderboard(
 
   if (!response.ok) {
     let message = `Failed to fetch ranked leaderboard: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function getBadgesMe(
+  sessionToken: string,
+): Promise<BadgesMeResponse> {
+  const response = await fetch(`${API_URL}/api/badges/me`, {
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to fetch badges: status ${response.status}`;
     try {
       const data = await response.json();
       if (data?.message) {

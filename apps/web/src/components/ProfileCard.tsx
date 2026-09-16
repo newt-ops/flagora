@@ -15,12 +15,14 @@ import {
   Copy,
   Check,
   Loader2,
+  Award,
 } from 'lucide-react';
 import {
   type PlayerProfile,
   type DailyChallengeStatusResponse,
   type StreakStatusResponse,
   type RankStatusResponse,
+  type PlayerBadgeResponseItem,
   getDisplayName,
 } from '@flagora/shared';
 import { getProfileStreakDisplay } from './streakDisplayHelpers.js';
@@ -30,6 +32,7 @@ import { useBonusCoinsAd } from '../hooks/useBonusCoinsAd.js';
 import { getBonusAdsButtonText } from './rewardUiHelpers.js';
 import { getAvatarFrameClass, getProfileBannerClass } from './cosmeticHelpers.js';
 import { formatSeasonName, getTierBadgeColors, getTierIcon } from './rankHelpers.js';
+import { BadgeShowcase } from './BadgeShowcase.js';
 
 export { getDisplayName };
 
@@ -38,6 +41,8 @@ interface ProfileCardProps {
   dailyStatus?: DailyChallengeStatusResponse | null;
   streakStatus?: StreakStatusResponse | null;
   rankStatus?: RankStatusResponse | null;
+  badges?: PlayerBadgeResponseItem[];
+  isLoadingBadges?: boolean;
   sessionToken?: string | null;
   onPlay?: () => void;
   onStartDaily?: () => void;
@@ -59,6 +64,8 @@ export function ProfileCard({
   dailyStatus,
   streakStatus,
   rankStatus,
+  badges = [],
+  isLoadingBadges = false,
   sessionToken,
   onPlay,
   onStartDaily,
@@ -139,11 +146,27 @@ export function ProfileCard({
   };
 
   return (
-    <div
-      className={`relative w-full max-w-sm rounded-2xl bg-tg-section border border-tg-separator text-tg-text shadow-sm overflow-hidden ${
-        bannerClass ? 'pt-0' : 'p-6'
-      }`}
-    >
+    <div className="flex w-full max-w-sm flex-col gap-3 text-tg-text">
+      {rankStatus?.newBadges && rankStatus.newBadges.length > 0 && (
+        <div className="flex w-full flex-col gap-2">
+          {rankStatus.newBadges.map((badge) => (
+            <div
+              key={badge.badgeId}
+              data-testid="profile-badge-unlock-banner"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-tg-button/15 p-3.5 text-sm font-bold text-tg-button ring-1 ring-tg-button/30"
+            >
+              <Award className="h-4 w-4 text-tg-button" />
+              <span>Badge Unlocked: {badge.name}!</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div
+        className={`relative w-full rounded-2xl bg-tg-section border border-tg-separator text-tg-text shadow-sm overflow-hidden ${
+          bannerClass ? 'pt-0' : 'p-6'
+        }`}
+      >
       {bannerClass && <div className={`h-20 w-full ${bannerClass} opacity-90`} />}
       <div className={`flex flex-col items-center text-center ${bannerClass ? '-mt-10 px-6 pb-6' : ''}`}>
         {profile.photoUrl ? (
@@ -284,6 +307,8 @@ export function ProfileCard({
           <p className="mt-1.5 text-lg font-bold text-tg-text">{profile.gamesPlayed.toLocaleString()}</p>
         </div>
       </div>
+
+      <BadgeShowcase badges={badges} isLoading={isLoadingBadges} />
 
       <div className="mt-4 flex w-full flex-col rounded-xl bg-tg-secondary-bg border border-tg-separator p-4 text-left">
         <div className="flex items-center justify-between">
@@ -494,6 +519,7 @@ export function ProfileCard({
           )}
         </>
       )}
+      </div>
     </div>
   );
 }

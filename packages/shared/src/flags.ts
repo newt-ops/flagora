@@ -233,3 +233,9 @@ export function getCountriesByContinent(continent?: Continent): CountryFlag[] {
   }
   return COUNTRIES.filter((c) => c.continent === continent);
 }
+
+export function isTier4Flag(isoCode: string): boolean {
+  const normalized = isoCode.toLowerCase();
+  const flag = COUNTRIES.find((c) => c.isoCode.toLowerCase() === normalized);
+  return flag?.tier === 4;
+}

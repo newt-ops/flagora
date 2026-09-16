@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Timer, Zap, Award, Check, X, AlertCircle } from 'lucide-react';
+import { Timer, Zap, Award, Check, X, AlertCircle, Sparkles } from 'lucide-react';
 import {
   calculateComboMultiplier,
+  isTier4Flag,
   type StartRunResponse,
   type FinishRunResponse,
 } from '@flagora/shared';
@@ -27,6 +28,7 @@ export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScree
   const [feedback, setFeedback] = useState<{
     correct: boolean;
     pointsThisFlag: number;
+    isTier4?: boolean;
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeLeftMs, setTimeLeftMs] = useState(run.runDurationMs);
@@ -113,12 +115,17 @@ export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScree
         selectedIsoCode: choiceText,
       });
 
+      const isTier4 = Boolean(
+        answerResponse.isTier4 ?? (currentFlag ? isTier4Flag(currentFlag.isoCode) : false),
+      );
+
       triggerHaptic(answerResponse.correct ? 'success' : 'error');
       setRunningScore(answerResponse.runningTotal);
       setComboCount(answerResponse.comboCount);
       setFeedback({
         correct: answerResponse.correct,
         pointsThisFlag: answerResponse.pointsThisFlag,
+        isTier4,
       });
 
       setTimeout(() => {
@@ -228,12 +235,23 @@ export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScree
           </div>
 
           {feedback && (
-            <div className="flex items-center gap-1.5 text-xs font-semibold">
+            <div className="flex items-center gap-2 text-xs font-semibold">
               {feedback.correct ? (
-                <span className="flex items-center gap-1 text-emerald-500">
-                  <Check className="h-3.5 w-3.5" />
-                  <span>+{feedback.pointsThisFlag} pts</span>
-                </span>
+                <>
+                  <span className="flex items-center gap-1 text-emerald-500">
+                    <Check className="h-3.5 w-3.5" />
+                    <span>+{feedback.pointsThisFlag} pts</span>
+                  </span>
+                  {feedback.isTier4 && (
+                    <span
+                      data-testid="tier4-mastery-flourish"
+                      className="inline-flex items-center gap-1 rounded-full bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 text-[11px] font-bold text-purple-400"
+                    >
+                      <Sparkles className="h-3 w-3 text-purple-400" />
+                      <span>Tier 4 Mastery</span>
+                    </span>
+                  )}
+                </>
               ) : (
                 <span className="flex items-center gap-1 text-rose-500">
                   <X className="h-3.5 w-3.5" />
