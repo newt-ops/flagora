@@ -461,7 +461,7 @@ export function App() {
 
   return (
     <main
-      className="flex min-h-screen flex-col items-center justify-start bg-tg-secondary-bg text-tg-text px-4 pt-[calc(var(--app-safe-top,0px)+1.25rem)] pb-[calc(var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))+5.5rem)]"
+      className="flex min-h-screen flex-col items-center justify-start bg-tg-secondary-bg text-tg-text px-3.5 sm:px-4 pt-[calc(var(--app-safe-top,0px)+1.25rem)] pb-[calc(var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))+5.5rem)]"
     >
       {isLoading && <PlaySkeleton />}
 
@@ -474,7 +474,7 @@ export function App() {
       {!isLoading && !isNotInTelegram && error && <ErrorState message={error} onRetry={refetch} />}
 
       {!isLoading && !error && startError && (
-        <div className="mb-4 w-full max-w-sm">
+        <div className="mb-4 w-full max-w-md mx-auto">
           <ErrorState
             message={startError}
             onRetry={
@@ -518,7 +518,7 @@ export function App() {
           )}
 
           {activeTab === 'leaderboard' && sessionToken && (
-            <div className="w-full max-w-sm pb-20">
+            <div className="w-full max-w-md mx-auto pb-20">
               <LeaderboardScreen
                 sessionToken={sessionToken}
                 currentUserId={profile.telegramUserId}
@@ -536,7 +536,7 @@ export function App() {
           )}
 
           {activeTab === 'shop' && (
-            <div className="w-full max-w-sm pb-20">
+            <div className="w-full max-w-md mx-auto pb-20">
               <ShopScreen
                 profile={profile}
                 sessionToken={sessionToken}
@@ -546,7 +546,7 @@ export function App() {
           )}
 
           {activeTab === 'rewards' && (
-            <div className="w-full max-w-sm pb-20">
+            <div className="w-full max-w-md mx-auto pb-20">
               <RewardsHubScreen
                 profile={profile}
                 streakStatus={streakStatus}
@@ -562,7 +562,7 @@ export function App() {
           )}
 
           {activeTab === 'profile' && (
-            <div className="w-full max-w-sm pb-20">
+            <div className="w-full max-w-md mx-auto pb-20">
               <ProfileCard
                 profile={profile}
                 dailyStatus={dailyStatus}

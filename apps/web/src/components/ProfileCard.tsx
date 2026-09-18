@@ -147,14 +147,14 @@ export function ProfileCard({
   };
 
   return (
-    <div className="flex w-full max-w-sm flex-col gap-3 text-tg-text">
+    <div className="flex w-full max-w-md mx-auto flex-col gap-3 text-tg-text">
       {rankStatus?.newBadges && rankStatus.newBadges.length > 0 && (
         <div className="flex w-full flex-col gap-2">
           {rankStatus.newBadges.map((badge) => (
             <div
               key={badge.badgeId}
               data-testid="profile-badge-unlock-banner"
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-tg-button/15 p-3.5 text-sm font-bold text-tg-button ring-1 ring-tg-button/30"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-tg-button/15 p-3.5 text-sm font-bold text-tg-button"
             >
               <Award className="h-4 w-4 text-tg-button" />
               <span>Badge Unlocked: {badge.name}!</span>
@@ -164,12 +164,12 @@ export function ProfileCard({
       )}
 
       <div
-        className={`relative w-full rounded-2xl bg-tg-section border border-tg-separator text-tg-text shadow-sm overflow-hidden ${
-          bannerClass ? 'pt-0' : 'p-6'
+        className={`relative w-full rounded-2xl bg-tg-section text-tg-text shadow-sm overflow-hidden ${
+          bannerClass ? 'pt-0' : 'p-4 sm:p-6'
         }`}
       >
       {bannerClass && <div className={`h-20 w-full ${bannerClass} opacity-90`} />}
-      <div className={`flex flex-col items-center text-center ${bannerClass ? '-mt-10 px-6 pb-6' : ''}`}>
+      <div className={`flex flex-col items-center text-center ${bannerClass ? '-mt-10 px-4 sm:px-6 pb-6' : ''}`}>
         {profile.photoUrl ? (
           <img
             src={profile.photoUrl}
@@ -199,18 +199,18 @@ export function ProfileCard({
         <p className="mt-1 text-xs font-semibold text-tg-hint">Level {profile.level} Player</p>
       </div>
 
-      <div className="mt-5 flex items-center justify-between rounded-xl bg-tg-secondary-bg border border-tg-separator px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20">
+      <div className="mt-5 flex items-center justify-between flex-wrap gap-2 rounded-xl bg-tg-secondary-bg px-4 py-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
             <Flame className="h-5 w-5 fill-current text-tg-button" />
           </div>
-          <div className="text-left">
-            <p className="text-sm font-bold text-tg-text">{streakInfo.title}</p>
-            <p className="text-xs text-tg-hint">{streakInfo.subtitle}</p>
+          <div className="text-left min-w-0">
+            <p className="text-sm font-bold text-tg-text truncate">{streakInfo.title}</p>
+            <p className="text-xs text-tg-hint truncate">{streakInfo.subtitle}</p>
           </div>
         </div>
         {streakInfo.isActive && (
-          <span className="rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-semibold text-tg-button ring-1 ring-tg-button/30">
+          <span className="shrink-0 rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-semibold text-tg-button">
             Active
           </span>
         )}
@@ -232,22 +232,22 @@ export function ProfileCard({
 
       <div
         data-testid="profile-rank-card"
-        className="mt-3 flex flex-col rounded-xl bg-tg-secondary-bg border border-tg-separator p-3.5 transition-all"
+        className="mt-3 flex flex-col rounded-xl bg-tg-secondary-bg p-3.5 transition-all"
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button"
             >
               <TierIcon className="h-5 w-5 fill-current" />
             </div>
-            <div className="text-left">
-              <div className="flex items-center gap-2">
+            <div className="text-left min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm font-extrabold text-tg-text">
                   {currentTier} Tier
                 </span>
                 {currentRank ? (
-                  <span className="rounded-full bg-tg-section border border-tg-separator px-2 py-0.5 text-[10px] font-extrabold text-tg-text">
+                  <span className="rounded-full bg-tg-section px-2 py-0.5 text-[10px] font-extrabold text-tg-text shadow-sm">
                     #{currentRank}
                   </span>
                 ) : (
@@ -262,7 +262,7 @@ export function ProfileCard({
             </div>
           </div>
 
-          <div className="flex flex-col items-end text-right">
+          <div className="flex flex-col items-end text-right shrink-0">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-tg-hint">
               Season
             </span>
@@ -276,8 +276,8 @@ export function ProfileCard({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg border border-tg-separator p-3 text-center">
+      <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg p-3 text-center">
           <div className="flex items-center gap-1.5 text-tg-hint">
             <Coins className="h-4 w-4 text-tg-button" />
             <span className="text-xs font-medium">Coins</span>
@@ -285,7 +285,7 @@ export function ProfileCard({
           <p className="mt-1.5 text-lg font-bold text-tg-text">{profile.coins.toLocaleString()}</p>
         </div>
 
-        <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg border border-tg-separator p-3 text-center">
+        <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg p-3 text-center">
           <div className="flex items-center gap-1.5 text-tg-hint">
             <Zap className="h-4 w-4 text-tg-button" />
             <span className="text-xs font-medium">XP</span>
@@ -293,7 +293,7 @@ export function ProfileCard({
           <p className="mt-1.5 text-lg font-bold text-tg-text">{profile.xp.toLocaleString()}</p>
         </div>
 
-        <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg border border-tg-separator p-3 text-center">
+        <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg p-3 text-center">
           <div className="flex items-center gap-1.5 text-tg-hint">
             <Trophy className="h-4 w-4 text-tg-button" />
             <span className="text-xs font-medium">Best Score</span>
@@ -301,7 +301,7 @@ export function ProfileCard({
           <p className="mt-1.5 text-lg font-bold text-tg-text">{profile.bestScore.toLocaleString()}</p>
         </div>
 
-        <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg border border-tg-separator p-3 text-center">
+        <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg p-3 text-center">
           <div className="flex items-center gap-1.5 text-tg-hint">
             <Gamepad2 className="h-4 w-4 text-tg-button" />
             <span className="text-xs font-medium">Games Played</span>
@@ -312,18 +312,18 @@ export function ProfileCard({
 
       <BadgeShowcase badges={badges} isLoading={isLoadingBadges} />
 
-      <div className="mt-4 flex w-full flex-col rounded-xl bg-tg-secondary-bg border border-tg-separator p-4 text-left">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20">
+      <div className="mt-4 flex w-full flex-col rounded-xl bg-tg-secondary-bg p-4 text-left">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-tg-button/10 text-tg-button">
               <Gift className="h-5 w-5" />
             </div>
-            <div>
-              <p className="text-sm font-bold text-tg-text">Invite & Earn</p>
-              <p className="text-[11px] text-tg-hint">+100 coins for you, +50 for friends</p>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-tg-text truncate">Invite & Earn</p>
+              <p className="text-[11px] text-tg-hint truncate">+100 coins for you, +50 for friends</p>
             </div>
           </div>
-          <div className="flex items-center gap-1 rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-bold text-tg-button">
+          <div className="flex items-center gap-1 rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-bold text-tg-button shrink-0">
             <Users className="h-3.5 w-3.5" />
             <span>{profile.referralCount ?? 0}</span>
           </div>
@@ -333,7 +333,7 @@ export function ProfileCard({
           <button
             type="button"
             onClick={handleCopyReferral}
-            className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-tg-section border border-tg-separator px-3 text-xs font-bold text-tg-text transition-opacity hover:opacity-90 active:opacity-75"
+            className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-tg-section px-3 text-xs font-bold text-tg-text transition-opacity hover:opacity-90 active:opacity-75 min-w-0"
           >
             {referralCopied ? (
               <>
@@ -343,35 +343,35 @@ export function ProfileCard({
             ) : (
               <>
                 <Copy className="h-3.5 w-3.5 text-tg-hint" />
-                <span>Copy Link</span>
+                <span className="truncate">Copy Link</span>
               </>
             )}
           </button>
           <button
             type="button"
             onClick={handleShareReferral}
-            className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-tg-button px-3 text-xs font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75"
+            className="flex h-10 items-center justify-center gap-1.5 rounded-lg bg-tg-button px-3 text-xs font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 min-w-0"
           >
-            <Share2 className="h-3.5 w-3.5" />
-            <span>Share Link</span>
+            <Share2 className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Share Link</span>
           </button>
         </div>
       </div>
 
-      <div className="mt-4 flex w-full flex-col rounded-xl bg-tg-secondary-bg border border-tg-separator p-4 text-left">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20">
+      <div className="mt-4 flex w-full flex-col rounded-xl bg-tg-secondary-bg p-4 text-left">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-tg-button/10 text-tg-button">
               <Coins className="h-5 w-5" />
             </div>
-            <div>
-              <p className="text-sm font-bold text-tg-text">Bonus Coins</p>
-              <p className="text-[11px] text-tg-hint">+50 coins per ad</p>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-tg-text truncate">Bonus Coins</p>
+              <p className="text-[11px] text-tg-hint truncate">+50 coins per ad</p>
             </div>
           </div>
           <span
             data-testid="bonus-coins-remaining-badge"
-            className="rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-bold text-tg-button"
+            className="rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-bold text-tg-button shrink-0"
           >
             {remainingAds > 0 ? `${remainingAds}/5 remaining today` : 'Daily cap reached (5/5)'}
           </span>
@@ -397,8 +397,8 @@ export function ProfileCard({
             data-testid="bonus-coins-feedback"
             className={`mt-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium ${
               bonusFeedback.isSuccess
-                ? 'bg-tg-button/10 text-tg-button border border-tg-button/20'
-                : 'bg-tg-secondary-bg text-tg-hint border border-tg-separator'
+                ? 'bg-tg-button/10 text-tg-button'
+                : 'bg-tg-section text-tg-hint'
             }`}
           >
             {bonusFeedback.text}
@@ -408,24 +408,24 @@ export function ProfileCard({
 
       {showGameActions && (
         <>
-          <div className="mt-4 rounded-xl bg-tg-secondary-bg p-4 border border-tg-separator">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20">
+          <div className="mt-4 rounded-xl bg-tg-secondary-bg p-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-tg-button/10 text-tg-button">
                   <Calendar className="h-4 w-4" />
                 </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-tg-text">Daily Challenge</p>
-                  <p className="text-[11px] text-tg-hint">Same 10 flags for all players</p>
+                <div className="text-left min-w-0">
+                  <p className="text-sm font-bold text-tg-text truncate">Daily Challenge</p>
+                  <p className="text-[11px] text-tg-hint truncate">Same 10 flags for all players</p>
                 </div>
               </div>
               {dailyStatus?.attempted ? (
-                <span className="flex items-center gap-1 rounded-full bg-tg-button/15 px-2.5 py-0.5 text-[11px] font-bold text-tg-button">
+                <span className="flex items-center gap-1 rounded-full bg-tg-button/15 px-2.5 py-0.5 text-[11px] font-bold text-tg-button shrink-0">
                   <CheckCircle2 className="h-3 w-3" />
                   Completed
                 </span>
               ) : (
-                <span className="rounded-full bg-tg-button/15 px-2.5 py-0.5 text-[11px] font-bold text-tg-button">
+                <span className="rounded-full bg-tg-button/15 px-2.5 py-0.5 text-[11px] font-bold text-tg-button shrink-0">
                   Available
                 </span>
               )}
@@ -434,7 +434,7 @@ export function ProfileCard({
             {dailyStatus?.attempted ? (
               <div className="mt-3 flex flex-col gap-2.5">
                 {dailySummary ? (
-                  <div className="flex items-center justify-between rounded-lg bg-tg-section border border-tg-separator px-3 py-2 text-xs">
+                  <div className="flex items-center justify-between rounded-lg bg-tg-section px-3 py-2 text-xs">
                     <div>
                       <span className="font-extrabold text-tg-text">{dailySummary.scoreText}</span>
                       <span className="ml-2 text-tg-hint">{dailySummary.correctText}</span>
@@ -449,7 +449,7 @@ export function ProfileCard({
                   <button
                     type="button"
                     onClick={onViewDailyLeaderboard}
-                    className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-tg-button/15 font-bold text-tg-button border border-tg-button/30 transition-opacity hover:opacity-90 active:opacity-75"
+                    className="flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-tg-button/15 font-bold text-tg-button transition-opacity hover:opacity-90 active:opacity-75"
                   >
                     <Trophy className="h-4 w-4 text-tg-button" />
                     <span>View Daily Leaderboard</span>
@@ -513,7 +513,7 @@ export function ProfileCard({
             <button
               type="button"
               onClick={onViewLeaderboard}
-              className="mt-2.5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg border border-tg-separator font-semibold text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
+              className="mt-2.5 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg font-semibold text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
             >
               <Trophy className="h-4 w-4 text-tg-button" />
               <span>Global Leaderboard</span>

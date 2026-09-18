@@ -82,7 +82,7 @@ export function BattleLobbyScreen({
     : isReady;
 
   return (
-    <div className="relative flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
+    <div className="relative flex w-full max-w-md mx-auto flex-col items-center gap-4 text-tg-text">
       {countdown !== null && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-2xl bg-tg-bg/90 backdrop-blur-md">
           <p className="text-xs font-bold uppercase tracking-widest text-tg-button">
@@ -99,7 +99,7 @@ export function BattleLobbyScreen({
         <button
           type="button"
           onClick={onBack}
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-tg-section border border-tg-separator text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
+          className="flex h-9 w-9 items-center justify-center rounded-xl bg-tg-section text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
           aria-label="Back"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -116,12 +116,12 @@ export function BattleLobbyScreen({
       </div>
 
       {error && (
-        <div className="w-full rounded-xl bg-rose-500/20 p-3 text-center text-xs font-semibold text-rose-400 border border-rose-500/30">
+        <div className="w-full rounded-xl bg-rose-500/15 p-3 text-center text-xs font-semibold text-rose-400">
           {error}
         </div>
       )}
 
-      <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg border border-tg-separator px-4 py-2.5 text-xs text-tg-hint">
+      <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg px-4 py-2.5 text-xs text-tg-hint">
         <span className="font-semibold text-tg-text">{totalFlags} Flags</span>
         <span>•</span>
         <span className="font-semibold text-tg-text">{durationSeconds}s Time Limit</span>
@@ -129,9 +129,9 @@ export function BattleLobbyScreen({
         <span className="font-semibold text-tg-button">1v1 Real-Time</span>
       </div>
 
-      <div className="flex w-full flex-col items-center rounded-2xl bg-tg-section border border-tg-separator p-5 text-center shadow-sm">
+      <div className="flex w-full flex-col items-center rounded-2xl bg-tg-section p-5 text-center shadow-sm">
         <div className="grid w-full grid-cols-2 gap-3">
-          <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg border border-tg-separator p-4">
+          <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg p-4">
             <div className="relative">
               {challengerPhoto ? (
                 <img
@@ -154,21 +154,21 @@ export function BattleLobbyScreen({
             <p className="mt-2 max-w-[120px] truncate text-xs font-bold text-tg-text">
               {challengerName}
             </p>
-            <span className="mt-1 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-semibold text-tg-button ring-1 ring-tg-button/30">
+            <span className="mt-1 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-semibold text-tg-button">
               {isChallenger ? 'You (Host)' : 'Host'}
             </span>
             <span
               className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                 challengerIsReady
-                  ? 'bg-tg-button/15 text-tg-button ring-1 ring-tg-button/30'
-                  : 'bg-tg-hint/15 text-tg-hint ring-1 ring-tg-separator'
+                  ? 'bg-tg-button/15 text-tg-button'
+                  : 'bg-tg-hint/15 text-tg-hint'
               }`}
             >
-              {challengerIsReady ? 'Ready ✓' : 'Waiting...'}
+              {challengerIsReady ? 'Ready' : 'Waiting...'}
             </span>
           </div>
 
-          <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg border border-tg-separator p-4">
+          <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg p-4">
             {hasOpponent ? (
               <>
                 <div className="relative">
@@ -193,17 +193,17 @@ export function BattleLobbyScreen({
                 <p className="mt-2 max-w-[120px] truncate text-xs font-bold text-tg-text">
                   {opponentDisplayName}
                 </p>
-                <span className="mt-1 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-semibold text-tg-button ring-1 ring-tg-button/30">
+                <span className="mt-1 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-semibold text-tg-button">
                   {!isChallenger ? 'You' : 'Opponent'}
                 </span>
                 <span
                   className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                     opponentIsReady
-                      ? 'bg-tg-button/15 text-tg-button ring-1 ring-tg-button/30'
-                      : 'bg-tg-hint/15 text-tg-hint ring-1 ring-tg-separator'
+                      ? 'bg-tg-button/15 text-tg-button'
+                      : 'bg-tg-hint/15 text-tg-hint'
                   }`}
                 >
-                  {opponentIsReady ? 'Ready ✓' : 'Waiting...'}
+                  {opponentIsReady ? 'Ready' : 'Waiting...'}
                 </span>
               </>
             ) : (
@@ -243,7 +243,7 @@ export function BattleLobbyScreen({
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-tg-secondary-bg border border-tg-separator px-3 text-xs font-bold text-tg-text transition-opacity hover:opacity-90 active:opacity-75"
+                  className="flex h-11 items-center justify-center gap-1.5 rounded-xl bg-tg-secondary-bg px-3 text-xs font-bold text-tg-text transition-opacity hover:opacity-90 active:opacity-75"
                 >
                   {copied ? (
                     <>

@@ -126,11 +126,11 @@ export function BattleResultScreen({
   const opponentFrame = isOpponentViewer ? getAvatarFrameClass(userAvatarFrame) : '';
 
   return (
-    <div className="flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
+    <div className="flex w-full max-w-md mx-auto flex-col items-center gap-4 text-tg-text">
       {promotionMoment.isPromoted && promotionMoment.newTier && (
         <div
           data-testid="battle-promotion-banner"
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-tg-button/15 p-3.5 text-sm font-bold text-tg-button ring-1 ring-tg-button/30"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-tg-button/15 p-3.5 text-sm font-bold text-tg-button"
         >
           <Sparkles className="h-4 w-4 text-tg-button" />
           <span>Promoted to {promotionMoment.newTier}!</span>
@@ -143,7 +143,7 @@ export function BattleResultScreen({
             <div
               key={badge.badgeId}
               data-testid="battle-badge-unlock-banner"
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-tg-button/15 p-3.5 text-sm font-bold text-tg-button ring-1 ring-tg-button/30"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-tg-button/15 p-3.5 text-sm font-bold text-tg-button"
             >
               <Award className="h-4 w-4 text-tg-button" />
               <span>Badge Unlocked: {badge.name}!</span>
@@ -152,8 +152,8 @@ export function BattleResultScreen({
         </div>
       )}
 
-      <div className="flex w-full flex-col items-center rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20">
+      <div className="flex w-full flex-col items-center rounded-2xl bg-tg-section p-6 text-center shadow-sm">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-tg-button/10 text-tg-button">
           <Trophy className="h-8 w-8" />
         </div>
 
@@ -165,7 +165,7 @@ export function BattleResultScreen({
         {viewerResult && viewerDelta && (
           <div
             data-testid="battle-rating-change"
-            className="mt-3.5 flex items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg border border-tg-separator px-3.5 py-1.5 text-xs font-semibold"
+            className="mt-3.5 flex items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg px-3.5 py-1.5 text-xs font-semibold"
           >
             <span className="text-tg-hint">Rating:</span>
             <span className="font-bold text-tg-text">
@@ -182,10 +182,10 @@ export function BattleResultScreen({
 
         <div className="mt-6 grid w-full grid-cols-2 gap-3">
           <div
-            className={`flex flex-col items-center rounded-xl bg-tg-secondary-bg border p-4 transition-all ${
+            className={`flex flex-col items-center rounded-xl bg-tg-secondary-bg p-4 transition-all ${
               challengerWon
-                ? 'border-tg-button shadow-sm'
-                : 'border-tg-separator'
+                ? 'ring-2 ring-tg-button shadow-sm'
+                : ''
             }`}
           >
             <div className="relative">
@@ -244,17 +244,17 @@ export function BattleResultScreen({
             )}
 
             {challengerWon && (
-              <span className="mt-2 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-bold text-tg-button border border-tg-button/30">
+              <span className="mt-2 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-bold text-tg-button">
                 Winner
               </span>
             )}
           </div>
 
           <div
-            className={`flex flex-col items-center rounded-xl bg-tg-secondary-bg border p-4 transition-all ${
+            className={`flex flex-col items-center rounded-xl bg-tg-secondary-bg p-4 transition-all ${
               opponentWon
-                ? 'border-tg-button shadow-sm'
-                : 'border-tg-separator'
+                ? 'ring-2 ring-tg-button shadow-sm'
+                : ''
             }`}
           >
             <div className="relative">
@@ -313,7 +313,7 @@ export function BattleResultScreen({
             )}
 
             {opponentWon && (
-              <span className="mt-2 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-bold text-tg-button border border-tg-button/30">
+              <span className="mt-2 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-bold text-tg-button">
                 Winner
               </span>
             )}
@@ -334,7 +334,7 @@ export function BattleResultScreen({
           <button
             type="button"
             onClick={onBackToProfile}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg border border-tg-separator text-sm font-semibold text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg text-sm font-semibold text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Back to Profile</span>

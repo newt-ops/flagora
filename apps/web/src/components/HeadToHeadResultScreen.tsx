@@ -41,9 +41,9 @@ export function HeadToHeadResultScreen({
   const opponentFrame = isOpponentViewer ? viewerFrame : '';
 
   return (
-    <div className="flex w-full max-w-sm flex-col items-center gap-4 text-tg-text">
-      <div className="flex w-full flex-col items-center rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20">
+    <div className="flex w-full max-w-md mx-auto flex-col items-center gap-4 text-tg-text">
+      <div className="flex w-full flex-col items-center rounded-2xl bg-tg-section p-6 text-center shadow-sm">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-tg-button/10 text-tg-button">
           <Trophy className="h-8 w-8" />
         </div>
 
@@ -54,10 +54,10 @@ export function HeadToHeadResultScreen({
 
         <div className="mt-6 grid w-full grid-cols-2 gap-3">
           <div
-            className={`flex flex-col items-center rounded-xl bg-tg-secondary-bg p-4 border transition-all ${
+            className={`flex flex-col items-center rounded-xl bg-tg-secondary-bg p-4 transition-all ${
               challengerWon
-                ? 'border-tg-button shadow-sm'
-                : 'border-tg-separator'
+                ? 'ring-2 ring-tg-button shadow-sm'
+                : ''
             }`}
           >
             <div className="relative">
@@ -94,17 +94,17 @@ export function HeadToHeadResultScreen({
             </div>
 
             {challengerWon && (
-              <span className="mt-2 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-bold text-tg-button border border-tg-button/30">
+              <span className="mt-2 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-bold text-tg-button">
                 Winner
               </span>
             )}
           </div>
 
           <div
-            className={`flex flex-col items-center rounded-xl bg-tg-secondary-bg p-4 border transition-all ${
+            className={`flex flex-col items-center rounded-xl bg-tg-secondary-bg p-4 transition-all ${
               opponentWon
-                ? 'border-tg-button shadow-sm'
-                : 'border-tg-separator'
+                ? 'ring-2 ring-tg-button shadow-sm'
+                : ''
             }`}
           >
             <div className="relative">
@@ -141,7 +141,7 @@ export function HeadToHeadResultScreen({
             </div>
 
             {opponentWon && (
-              <span className="mt-2 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-bold text-tg-button border border-tg-button/30">
+              <span className="mt-2 rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-bold text-tg-button">
                 Winner
               </span>
             )}
@@ -167,7 +167,7 @@ export function HeadToHeadResultScreen({
         <button
           type="button"
           onClick={onBackToProfile}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-section border border-tg-separator font-semibold text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-tg-section font-semibold text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
         >
           <User className="h-4 w-4" />
           <span>Back to Profile</span>

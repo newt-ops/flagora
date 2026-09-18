@@ -14,7 +14,7 @@ export function NonTelegramFallback({ botUsername }: NonTelegramFallbackProps) {
   const telegramUrl = `https://t.me/${cleanUsername}`;
 
   return (
-    <div className="flex min-h-[70vh] w-full max-w-sm flex-col items-center justify-center px-4 text-center">
+    <div className="flex min-h-[70vh] w-full max-w-md mx-auto flex-col items-center justify-center px-4 text-center">
       <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-tg-button/10 text-tg-button shadow-sm">
         <Gamepad2 className="h-10 w-10" />
       </div>
@@ -26,7 +26,7 @@ export function NonTelegramFallback({ botUsername }: NonTelegramFallbackProps) {
         Play on Telegram
       </p>
 
-      <div className="mt-6 rounded-2xl border border-tg-separator bg-tg-section p-5 text-left shadow-sm">
+      <div className="mt-6 rounded-2xl bg-tg-section p-5 text-left shadow-sm">
         <p className="text-sm leading-relaxed text-tg-text">
           Flagora is a fast-paced country flag trivia game built natively for Telegram Mini Apps.
         </p>

@@ -48,13 +48,13 @@ export function LeaderboardScreen({
   const isUnranked = isUnrankedPlayer(myRank);
 
   return (
-    <div className="flex w-full max-w-sm flex-col gap-4 text-tg-text">
+    <div className="flex w-full max-w-md mx-auto flex-col gap-4 text-tg-text">
       <div className="flex items-center justify-between">
         {showBackButton && onBack ? (
           <button
             type="button"
             onClick={onBack}
-            className="flex h-10 w-10 items-center justify-center rounded-xl bg-tg-section border border-tg-separator text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-tg-section text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
             aria-label="Back"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -71,13 +71,13 @@ export function LeaderboardScreen({
         <div className="h-10 w-10" />
       </div>
 
-      <div className="flex rounded-xl bg-tg-secondary-bg border border-tg-separator p-1">
+      <div className="flex rounded-xl bg-tg-secondary-bg p-1">
         <button
           type="button"
           onClick={() => setMode('global')}
           className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${
             mode === 'global'
-              ? 'bg-tg-section text-tg-text shadow-sm border border-tg-separator'
+              ? 'bg-tg-section text-tg-text shadow-sm'
               : 'text-tg-hint hover:text-tg-text'
           }`}
         >
@@ -88,7 +88,7 @@ export function LeaderboardScreen({
           onClick={() => setMode('daily')}
           className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${
             mode === 'daily'
-              ? 'bg-tg-section text-tg-text shadow-sm border border-tg-separator'
+              ? 'bg-tg-section text-tg-text shadow-sm'
               : 'text-tg-hint hover:text-tg-text'
           }`}
         >
@@ -99,7 +99,7 @@ export function LeaderboardScreen({
           onClick={() => setMode('ranked')}
           className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${
             mode === 'ranked'
-              ? 'bg-tg-section text-tg-text shadow-sm border border-tg-separator'
+              ? 'bg-tg-section text-tg-text shadow-sm'
               : 'text-tg-hint hover:text-tg-text'
           }`}
         >
@@ -133,12 +133,12 @@ export function LeaderboardScreen({
       )}
 
       {!isLoading && error && (
-        <div className="flex flex-col items-center gap-3 rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
+        <div className="flex flex-col items-center gap-3 rounded-2xl bg-tg-section p-6 text-center shadow-sm">
           <p className="text-sm font-semibold text-rose-400">{error}</p>
           <button
             type="button"
             onClick={refetch}
-            className="rounded-xl bg-tg-secondary-bg border border-tg-separator px-4 py-2 text-xs font-bold text-tg-text transition-opacity hover:opacity-90 active:opacity-75"
+            className="rounded-xl bg-tg-secondary-bg px-4 py-2 text-xs font-bold text-tg-text transition-opacity hover:opacity-90 active:opacity-75"
           >
             Retry
           </button>
@@ -172,7 +172,7 @@ export function LeaderboardScreen({
                     key={entry.telegramUserId}
                     className={`flex items-center justify-between rounded-xl px-3 py-2.5 transition-colors ${
                       isMe
-                        ? 'bg-tg-button/15 border border-tg-button'
+                        ? 'bg-tg-button/15'
                         : 'hover:bg-tg-secondary-bg/60'
                     }`}
                   >
@@ -190,7 +190,7 @@ export function LeaderboardScreen({
                           src={entry.photoUrl}
                           alt={entry.displayName}
                           className={`h-8 w-8 shrink-0 rounded-full object-cover bg-tg-section ${
-                            frameClass ? frameClass : 'border border-tg-separator'
+                            frameClass ? frameClass : ''
                           }`}
                         />
                       ) : (
@@ -233,9 +233,9 @@ export function LeaderboardScreen({
           </div>
 
           {showPinnedRow && myRank && (
-            <div className="flex items-center justify-between rounded-2xl bg-tg-section p-3.5 shadow-sm border border-tg-button/40">
+            <div className="flex items-center justify-between rounded-2xl bg-tg-section p-3.5 shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-tg-button/20 text-xs font-extrabold text-tg-button ring-1 ring-tg-button/30">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-tg-button/20 text-xs font-extrabold text-tg-button">
                   #{myRank.rank}
                 </div>
                 <div className="text-left">
@@ -264,7 +264,7 @@ export function LeaderboardScreen({
           )}
 
           {isUnranked && (
-            <div className="flex flex-col items-center gap-2 rounded-2xl bg-tg-section border border-tg-separator p-4 text-center shadow-sm">
+            <div className="flex flex-col items-center gap-2 rounded-2xl bg-tg-section p-4 text-center shadow-sm">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-tg-button">
                 <Sparkles className="h-4 w-4 text-tg-button" />
                 <span>
@@ -325,7 +325,7 @@ export function LeaderboardScreen({
       <button
         type="button"
         onClick={onBack}
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-tg-section border border-tg-separator font-semibold text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-tg-section font-semibold text-tg-hint transition-colors hover:text-tg-text active:opacity-75"
       >
         <ArrowLeft className="h-4 w-4" />
         <span>Back to Profile</span>

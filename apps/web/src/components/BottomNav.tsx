@@ -19,7 +19,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   return (
     <nav
       aria-label="Bottom Navigation"
-      className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] inset-x-0 mx-auto z-40 flex w-fit items-center gap-1.5 rounded-full border border-tg-separator bg-tg-section/90 p-1.5 shadow-lg shadow-black/10 backdrop-blur-xl transition-all duration-300"
+      className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] inset-x-0 mx-auto z-40 flex w-fit max-w-[calc(100vw-1.5rem)] items-center gap-1.5 rounded-full bg-tg-section/90 p-1.5 shadow-lg shadow-black/15 backdrop-blur-xl transition-all duration-300"
     >
       {tabs.map((tab) => {
         const Icon = tab.icon;

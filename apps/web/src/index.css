@@ -50,7 +50,6 @@ body {
   background-color: var(--section-bg-color);
   border-radius: 14px;
   overflow: hidden;
-  border: 0.5px solid var(--section-separator-color);
 }
 
 .tg-item {

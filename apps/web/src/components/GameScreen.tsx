@@ -163,11 +163,11 @@ export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScree
 
   return (
     <div
-      className={`flex w-full max-w-sm flex-col items-center gap-4 text-tg-text transition-colors duration-300 ${
+      className={`flex w-full max-w-md mx-auto flex-col items-center gap-4 text-tg-text transition-colors duration-300 ${
         themeClass ? `rounded-3xl p-3 shadow-xl ${themeClass}` : ''
       }`}
     >
-      <div className="w-full rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm">
+      <div className="w-full rounded-2xl bg-tg-section p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-tg-hint">
             <span>Flag</span>
@@ -178,13 +178,13 @@ export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScree
 
           <div className="flex items-center gap-2">
             {comboCount > 0 && (
-              <div className="flex items-center gap-1 rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-bold text-tg-button ring-1 ring-tg-button/30">
+              <div className="flex items-center gap-1 rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-bold text-tg-button">
                 <Zap className="h-3 w-3" />
                 <span>{comboMultiplier}x</span>
               </div>
             )}
 
-            <div className="flex items-center gap-1 rounded-full bg-tg-secondary-bg border border-tg-separator px-2.5 py-0.5 text-xs font-bold text-tg-text">
+            <div className="flex items-center gap-1 rounded-full bg-tg-secondary-bg px-2.5 py-0.5 text-xs font-bold text-tg-text">
               <Award className="h-3.5 w-3.5 text-tg-button" />
               <span>{runningScore}</span>
             </div>
@@ -220,7 +220,7 @@ export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScree
       </div>
 
       {timeExpired && (
-        <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-rose-500/20 p-3 text-sm font-semibold text-rose-400 border border-rose-500/30">
+        <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-rose-500/20 p-3 text-sm font-semibold text-rose-400">
           <AlertCircle className="h-4 w-4" />
           <span>Time Expired! Wrapping up run...</span>
         </div>
@@ -228,7 +228,7 @@ export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScree
 
       {currentFlag && !timeExpired && (
         <div className="flex w-full flex-col items-center gap-4">
-          <div className="flex aspect-[3/2] w-full items-center justify-center overflow-hidden rounded-2xl bg-tg-section p-6 shadow-sm border border-tg-separator">
+          <div className="flex aspect-[3/2] w-full items-center justify-center overflow-hidden rounded-2xl bg-tg-section p-6 shadow-sm">
             <span
               className={`fi fi-${currentFlag.isoCode.toLowerCase()} text-8xl rounded-lg shadow-sm`}
             />
@@ -245,9 +245,9 @@ export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScree
                   {feedback.isTier4 && (
                     <span
                       data-testid="tier4-mastery-flourish"
-                      className="inline-flex items-center gap-1 rounded-full bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 text-[11px] font-bold text-purple-400"
+                      className="inline-flex items-center gap-1 rounded-full bg-tg-button/15 px-2 py-0.5 text-[11px] font-bold text-tg-button"
                     >
-                      <Sparkles className="h-3 w-3 text-purple-400" />
+                      <Sparkles className="h-3 w-3 text-tg-button" />
                       <span>Tier 4 Mastery</span>
                     </span>
                   )}
@@ -264,7 +264,7 @@ export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScree
           <div className="grid w-full grid-cols-2 gap-2.5">
             {currentFlag.choices.map((choice: string) => {
               const isSelected = selectedChoice === choice;
-              let buttonStyle = 'bg-tg-section text-tg-text border border-tg-separator hover:opacity-90';
+              let buttonStyle = 'bg-tg-section text-tg-text shadow-sm hover:opacity-90';
 
               if (isSelected) {
                 if (feedback) {

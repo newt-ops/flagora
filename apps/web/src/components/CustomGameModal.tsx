@@ -35,8 +35,8 @@ export function CustomGameModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-md rounded-3xl bg-tg-section border border-tg-separator shadow-2xl p-5 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between pb-3 border-b border-tg-separator mb-4">
+      <div className="relative w-full max-w-md rounded-3xl bg-tg-section shadow-2xl p-5 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between pb-3 border-b border-tg-separator/30 mb-4">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-tg-button/10 text-tg-button">
               <Flag className="w-5 h-5" />
@@ -68,10 +68,10 @@ export function CustomGameModal({
                 key={c}
                 type="button"
                 onClick={() => setContinent(c)}
-                className={`py-1.5 px-2 rounded-xl text-xs font-semibold border transition-all text-center truncate ${
+                className={`py-1.5 px-2 rounded-xl text-xs font-semibold transition-all text-center truncate ${
                   continent === c
-                    ? 'bg-tg-button text-tg-button-text border-tg-button shadow-sm'
-                    : 'bg-tg-secondary-bg text-tg-text border-tg-separator hover:border-tg-button/50'
+                    ? 'bg-tg-button text-tg-button-text shadow-sm'
+                    : 'bg-tg-secondary-bg text-tg-text hover:bg-tg-secondary-bg/80'
                 }`}
               >
                 {CONTINENT_LABELS[c]}
@@ -91,10 +91,10 @@ export function CustomGameModal({
                 key={count}
                 type="button"
                 onClick={() => setFlagCount(count)}
-                className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                className={`py-2 rounded-xl text-xs font-bold transition-all ${
                   flagCount === count
-                    ? 'bg-tg-button text-tg-button-text border-tg-button shadow-sm'
-                    : 'bg-tg-secondary-bg text-tg-text border-tg-separator hover:border-tg-button/50'
+                    ? 'bg-tg-button text-tg-button-text shadow-sm'
+                    : 'bg-tg-secondary-bg text-tg-text hover:bg-tg-secondary-bg/80'
                 }`}
               >
                 {count} Flags
@@ -114,10 +114,10 @@ export function CustomGameModal({
                 key={sec}
                 type="button"
                 onClick={() => setDurationSeconds(sec)}
-                className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                className={`py-2 rounded-xl text-xs font-bold transition-all ${
                   durationSeconds === sec
-                    ? 'bg-tg-button text-tg-button-text border-tg-button shadow-sm'
-                    : 'bg-tg-secondary-bg text-tg-text border-tg-separator hover:border-tg-button/50'
+                    ? 'bg-tg-button text-tg-button-text shadow-sm'
+                    : 'bg-tg-secondary-bg text-tg-text hover:bg-tg-secondary-bg/80'
                 }`}
               >
                 {sec}s

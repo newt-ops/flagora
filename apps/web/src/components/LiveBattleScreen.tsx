@@ -126,7 +126,7 @@ export function LiveBattleScreen({
 
   return (
     <div
-      className={`relative flex w-full max-w-sm flex-col items-center gap-4 text-tg-text transition-colors duration-300 ${
+      className={`relative flex w-full max-w-md mx-auto flex-col items-center gap-4 text-tg-text transition-colors duration-300 ${
         themeClass ? `rounded-3xl p-3 shadow-xl ${themeClass}` : ''
       }`}
     >
@@ -139,8 +139,8 @@ export function LiveBattleScreen({
         </div>
       )}
 
-      <div className="flex w-full flex-col gap-2 rounded-2xl bg-tg-section border border-tg-separator p-3.5 shadow-sm">
-        <div className="grid grid-cols-2 gap-2 border-b border-tg-separator pb-2.5">
+      <div className="flex w-full flex-col gap-2 rounded-2xl bg-tg-section p-3.5 shadow-sm">
+        <div className="grid grid-cols-2 gap-2 border-b border-tg-separator/30 pb-2.5">
           <div className="flex flex-col">
             <div className="flex items-center gap-1 text-[11px] font-semibold text-tg-hint">
               <span>You</span>
@@ -171,8 +171,8 @@ export function LiveBattleScreen({
                 <span
                   className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-black ${
                     opponentProgress.correct
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                      : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'bg-rose-500/20 text-rose-400'
                   }`}
                 >
                   {opponentProgress.correct ? '+' : 'x'}
@@ -214,7 +214,7 @@ export function LiveBattleScreen({
       </div>
 
       {timeExpired ? (
-        <div className="flex w-full flex-col items-center justify-center gap-3 rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
+        <div className="flex w-full flex-col items-center justify-center gap-3 rounded-2xl bg-tg-section p-6 text-center shadow-sm">
           <Loader2 className="h-6 w-6 animate-spin text-tg-button" />
           <p className="text-sm font-bold text-tg-text">Time is up!</p>
           <p className="text-xs text-tg-hint">Tallying final battle results...</p>
@@ -229,7 +229,7 @@ export function LiveBattleScreen({
           )}
         </div>
       ) : currentFlagIndex >= battleStart.flags.length ? (
-        <div className="flex w-full flex-col items-center justify-center gap-3 rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
+        <div className="flex w-full flex-col items-center justify-center gap-3 rounded-2xl bg-tg-section p-6 text-center shadow-sm">
           <Check className="h-8 w-8 text-tg-button" />
           <p className="text-sm font-bold text-tg-text">All flags completed!</p>
           <p className="text-xs text-tg-hint">Waiting for opponent or battle tally...</p>
@@ -246,7 +246,7 @@ export function LiveBattleScreen({
       ) : (
         currentFlag && (
           <div className="flex w-full flex-col items-center gap-4">
-            <div className="flex aspect-[3/2] w-full items-center justify-center overflow-hidden rounded-2xl bg-tg-section p-6 shadow-sm border border-tg-separator">
+            <div className="flex aspect-[3/2] w-full items-center justify-center overflow-hidden rounded-2xl bg-tg-section p-6 shadow-sm">
               <span
                 className={`fi fi-${currentFlag.isoCode.toLowerCase()} text-8xl rounded-lg shadow-sm`}
               />
@@ -263,9 +263,9 @@ export function LiveBattleScreen({
                     {feedback.isTier4 && (
                       <span
                         data-testid="tier4-mastery-flourish"
-                        className="inline-flex items-center gap-1 rounded-full bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 text-[11px] font-bold text-purple-400"
+                        className="inline-flex items-center gap-1 rounded-full bg-tg-button/15 px-2 py-0.5 text-[11px] font-bold text-tg-button"
                       >
-                        <Sparkles className="h-3 w-3 text-purple-400" />
+                        <Sparkles className="h-3 w-3 text-tg-button" />
                         <span>Tier 4 Mastery</span>
                       </span>
                     )}
@@ -282,7 +282,7 @@ export function LiveBattleScreen({
             <div className="grid w-full grid-cols-2 gap-2.5">
               {currentFlag.choices.map((choice: string) => {
                 const isSelected = selectedChoice === choice;
-                let buttonStyle = 'bg-tg-section text-tg-text border border-tg-separator hover:opacity-90';
+                let buttonStyle = 'bg-tg-section text-tg-text shadow-sm hover:opacity-90';
 
                 if (isSelected) {
                   if (feedback) {

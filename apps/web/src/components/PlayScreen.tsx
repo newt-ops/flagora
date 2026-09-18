@@ -81,7 +81,7 @@ export function PlayScreen({
   const TierIcon = getTierIcon(currentTier);
 
   return (
-    <div className="flex w-full max-w-sm flex-col gap-4 text-tg-text pb-20">
+    <div className="flex w-full max-w-md mx-auto flex-col gap-4 text-tg-text pb-20">
       <div
         role="button"
         tabIndex={0}
@@ -91,9 +91,9 @@ export function PlayScreen({
             onNavigateToProfile();
           }
         }}
-        className="flex cursor-pointer items-center justify-between rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm transition-opacity hover:opacity-95 active:scale-[0.99]"
+        className="flex cursor-pointer items-center justify-between flex-wrap gap-2.5 rounded-2xl bg-tg-section p-4 shadow-sm transition-opacity hover:opacity-95 active:scale-[0.99]"
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           {profile.photoUrl ? (
             <img
               src={profile.photoUrl}
@@ -111,25 +111,25 @@ export function PlayScreen({
               {initial}
             </div>
           )}
-          <div className="flex flex-col text-left">
-            <h1 className="text-base font-bold text-tg-text">{firstName}</h1>
-            <div className="flex items-center gap-2 text-xs text-tg-hint">
+          <div className="flex flex-col text-left min-w-0">
+            <h1 className="text-base font-bold text-tg-text truncate">{firstName}</h1>
+            <div className="flex items-center gap-2 text-xs text-tg-hint flex-wrap">
               <span>Level {profile.level}</span>
               <TierBadge tier={currentTier} size="xs" />
               {profile.username && (
-                <span>• @{profile.username.replace(/^@/, '')}</span>
+                <span className="truncate">• @{profile.username.replace(/^@/, '')}</span>
               )}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-full bg-tg-secondary-bg border border-tg-separator px-2.5 py-1 text-xs font-bold text-tg-text">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 rounded-full bg-tg-secondary-bg px-2.5 py-1 text-xs font-bold text-tg-text">
             <Coins className="h-3.5 w-3.5 text-tg-button" />
             <span>{profile.coins.toLocaleString()}</span>
           </div>
 
-          <div className="flex items-center gap-1.5 rounded-full bg-tg-secondary-bg border border-tg-separator px-2.5 py-1 text-xs font-bold text-tg-text">
+          <div className="flex items-center gap-1.5 rounded-full bg-tg-secondary-bg px-2.5 py-1 text-xs font-bold text-tg-text">
             <Flame className="h-3.5 w-3.5 fill-current text-tg-button" />
             <span>{profile.currentStreak}</span>
           </div>
@@ -146,15 +146,15 @@ export function PlayScreen({
           }
         }}
         data-testid="play-rank-tier-banner"
-        className="flex cursor-pointer items-center justify-between rounded-2xl bg-tg-section border border-tg-separator px-4 py-2.5 shadow-sm transition-all hover:opacity-95 active:scale-[0.99]"
+        className="flex cursor-pointer items-center justify-between flex-wrap gap-2 rounded-2xl bg-tg-section px-4 py-2.5 shadow-sm transition-all hover:opacity-95 active:scale-[0.99]"
       >
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 min-w-0">
           <div
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-tg-button/10 text-tg-button"
           >
             <TierIcon className="h-4 w-4 fill-current" />
           </div>
-          <div className="flex items-center gap-2 text-left">
+          <div className="flex items-center gap-2 text-left min-w-0 flex-wrap">
             <span className="text-xs font-extrabold text-tg-text">
               {currentTier} Tier
             </span>
@@ -164,7 +164,7 @@ export function PlayScreen({
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           <span
             data-testid="play-season-identifier"
             className="text-[11px] font-semibold text-tg-hint"
@@ -187,25 +187,25 @@ export function PlayScreen({
         />
       )}
 
-      <div className="rounded-2xl bg-tg-section border border-tg-separator p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
+      <div className="rounded-2xl bg-tg-section p-5 shadow-sm">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
               <Calendar className="h-4 w-4" />
             </div>
-            <div className="text-left">
-              <h2 className="text-sm font-bold text-tg-text">Daily Challenge</h2>
-              <p className="text-[11px] text-tg-hint">10 daily flags for all players</p>
+            <div className="text-left min-w-0">
+              <h2 className="text-sm font-bold text-tg-text truncate">Daily Challenge</h2>
+              <p className="text-[11px] text-tg-hint truncate">10 daily flags for all players</p>
             </div>
           </div>
 
           {dailyStatus?.attempted ? (
-            <span className="flex items-center gap-1 rounded-full bg-tg-secondary-bg border border-tg-separator px-2.5 py-0.5 text-[11px] font-semibold text-tg-hint">
+            <span className="flex items-center gap-1 rounded-full bg-tg-secondary-bg px-2.5 py-0.5 text-[11px] font-semibold text-tg-hint shrink-0">
               <CheckCircle2 className="h-3 w-3" />
               Completed
             </span>
           ) : (
-            <span className="rounded-full bg-tg-button/15 px-2.5 py-0.5 text-[11px] font-bold text-tg-button">
+            <span className="rounded-full bg-tg-button/15 px-2.5 py-0.5 text-[11px] font-bold text-tg-button shrink-0">
               Available
             </span>
           )}
@@ -214,7 +214,7 @@ export function PlayScreen({
         {dailyStatus?.attempted ? (
           <div className="mt-4 flex flex-col gap-2.5">
             {dailySummary && (
-              <div className="flex items-center justify-between rounded-xl bg-tg-secondary-bg border border-tg-separator px-3.5 py-2.5 text-xs">
+              <div className="flex items-center justify-between rounded-xl bg-tg-secondary-bg px-3.5 py-2.5 text-xs">
                 <div>
                   <span className="font-extrabold text-tg-text">{dailySummary.scoreText}</span>
                   <span className="ml-2 text-tg-hint">{dailySummary.correctText}</span>
@@ -226,7 +226,7 @@ export function PlayScreen({
             <button
               type="button"
               onClick={onViewDailyLeaderboard}
-              className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg border border-tg-separator font-bold text-tg-text transition-opacity hover:opacity-90 active:opacity-75"
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg font-bold text-tg-text transition-opacity hover:opacity-90 active:opacity-75"
             >
               <Trophy className="h-4 w-4 text-tg-button" />
               <span>View Daily Leaderboard</span>
@@ -252,15 +252,15 @@ export function PlayScreen({
           Game Modes
         </h2>
 
-        <div className="rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm">
+        <div className="rounded-2xl bg-tg-section p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
                 <Play className="h-5 w-5 fill-current" />
               </div>
-              <div className="text-left">
-                <h3 className="text-sm font-bold text-tg-text">Practice Solo</h3>
-                <p className="text-xs text-tg-hint">60s speed blitz with combo multipliers</p>
+              <div className="text-left min-w-0">
+                <h3 className="text-sm font-bold text-tg-text truncate">Practice Solo</h3>
+                <p className="text-xs text-tg-hint truncate">60s speed blitz with combo multipliers</p>
               </div>
             </div>
           </div>
@@ -275,37 +275,37 @@ export function PlayScreen({
           </button>
         </div>
 
-        <div className="rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm">
+        <div className="rounded-2xl bg-tg-section p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
                 <Globe className="h-5 w-5" />
               </div>
-              <div className="text-left">
-                <h3 className="text-sm font-bold text-tg-text">Custom Mode</h3>
-                <p className="text-xs text-tg-hint">Choose continents, flag count & timer</p>
+              <div className="text-left min-w-0">
+                <h3 className="text-sm font-bold text-tg-text truncate">Custom Mode</h3>
+                <p className="text-xs text-tg-hint truncate">Choose continents, flag count & timer</p>
               </div>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setIsCustomModalOpen(true)}
-            className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg border border-tg-separator font-bold text-tg-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75"
+            className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg font-bold text-tg-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75"
           >
             <Sliders className="h-3.5 w-3.5 text-tg-button" />
             <span>Customize & Play</span>
           </button>
         </div>
 
-        <div className="rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm">
+        <div className="rounded-2xl bg-tg-section p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
                 <Zap className="h-5 w-5" />
               </div>
-              <div className="text-left">
-                <h3 className="text-sm font-bold text-tg-text">Live 1v1 Battle</h3>
-                <p className="text-xs text-tg-hint">Real-time head-to-head multiplayer</p>
+              <div className="text-left min-w-0">
+                <h3 className="text-sm font-bold text-tg-text truncate">Live 1v1 Battle</h3>
+                <p className="text-xs text-tg-hint truncate">Real-time head-to-head multiplayer</p>
               </div>
             </div>
           </div>
@@ -320,15 +320,15 @@ export function PlayScreen({
           </button>
         </div>
 
-        <div className="rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm">
+        <div className="rounded-2xl bg-tg-section p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
                 <Swords className="h-5 w-5" />
               </div>
-              <div className="text-left">
-                <h3 className="text-sm font-bold text-tg-text">Duel a Friend</h3>
-                <p className="text-xs text-tg-hint">Send a challenge score to any Telegram chat</p>
+              <div className="text-left min-w-0">
+                <h3 className="text-sm font-bold text-tg-text truncate">Duel a Friend</h3>
+                <p className="text-xs text-tg-hint truncate">Send a challenge score to any Telegram chat</p>
               </div>
             </div>
           </div>

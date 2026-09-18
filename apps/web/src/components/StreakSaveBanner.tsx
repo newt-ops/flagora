@@ -53,17 +53,17 @@ export function StreakSaveBanner({
   return (
     <div
       data-testid="streak-save-banner"
-      className="flex w-full flex-col rounded-2xl border border-tg-separator bg-tg-section p-4 text-left shadow-sm"
+      className="flex w-full flex-col rounded-2xl bg-tg-section p-4 text-left shadow-sm"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
+      <div className="flex items-start justify-between flex-wrap sm:flex-nowrap gap-3">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
             <Flame className="h-4 w-4 fill-current text-tg-button" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-bold text-tg-text">{title}</span>
-              <ShieldCheck className="h-4 w-4 text-tg-button" />
+              <span className="text-sm font-bold text-tg-text truncate">{title}</span>
+              <ShieldCheck className="h-4 w-4 text-tg-button shrink-0" />
             </div>
             <p className="mt-0.5 text-xs text-tg-hint">{subtitle}</p>
             {onLearnMore && (
@@ -101,8 +101,8 @@ export function StreakSaveBanner({
           data-testid="streak-save-feedback"
           className={`mt-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium ${
             feedback.isSuccess
-              ? 'bg-tg-button/10 text-tg-button border border-tg-button/20'
-              : 'bg-tg-secondary-bg text-tg-hint border border-tg-separator'
+              ? 'bg-tg-button/10 text-tg-button'
+              : 'bg-tg-secondary-bg text-tg-hint'
           }`}
         >
           {feedback.text}

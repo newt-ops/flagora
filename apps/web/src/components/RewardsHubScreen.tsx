@@ -80,38 +80,38 @@ export function RewardsHubScreen({
   }, [sessionToken, isSavingStreak, isStreakAtRisk, onRefetchProfile, onRefetchStreakStatus]);
 
   return (
-    <div data-testid="rewards-hub-screen" className="flex w-full max-w-sm flex-col gap-4 text-tg-text pb-20">
-      <div className="flex items-center justify-between rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
+    <div data-testid="rewards-hub-screen" className="flex w-full max-w-md mx-auto flex-col gap-4 text-tg-text pb-20">
+      <div className="flex items-center justify-between flex-wrap gap-2 rounded-2xl bg-tg-section p-4 shadow-sm">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
             <Coins className="h-5 w-5" />
           </div>
-          <div className="flex flex-col text-left">
-            <h1 className="text-base font-bold text-tg-text">Earn Free Coins</h1>
-            <p className="text-xs text-tg-hint">Sponsored rewards & streak protection</p>
+          <div className="flex flex-col text-left min-w-0">
+            <h1 className="text-base font-bold text-tg-text truncate">Earn Free Coins</h1>
+            <p className="text-xs text-tg-hint truncate">Sponsored rewards & streak protection</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5 rounded-full bg-tg-secondary-bg border border-tg-separator px-3 py-1.5 text-xs font-bold text-tg-text">
+        <div className="flex items-center gap-1.5 rounded-full bg-tg-secondary-bg px-3 py-1.5 text-xs font-bold text-tg-text shrink-0">
           <Coins className="h-4 w-4 text-tg-button" />
           <span>{profile.coins.toLocaleString()}</span>
         </div>
       </div>
 
-      <div className="rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm text-left">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
+      <div className="rounded-2xl bg-tg-section p-4 shadow-sm text-left">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
               <Coins className="h-4 w-4" />
             </div>
-            <div>
-              <p className="text-sm font-bold text-tg-text">Daily Bonus Coins</p>
-              <p className="text-[11px] text-tg-hint">+50 coins per ad • 5 available daily</p>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-tg-text truncate">Daily Bonus Coins</p>
+              <p className="text-[11px] text-tg-hint truncate">+50 coins per ad • 5 available daily</p>
             </div>
           </div>
           <span
             data-testid="bonus-coins-remaining-badge"
-            className="rounded-full bg-tg-button/15 border border-tg-button/25 px-2.5 py-0.5 text-xs font-bold text-tg-button"
+            className="rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-bold text-tg-button shrink-0"
           >
             {remainingAds > 0 ? `${remainingAds}/5 remaining today` : 'Daily cap reached (5/5)'}
           </span>
@@ -141,8 +141,8 @@ export function RewardsHubScreen({
             data-testid="bonus-coins-feedback"
             className={`mt-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium ${
               bonusFeedback.isSuccess
-                ? 'bg-tg-button/10 text-tg-button border border-tg-button/20'
-                : 'bg-tg-secondary-bg text-tg-hint border border-tg-separator'
+                ? 'bg-tg-button/10 text-tg-button'
+                : 'bg-tg-secondary-bg text-tg-hint'
             }`}
           >
             {bonusFeedback.text}
@@ -150,28 +150,28 @@ export function RewardsHubScreen({
         )}
       </div>
 
-      <div className="rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm text-left">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
+      <div className="rounded-2xl bg-tg-section p-4 shadow-sm text-left">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
               {isStreakAtRisk ? (
                 <ShieldAlert className="h-4 w-4" />
               ) : (
                 <ShieldCheck className="h-4 w-4" />
               )}
             </div>
-            <div>
-              <p className="text-sm font-bold text-tg-text">Streak Protection</p>
-              <p className="text-[11px] text-tg-hint">Preserve streak when a day is missed</p>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-tg-text truncate">Streak Protection</p>
+              <p className="text-[11px] text-tg-hint truncate">Preserve streak when a day is missed</p>
             </div>
           </div>
 
           <span
             data-testid="streak-protection-status-badge"
-            className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${
+            className={`rounded-full px-2.5 py-0.5 text-xs font-bold shrink-0 ${
               isStreakAtRisk
-                ? 'bg-tg-secondary-bg border-tg-separator text-tg-text'
-                : 'bg-tg-button/15 border-tg-button/25 text-tg-button'
+                ? 'bg-tg-secondary-bg text-tg-text'
+                : 'bg-tg-button/15 text-tg-button'
             }`}
           >
             {isStreakAtRisk ? 'At Risk' : 'Not currently needed'}
@@ -216,7 +216,7 @@ export function RewardsHubScreen({
             type="button"
             disabled
             data-testid="streak-save-not-needed-button"
-            className="mt-3.5 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg border border-tg-separator px-3 text-xs font-medium text-tg-hint cursor-not-allowed opacity-75"
+            className="mt-3.5 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg px-3 text-xs font-medium text-tg-hint cursor-not-allowed opacity-75"
           >
             <CheckCircle2 className="h-4 w-4 text-tg-button" />
             <span>Protection Not Needed • Streak Safe</span>
@@ -228,8 +228,8 @@ export function RewardsHubScreen({
             data-testid="streak-save-feedback"
             className={`mt-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium ${
               streakFeedback.isSuccess
-                ? 'bg-tg-button/10 text-tg-button border border-tg-button/20'
-                : 'bg-tg-secondary-bg text-tg-hint border border-tg-separator'
+                ? 'bg-tg-button/10 text-tg-button'
+                : 'bg-tg-secondary-bg text-tg-hint'
             }`}
           >
             {streakFeedback.text}
@@ -237,32 +237,32 @@ export function RewardsHubScreen({
         )}
       </div>
 
-      <div className="rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm text-left">
+      <div className="rounded-2xl bg-tg-section p-4 shadow-sm text-left">
         <div className="flex items-center gap-2">
           <Info className="h-4 w-4 text-tg-button shrink-0" />
           <h2 className="text-xs font-bold uppercase tracking-wider text-tg-hint">Reward Economy Guide</h2>
         </div>
 
         <div className="mt-3 grid grid-cols-1 gap-2.5 text-xs">
-          <div className="flex items-start gap-2 rounded-xl bg-tg-secondary-bg p-2.5 border border-tg-separator">
+          <div className="flex items-start gap-2.5 rounded-xl bg-tg-secondary-bg p-3">
             <Sparkles className="h-4 w-4 text-tg-button shrink-0 mt-0.5" />
-            <div>
+            <div className="min-w-0">
               <p className="font-semibold text-tg-text">Correct Quiz Answers</p>
               <p className="text-[11px] text-tg-hint">+5 coins for every correct flag identified during practice, daily, challenge, and battle runs.</p>
             </div>
           </div>
 
-          <div className="flex items-start gap-2 rounded-xl bg-tg-secondary-bg p-2.5 border border-tg-separator">
+          <div className="flex items-start gap-2.5 rounded-xl bg-tg-secondary-bg p-3">
             <Coins className="h-4 w-4 text-tg-button shrink-0 mt-0.5" />
-            <div>
+            <div className="min-w-0">
               <p className="font-semibold text-tg-text">Daily Sponsored Videos</p>
               <p className="text-[11px] text-tg-hint">+50 coins per video, up to 5 times per day (+250 coins maximum daily bonus).</p>
             </div>
           </div>
 
-          <div className="flex items-start gap-2 rounded-xl bg-tg-secondary-bg p-2.5 border border-tg-separator">
+          <div className="flex items-start gap-2.5 rounded-xl bg-tg-secondary-bg p-3">
             <ShoppingBag className="h-4 w-4 text-tg-button shrink-0 mt-0.5" />
-            <div>
+            <div className="min-w-0">
               <p className="font-semibold text-tg-text">Cosmetic Shop Tiers</p>
               <p className="text-[11px] text-tg-hint">Spend coins on Avatar Frames, Flag Themes, and Profile Banners: Tier 1 (~150 coins), Tier 2 (~400 coins), Tier 3 (~900 coins).</p>
             </div>
@@ -273,7 +273,7 @@ export function RewardsHubScreen({
           <button
             type="button"
             onClick={onNavigateToShop}
-            className="mt-3.5 flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-tg-button/15 border border-tg-button/30 px-3 text-xs font-semibold text-tg-button hover:bg-tg-button/20 active:opacity-75 transition-colors"
+            className="mt-3.5 flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-tg-button/15 px-3 text-xs font-semibold text-tg-button hover:bg-tg-button/20 active:opacity-75 transition-colors"
           >
             <ShoppingBag className="h-3.5 w-3.5" />
             <span>Browse Cosmetic Shop</span>
