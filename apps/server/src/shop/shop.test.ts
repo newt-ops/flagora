@@ -266,7 +266,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     assert.ok(cyanFrame);
     assert.equal(cyanFrame.id, 'frame-neon-cyan');
     assert.equal(cyanFrame.category, 'avatarFrame');
-    assert.equal(cyanFrame.price, 100);
+    assert.equal(cyanFrame.price, 150);
     assert.ok(cyanFrame.cssVars);
 
     const nonExistent = getCachedCosmeticItem('unknown_item_xyz');
@@ -352,7 +352,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     await initCosmeticCache(db);
 
     const userId = 1002;
-    const itemPrice = 100;
+    const itemPrice = 150;
     await db.collection<PlayerProfile>('profiles').insertOne(
       createTestProfile(userId, {
         coins: itemPrice,
@@ -386,7 +386,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     await initCosmeticCache(db);
 
     const userId = 1003;
-    const itemPrice = 100;
+    const itemPrice = 150;
     await db.collection<PlayerProfile>('profiles').insertOne(
       createTestProfile(userId, {
         coins: itemPrice - 1,
@@ -406,12 +406,12 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     assert.equal(res.status, 400);
     const body = (await res.json()) as { error: string; required: number; available: number };
     assert.equal(body.error, 'Insufficient coins');
-    assert.equal(body.required, 100);
-    assert.equal(body.available, 99);
+    assert.equal(body.required, 150);
+    assert.equal(body.available, 149);
 
     const profile = await db.collection<PlayerProfile>('profiles').findOne({ telegramUserId: userId });
     assert.ok(profile);
-    assert.equal(profile.coins, 99);
+    assert.equal(profile.coins, 149);
     assert.deepEqual(profile.ownedItemIds, []);
   });
 
@@ -478,7 +478,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     await initCosmeticCache(db);
 
     const userId = 1006;
-    const price = 100;
+    const price = 150;
     await db.collection<PlayerProfile>('profiles').insertOne(
       createTestProfile(userId, {
         coins: price,

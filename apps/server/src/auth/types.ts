@@ -12,6 +12,7 @@ export interface TelegramUser {
 
 export interface AuthenticatedRequest extends Request {
   telegramUser?: TelegramUser;
+  startParam?: string;
 }
 
 export interface ValidatedInitData {
@@ -19,6 +20,7 @@ export interface ValidatedInitData {
   authDate: Date;
   queryId?: string;
   hash: string;
+  startParam?: string;
 }
 
 export class InitDataError extends Error {

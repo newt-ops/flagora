@@ -38,6 +38,7 @@ interface PlayScreenProps {
   onStartCustomGame?: (config: CustomGameConfig) => void;
   onViewDailyLeaderboard: () => void;
   onNavigateToProfile: () => void;
+  onNavigateToRewards?: () => void;
   onRefetchProfile?: () => void;
   onRefetchStreakStatus?: () => void;
   isStarting?: boolean;
@@ -59,6 +60,7 @@ export function PlayScreen({
   onStartCustomGame,
   onViewDailyLeaderboard,
   onNavigateToProfile,
+  onNavigateToRewards,
   onRefetchProfile,
   onRefetchStreakStatus,
   isStarting = false,
@@ -182,6 +184,7 @@ export function PlayScreen({
             onRefetchProfile?.();
             onRefetchStreakStatus?.();
           }}
+          onLearnMore={onNavigateToRewards}
         />
       )}
 

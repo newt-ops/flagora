@@ -13,6 +13,7 @@ import {
   type RewardTokenServiceOptions,
 } from './rewardTokenService.js';
 import { UnauthorizedTokenRedemptionError } from './rewardErrors.js';
+import { notifyPublicRewardPayout } from '../telegram/telegramService.js';
 
 export async function requestBonusCoinsIntent(
   telegramUserId: number,
@@ -56,6 +57,11 @@ export async function redeemBonusCoins(
   );
 
   const finalCoins = updateResult?.coins ?? BONUS_COINS_REWARD_AMOUNT;
+
+  void notifyPublicRewardPayout(
+    'bonus-coins',
+    options ? { channelId: (options as { channelId?: string | number }).channelId } : undefined,
+  );
 
   return {
     ok: true,

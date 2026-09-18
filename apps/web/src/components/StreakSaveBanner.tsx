@@ -11,12 +11,14 @@ export interface StreakSaveBannerProps {
   sessionToken?: string | null;
   streakStatus?: StreakStatusResponse | null;
   onSuccess?: () => void;
+  onLearnMore?: () => void;
 }
 
 export function StreakSaveBanner({
   sessionToken,
   streakStatus,
   onSuccess,
+  onLearnMore,
 }: StreakSaveBannerProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ text: string; isSuccess: boolean } | null>(null);
@@ -64,6 +66,16 @@ export function StreakSaveBanner({
               <ShieldCheck className="h-4 w-4 text-amber-400" />
             </div>
             <p className="mt-0.5 text-xs text-tg-hint">{subtitle}</p>
+            {onLearnMore && (
+              <button
+                type="button"
+                onClick={onLearnMore}
+                data-testid="streak-save-learn-more"
+                className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-2"
+              >
+                Learn more & view earn options
+              </button>
+            )}
           </div>
         </div>
 

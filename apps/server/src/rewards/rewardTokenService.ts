@@ -93,6 +93,10 @@ function getPendingRedisKey(jti: string): string {
   return `reward:pending:${jti}`;
 }
 
+function getUserPendingRedisKey(telegramUserId: number): string {
+  return `reward:user:pending:${telegramUserId}`;
+}
+
 function logRewardEvent(message: string): void {
   process.stdout.write(`[Reward] ${message}\n`);
 }
@@ -189,9 +193,21 @@ export async function issueRewardToken(
   const pendingKey = getPendingRedisKey(jti);
   await redis.set(pendingKey, '1', 'EX', ttlSeconds);
 
+  const userPendingKey = getUserPendingRedisKey(telegramUserId);
+  await redis.set(userPendingKey, token, 'EX', ttlSeconds);
+
   logRewardEvent(`Issued token: user=${telegramUserId}, type=${rewardType}, jti=${jti}`);
 
   return token;
+}
+
+export async function getLatestPendingRewardToken(
+  telegramUserId: number,
+  options?: RewardTokenServiceOptions,
+): Promise<string | null> {
+  const redis = resolveRedis(options);
+  const userPendingKey = getUserPendingRedisKey(telegramUserId);
+  return redis.get(userPendingKey);
 }
 
 export function verifyRewardToken(
@@ -267,6 +283,9 @@ export async function redeemRewardToken(
     );
     throw new RewardTokenAlreadyRedeemedError();
   }
+
+  const userPendingKey = getUserPendingRedisKey(payload.telegramUserId);
+  await redis.del(userPendingKey);
 
   const now = options?.now ?? new Date();
   const dateStr = getUtcDateString(now);

@@ -80,7 +80,6 @@ import {
   sendTelegramMessage,
   editTelegramMessage,
   answerCallbackQuery,
-  notifyReferralReward,
   type InlineKeyboardButton,
 } from './telegram/telegramService.js';
 import {
@@ -89,6 +88,8 @@ import {
   getStreakStatus,
   requestStreakSaveIntent,
   redeemStreakSave,
+  getLatestPendingRewardToken,
+  verifyRewardToken,
   StreakNotAtRiskError,
   RewardCapReachedError,
   RewardTokenError,
@@ -100,6 +101,10 @@ import {
 } from './rewards/index.js';
 import { getDisplayName, type PlayerProfile } from '@flagora/shared';
 import { rateLimit } from './middleware/rateLimit.js';
+import {
+  initReferralCollection,
+  registerReferralSignup,
+} from './referral/referralService.js';
 
 dotenv.config();
 
@@ -147,6 +152,7 @@ async function bootstrap() {
     process.stdout.write(`Seeded cosmetics collection (${cosmeticSeedResult.total} total cosmetics)\n`);
     await initCosmeticCache(db);
     await initBadgeCollection(db);
+    await initReferralCollection(db);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown database error';
     process.stderr.write(`Fatal: Failed to connect or initialize MongoDB: ${message}\n`);
@@ -191,6 +197,15 @@ async function bootstrap() {
       }
 
       const profile = await findOrCreatePlayerProfile(user, db);
+      const startParam =
+        req.startParam ||
+        (typeof req.query.startapp === 'string' ? req.query.startapp : undefined);
+      if (startParam && startParam.startsWith('ref_')) {
+        const inviterUserId = Number(startParam.replace(/^ref_/, ''));
+        if (inviterUserId && inviterUserId !== profile.telegramUserId) {
+          await registerReferralSignup(inviterUserId, profile.telegramUserId, db);
+        }
+      }
       const sessionToken = createSessionToken(profile.telegramUserId, sessionSecret!);
 
       res.status(200).json({ sessionToken, profile });
@@ -768,6 +783,103 @@ async function bootstrap() {
     },
   );
 
+  app.get(
+    '/api/rewards/adsgram-postback',
+    rateLimit({ endpoint: 'adsgram_postback', limit: 60, windowSeconds: 60 }),
+    async (req, res) => {
+      try {
+        const rawUserId = req.query.userid ?? req.query.user_id;
+        if (!rawUserId) {
+          res.status(400).json({ ok: false, error: 'Missing userid parameter' });
+          return;
+        }
+
+        const telegramUserId = Number(rawUserId);
+        if (!Number.isFinite(telegramUserId) || telegramUserId <= 0) {
+          res.status(400).json({ ok: false, error: 'Invalid userid parameter' });
+          return;
+        }
+
+        const token = await getLatestPendingRewardToken(telegramUserId, { redis });
+        if (!token) {
+          res.status(200).json({
+            ok: true,
+            status: 'no_pending_token',
+            message: 'No pending reward token found for user',
+          });
+          return;
+        }
+
+        let payload;
+        try {
+          payload = verifyRewardToken(token);
+        } catch {
+          res.status(200).json({
+            ok: true,
+            status: 'invalid_or_expired_token',
+            message: 'Pending token is invalid or expired',
+          });
+          return;
+        }
+
+        try {
+          if (payload.rewardType === 'bonus-coins') {
+            const result = await redeemBonusCoins(token, telegramUserId, db, { redis });
+            res.status(200).json({
+              ok: true,
+              status: 'redeemed',
+              rewardType: 'bonus-coins',
+              coinsEarned: result.coinsEarned,
+              coins: result.coins,
+            });
+            return;
+          }
+
+          if (payload.rewardType === 'streak-save') {
+            const result = await redeemStreakSave(token, telegramUserId, db, { redis });
+            res.status(200).json({
+              ok: true,
+              status: 'redeemed',
+              rewardType: 'streak-save',
+              saved: result.saved,
+              currentStreak: result.currentStreak,
+            });
+            return;
+          }
+
+          res.status(200).json({
+            ok: true,
+            status: 'unsupported_reward_type',
+          });
+        } catch (error) {
+          if (error instanceof RewardTokenAlreadyRedeemedError) {
+            res.status(200).json({
+              ok: true,
+              status: 'already_redeemed',
+              message: 'Reward token was already redeemed',
+            });
+            return;
+          }
+
+          if (error instanceof StreakNotAtRiskError) {
+            res.status(200).json({
+              ok: true,
+              status: 'streak_not_at_risk',
+              message: error.message,
+            });
+            return;
+          }
+
+          const message = error instanceof Error ? error.message : 'Redemption failed';
+          res.status(500).json({ ok: false, error: 'Internal server error', message });
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Postback processing failed';
+        res.status(500).json({ ok: false, error: 'Internal server error', message });
+      }
+    },
+  );
+
   app.post('/api/admin/flags/reload', async (req, res) => {
     try {
       const adminSecret = process.env.ADMIN_SECRET;
@@ -1089,30 +1201,7 @@ async function bootstrap() {
           if (startParam && startParam.startsWith('ref_')) {
             const refUserId = Number(startParam.replace(/^ref_/, ''));
             if (refUserId && refUserId !== chatId) {
-              const existingProfile = await db
-                .collection<PlayerProfile>('profiles')
-                .findOne({ telegramUserId: chatId });
-              if (!existingProfile || !existingProfile.referredBy) {
-                await db
-                  .collection<PlayerProfile>('profiles')
-                  .updateOne(
-                    { telegramUserId: refUserId },
-                    { $inc: { coins: 100, referralCount: 1 } },
-                  );
-                void notifyReferralReward(
-                  refUserId,
-                  message.from?.first_name || 'A friend',
-                  db,
-                );
-                if (existingProfile) {
-                  await db
-                    .collection<PlayerProfile>('profiles')
-                    .updateOne(
-                      { telegramUserId: chatId },
-                      { $set: { referredBy: refUserId }, $inc: { coins: 50 } },
-                    );
-                }
-              }
+              await registerReferralSignup(refUserId, chatId, db);
             }
           }
 

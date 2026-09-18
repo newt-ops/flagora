@@ -18,6 +18,7 @@ import {
   StreakNotAtRiskError,
   UnauthorizedTokenRedemptionError,
 } from './rewardErrors.js';
+import { notifyPublicRewardPayout } from '../telegram/telegramService.js';
 
 export async function getStreakStatus(
   telegramUserId: number,
@@ -98,6 +99,11 @@ export async function redeemStreakSave(
         updatedAt: new Date(),
       },
     },
+  );
+
+  void notifyPublicRewardPayout(
+    'streak-save',
+    options ? { channelId: (options as { channelId?: string | number }).channelId } : undefined,
   );
 
   return {

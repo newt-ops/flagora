@@ -50,6 +50,7 @@ interface ProfileCardProps {
   onBattleFriend?: () => void;
   onViewLeaderboard?: () => void;
   onViewDailyLeaderboard?: () => void;
+  onNavigateToRewards?: () => void;
   onRefetchProfile?: () => void;
   onRefetchStreakStatus?: () => void;
   isStarting?: boolean;
@@ -73,6 +74,7 @@ export function ProfileCard({
   onBattleFriend,
   onViewLeaderboard,
   onViewDailyLeaderboard,
+  onNavigateToRewards,
   onRefetchProfile,
   onRefetchStreakStatus,
   isStarting = false,
@@ -224,6 +226,7 @@ export function ProfileCard({
               onRefetchProfile?.();
               onRefetchStreakStatus?.();
             }}
+            onLearnMore={onNavigateToRewards}
           />
         </div>
       )}

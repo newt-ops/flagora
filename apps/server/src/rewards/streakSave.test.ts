@@ -211,6 +211,13 @@ describe('Phase 8 Prompt 03: Streak-Save Reward Backend', () => {
         if (name === 'profiles') return mockProfiles as unknown;
         if (name === 'runs') return mockRuns as unknown;
         if (name === 'flags') return mockFlags as unknown;
+        if (name === 'referrals') {
+          return {
+            findOne: async () => null,
+            findOneAndUpdate: async () => null,
+            updateOne: async () => ({ matchedCount: 0, modifiedCount: 0 }),
+          } as unknown;
+        }
         throw new Error(`Unexpected collection: ${name}`);
       },
     } as unknown as Db;

@@ -45,4 +45,5 @@ export * from './rewards.js';
 export * from './shop.js';
 export * from './rank.js';
 export * from './badge.js';
+export * from './referral.js';
 

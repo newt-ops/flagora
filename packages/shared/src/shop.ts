@@ -63,7 +63,7 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
       '--avatar-frame-border': '2px solid #06b6d4',
       '--avatar-frame-shadow': '0 0 10px rgba(6, 182, 212, 0.6)',
     },
-    price: 100,
+    price: 150,
     description: 'Electric cyan border with a subtle neon glow',
   },
   {
@@ -74,7 +74,7 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
       '--avatar-frame-border': '2px solid #f59e0b',
       '--avatar-frame-shadow': '0 0 12px rgba(245, 158, 11, 0.6)',
     },
-    price: 250,
+    price: 150,
     description: 'Polished amber gold ring',
   },
   {
@@ -85,7 +85,7 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
       '--avatar-frame-border': '2px solid #10b981',
       '--avatar-frame-shadow': '0 0 14px rgba(16, 185, 129, 0.65)',
     },
-    price: 500,
+    price: 400,
     description: 'Vibrant emerald border with an active pulse',
   },
   {
@@ -96,7 +96,7 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
       '--avatar-frame-border': '3px solid #8b5cf6',
       '--avatar-frame-shadow': '0 0 16px rgba(139, 92, 246, 0.7)',
     },
-    price: 1000,
+    price: 400,
     description: 'Deep royal purple with radiant halo',
   },
   {
@@ -107,7 +107,7 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
       '--avatar-frame-border': '3px solid #ef4444',
       '--avatar-frame-shadow': '0 0 18px rgba(239, 68, 68, 0.75)',
     },
-    price: 2000,
+    price: 900,
     description: 'Fierce crimson fiery ring',
   },
   {
@@ -131,7 +131,7 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
       '--theme-accent-color': '#fb923c',
       '--theme-surface-color': 'rgba(76, 5, 25, 0.85)',
     },
-    price: 300,
+    price: 150,
     description: 'Warm twilight gradient with amber highlights',
   },
   {
@@ -143,7 +143,7 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
       '--theme-accent-color': '#a855f7',
       '--theme-surface-color': 'rgba(24, 24, 27, 0.85)',
     },
-    price: 600,
+    price: 400,
     description: 'High-contrast neon cyberpunk dark space',
   },
   {
@@ -155,7 +155,7 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
       '--theme-accent-color': '#4ade80',
       '--theme-surface-color': 'rgba(5, 46, 22, 0.85)',
     },
-    price: 1200,
+    price: 400,
     description: 'Lush green botanical backdrop',
   },
   {
@@ -167,7 +167,7 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
       '--theme-accent-color': '#fde047',
       '--theme-surface-color': 'rgba(66, 32, 6, 0.85)',
     },
-    price: 2500,
+    price: 900,
     description: 'Prestige stellar gold aesthetic',
   },
   {
@@ -177,7 +177,7 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     cssVars: {
       '--banner-background': 'linear-gradient(90deg, #064e3b 0%, #0284c7 100%)',
     },
-    price: 100,
+    price: 150,
     description: 'Flowing polar lights backdrop for your profile card',
   },
   {
@@ -187,7 +187,7 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     cssVars: {
       '--banner-background': 'linear-gradient(90deg, #1c1917 0%, #7f1d1d 100%)',
     },
-    price: 250,
+    price: 150,
     description: 'Dark volcanic rock with glowing embers',
   },
   {
@@ -197,7 +197,7 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     cssVars: {
       '--banner-background': 'linear-gradient(90deg, #2e1065 0%, #701a75 100%)',
     },
-    price: 500,
+    price: 400,
     description: 'Deep cosmic galaxy backdrop',
   },
   {
@@ -207,7 +207,7 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     cssVars: {
       '--banner-background': 'linear-gradient(90deg, #7c2d12 0%, #d97706 100%)',
     },
-    price: 1000,
+    price: 400,
     description: 'Radiant solar storm banner',
   },
   {
@@ -217,7 +217,7 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     cssVars: {
       '--banner-background': 'linear-gradient(90deg, #1e293b 0%, #64748b 100%)',
     },
-    price: 2000,
+    price: 900,
     description: 'Sleek frosted silver diamond banner',
   },
 ];

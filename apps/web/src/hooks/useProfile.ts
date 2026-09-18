@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, useCallback } from 'react';
-import { initTelegramApp } from '../telegram/init.js';
+import { initTelegramApp, NotInTelegramError } from '../telegram/init.js';
 import { exchangeSession, fetchProfile } from '../api/client.js';
 import { useStore } from '../store/useStore.js';
 import type { PlayerProfile } from '@flagora/shared';
@@ -8,16 +8,24 @@ import type { PlayerProfile } from '@flagora/shared';
 export function useProfile() {
   const { sessionToken, profile: cachedProfile, setSession, setProfile } = useStore();
   const [initError, setInitError] = useState<string | null>(null);
+  const [isNotInTelegram, setIsNotInTelegram] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
 
   const authenticate = useCallback(async () => {
     setIsInitializing(true);
     setInitError(null);
+    setIsNotInTelegram(false);
     try {
       const { initData } = await initTelegramApp();
       const session = await exchangeSession(initData);
       setSession(session.sessionToken, session.profile);
     } catch (error) {
+      if (
+        error instanceof NotInTelegramError ||
+        (error instanceof Error && error.message.includes('launched from Telegram'))
+      ) {
+        setIsNotInTelegram(true);
+      }
       const message = error instanceof Error ? error.message : 'Authentication failed';
       setInitError(message);
     } finally {
@@ -53,6 +61,7 @@ export function useProfile() {
     profile,
     isLoading,
     error,
+    isNotInTelegram,
     refetch: () => {
       if (!sessionToken) {
         authenticate();

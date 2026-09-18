@@ -25,6 +25,7 @@ import { scoreAnswer, finalizeRun } from './runScoringService.js';
 import type { TypedSocketServer } from '../multiplayer/socketTypes.js';
 import { checkAndFinalizeBattle } from '../battle/battleService.js';
 import { evaluateBadges } from '../badge/badgeService.js';
+import { processReferralOnFirstRun } from '../referral/referralService.js';
 import {
   type GameRun,
   type RunFlagItem,
@@ -314,6 +315,16 @@ export async function finishRun(
         },
       );
     }
+  }
+
+  try {
+    const referralOutcome = await processReferralOnFirstRun(telegramUserId, db, redis);
+    if (referralOutcome?.creditedNewPlayer) {
+      newCoins += 50;
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`Warning: Failed to process referral on first run: ${message}\n`);
   }
 
   const newlyAwardedBadges: PlayerBadgeResponseItem[] = [];

@@ -110,5 +110,6 @@ export function validateInitData(
     authDate: new Date(authTimestamp * 1000),
     queryId: params.get('query_id') ?? undefined,
     hash: receivedHash,
+    startParam: params.get('start_param') ?? undefined,
   };
 }

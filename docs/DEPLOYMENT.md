@@ -52,3 +52,49 @@ Verify that the following environment variables are configured in the **Environm
 ### Step 4: Health Checks & Zero-Downtime Deploys
 - Health check path is `/health`, returning `200 {"status":"ok"}`.
 - Render uses this endpoint during rolling restarts to ensure new instances are fully booted before routing traffic to them.
+
+---
+
+## AdsGram Reward Postback Configuration
+
+AdsGram supports an optional server-to-server confirmation postback to ensure players receive their rewards even if the web app closes or loses connectivity immediately after viewing an ad.
+
+### Postback URL Format
+Configure the following postback URL in the **AdsGram Partner Dashboard** under your Ad Unit settings:
+
+`https://<your-backend-domain>/api/rewards/adsgram-postback?userid={user_id}`
+
+> [!NOTE]
+> - AdsGram passes the player's numerical Telegram user ID via the `userid` query parameter.
+> - This dashboard step must be configured manually in the AdsGram partner portal for each rewarded ad unit.
+> - The backend checks for the user's latest pending reward intent in Redis and atomically redeems it if not already claimed by the client.
+> - If the client already redeemed the reward, the postback endpoint cleanly no-ops and returns an idempotent 200 OK without double-crediting.
+
+---
+
+## Public Reward Payout Proof Channel
+
+AdsGram moderation requires public, reliable confirmation of reward payouts to players. Flagora provides an automated, anonymized confirmation feed posted directly to a dedicated public Telegram channel via the BullMQ notification queue.
+
+### Setup Steps
+1. **Create a Public Telegram Channel**:
+   - In Telegram, create a new public channel (e.g. `@flagora_payouts` or `Flagora Reward Confirmations`).
+2. **Add Bot as Administrator**:
+   - Add your Flagora Telegram Bot (`@flagora_bot`) to the channel as an Administrator with the **Post Messages** permission enabled.
+3. **Configure Environment Variable**:
+   - Set `PUBLIC_REWARD_CHANNEL_ID` in your backend environment variables (Render/production):
+     - Example: `@flagora_payouts` or the numeric channel ID (e.g., `-1001234567890`).
+4. **Post and Pin the Reward Economy Explanation Message**:
+   - In the channel, post and **pin** the following explanation message:
+
+```markdown
+Welcome to the Flagora Reward Confirmation Channel.
+
+Flagora offers optional rewarded video ads powered by AdsGram:
+- Bonus Coins: Earn 50 coins per completed ad view (daily cap: 5 ad views per UTC day).
+- Streak Save: Rescue an at-risk daily streak by watching a completed ad (daily cap: 1 save per UTC day).
+
+This public channel automatically receives real-time confirmations whenever a reward payout is successfully credited to a player. All confirmations are anonymized to protect player privacy.
+```
+
+

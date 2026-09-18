@@ -35,6 +35,22 @@ export function getAdsgramBlockId(): string {
   return '46710';
 }
 
+export function isAdsgramDebugEnabled(requestedDebug?: boolean): boolean {
+  if (typeof import.meta !== 'undefined' && import.meta.env?.PROD) {
+    return false;
+  }
+  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production') {
+    return false;
+  }
+  if (typeof requestedDebug === 'boolean') {
+    return requestedDebug;
+  }
+  const envDebug =
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ADSGRAM_DEBUG) ||
+    (typeof process !== 'undefined' && process.env?.VITE_ADSGRAM_DEBUG);
+  return envDebug === 'true' || envDebug === '1';
+}
+
 export function getAdsgramController(
   options?: Partial<AdsgramInitOptions>,
 ): AdsgramController | null {
@@ -43,7 +59,7 @@ export function getAdsgramController(
   }
 
   const blockId = options?.blockId ?? getAdsgramBlockId();
-  const debug = typeof options?.debug === 'boolean' ? options.debug : false;
+  const debug = isAdsgramDebugEnabled(options?.debug);
   if (cachedController && cachedBlockId === blockId && !debug) {
     return cachedController;
   }
@@ -133,7 +149,7 @@ export async function showRewardedAd(
     options?.controller ??
     getAdsgramController({
       blockId: options?.blockId ?? getAdsgramBlockId(),
-      debug: typeof options?.debug === 'boolean' ? options.debug : false,
+      debug: options?.debug,
     });
 
   if (!controller) {

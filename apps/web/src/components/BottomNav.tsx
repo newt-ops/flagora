@@ -1,6 +1,6 @@
-import { Gamepad2, Trophy, ShoppingBag, User } from 'lucide-react';
+import { Gamepad2, Trophy, ShoppingBag, Coins, User } from 'lucide-react';
 
-export type NavTab = 'play' | 'leaderboard' | 'shop' | 'profile';
+export type NavTab = 'play' | 'leaderboard' | 'shop' | 'rewards' | 'profile';
 
 interface BottomNavProps {
   activeTab: NavTab;
@@ -12,6 +12,7 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
     { id: 'play', label: 'Play', icon: Gamepad2 },
     { id: 'leaderboard', label: 'Ranks', icon: Trophy },
     { id: 'shop', label: 'Shop', icon: ShoppingBag },
+    { id: 'rewards', label: 'Earn', icon: Coins },
     { id: 'profile', label: 'Profile', icon: User },
   ];
 

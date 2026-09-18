@@ -5,6 +5,14 @@ export interface TelegramInitResult {
   isDev: boolean;
 }
 
+export class NotInTelegramError extends Error {
+  readonly code = 'NOT_IN_TELEGRAM';
+  constructor(message = 'This application must be launched from Telegram.') {
+    super(message);
+    this.name = 'NotInTelegramError';
+  }
+}
+
 export async function initTelegramApp(): Promise<TelegramInitResult> {
   const inTelegram = isTMA();
 
@@ -33,5 +41,6 @@ export async function initTelegramApp(): Promise<TelegramInitResult> {
     };
   }
 
-  throw new Error('This application must be launched from Telegram.');
+  throw new NotInTelegramError();
 }
+
