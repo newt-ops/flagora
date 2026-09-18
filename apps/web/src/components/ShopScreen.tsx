@@ -83,7 +83,7 @@ export function ShopScreen({ profile, sessionToken }: ShopScreenProps) {
         </div>
 
         <div className="flex items-center gap-1.5 rounded-full bg-tg-secondary-bg border border-tg-separator px-3 py-1.5 text-xs font-bold text-tg-text">
-          <Coins className="h-4 w-4 text-amber-500" />
+          <Coins className="h-4 w-4 text-tg-button" />
           <span>{profile.coins.toLocaleString()}</span>
         </div>
       </div>
@@ -231,14 +231,14 @@ export function ShopScreen({ profile, sessionToken }: ShopScreenProps) {
                   </div>
 
                   <div className="flex shrink-0 items-center gap-1 rounded-full bg-tg-secondary-bg border border-tg-separator px-2.5 py-1 text-xs font-bold text-tg-text">
-                    <Coins className="h-3.5 w-3.5 text-amber-500" />
+                    <Coins className="h-3.5 w-3.5 text-tg-button" />
                     <span>{item.price.toLocaleString()}</span>
                   </div>
                 </div>
 
                 <div className="mt-3.5 flex items-center justify-end border-t border-tg-separator pt-3">
                   {item.isEquipped && (
-                    <div className="flex items-center gap-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 px-3 py-1.5 text-xs font-bold text-emerald-400">
+                    <div className="flex items-center gap-1.5 rounded-xl bg-tg-button/15 border border-tg-button/30 px-3 py-1.5 text-xs font-bold text-tg-button">
                       <CheckCircle2 className="h-4 w-4" />
                       <span>Currently Active</span>
                     </div>
@@ -268,7 +268,7 @@ export function ShopScreen({ profile, sessionToken }: ShopScreenProps) {
                       {isItemActionLoading ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <Coins className="h-3.5 w-3.5 text-amber-300" />
+                        <Coins className="h-3.5 w-3.5 text-tg-button-text" />
                       )}
                       <span>Buy for {item.price.toLocaleString()} 🪙</span>
                     </button>

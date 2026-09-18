@@ -396,10 +396,10 @@ export function ProfileCard({
         {bonusFeedback && (
           <div
             data-testid="bonus-coins-feedback"
-            className={`mt-2.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
+            className={`mt-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium ${
               bonusFeedback.isSuccess
-                ? 'bg-emerald-500/15 text-emerald-400'
-                : 'bg-amber-500/15 text-amber-300'
+                ? 'bg-tg-button/10 text-tg-button border border-tg-button/20'
+                : 'bg-tg-secondary-bg text-tg-hint border border-tg-separator'
             }`}
           >
             {bonusFeedback.text}

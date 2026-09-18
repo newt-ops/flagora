@@ -53,17 +53,17 @@ export function StreakSaveBanner({
   return (
     <div
       data-testid="streak-save-banner"
-      className="flex w-full flex-col rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-left"
+      className="flex w-full flex-col rounded-2xl border border-tg-separator bg-tg-section p-4 text-left shadow-sm"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-500 ring-1 ring-amber-500/30">
-            <Flame className="h-5 w-5 fill-current text-amber-500" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
+            <Flame className="h-4 w-4 fill-current text-tg-button" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-bold text-amber-400">{title}</span>
-              <ShieldCheck className="h-4 w-4 text-amber-400" />
+              <span className="text-sm font-bold text-tg-text">{title}</span>
+              <ShieldCheck className="h-4 w-4 text-tg-button" />
             </div>
             <p className="mt-0.5 text-xs text-tg-hint">{subtitle}</p>
             {onLearnMore && (
@@ -71,7 +71,7 @@ export function StreakSaveBanner({
                 type="button"
                 onClick={onLearnMore}
                 data-testid="streak-save-learn-more"
-                className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-2"
+                className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-tg-link hover:opacity-80 underline underline-offset-2"
               >
                 Learn more & view earn options
               </button>
@@ -83,11 +83,11 @@ export function StreakSaveBanner({
           type="button"
           onClick={handleSaveStreak}
           disabled={isSaving || !sessionToken}
-          className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-3.5 text-xs font-bold text-slate-950 shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
+          className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-tg-button px-3.5 text-xs font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
         >
           {isSaving ? (
             <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-950" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-tg-button-text" />
               <span>Saving...</span>
             </>
           ) : (
@@ -99,10 +99,10 @@ export function StreakSaveBanner({
       {feedback && (
         <div
           data-testid="streak-save-feedback"
-          className={`mt-2.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
+          className={`mt-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium ${
             feedback.isSuccess
-              ? 'bg-emerald-500/15 text-emerald-400'
-              : 'bg-amber-500/15 text-amber-300'
+              ? 'bg-tg-button/10 text-tg-button border border-tg-button/20'
+              : 'bg-tg-secondary-bg text-tg-hint border border-tg-separator'
           }`}
         >
           {feedback.text}

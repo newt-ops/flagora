@@ -15,14 +15,14 @@ export function NonTelegramFallback({ botUsername }: NonTelegramFallbackProps) {
 
   return (
     <div className="flex min-h-[70vh] w-full max-w-sm flex-col items-center justify-center px-4 text-center">
-      <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-blue-500/10 text-blue-500 shadow-sm">
+      <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-tg-button/10 text-tg-button shadow-sm">
         <Gamepad2 className="h-10 w-10" />
       </div>
 
       <h1 className="mt-6 text-2xl font-bold tracking-tight text-tg-text">
         Flagora
       </h1>
-      <p className="mt-1 text-sm font-semibold uppercase tracking-wider text-blue-500">
+      <p className="mt-1 text-sm font-semibold uppercase tracking-wider text-tg-button">
         Play on Telegram
       </p>
 
@@ -39,7 +39,7 @@ export function NonTelegramFallback({ botUsername }: NonTelegramFallbackProps) {
         href={telegramUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3.5 text-sm font-semibold text-white shadow-md transition-all active:scale-98 hover:bg-blue-500"
+        className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-tg-button px-5 py-3.5 text-sm font-semibold text-tg-button-text shadow-md transition-all active:scale-98 hover:opacity-90 active:opacity-75"
       >
         <span>Open in Telegram</span>
         <ExternalLink className="h-4 w-4" />

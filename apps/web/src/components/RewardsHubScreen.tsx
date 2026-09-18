@@ -83,7 +83,7 @@ export function RewardsHubScreen({
     <div data-testid="rewards-hub-screen" className="flex w-full max-w-sm flex-col gap-4 text-tg-text pb-20">
       <div className="flex items-center justify-between rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15 text-amber-500 ring-1 ring-amber-500/25">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
             <Coins className="h-5 w-5" />
           </div>
           <div className="flex flex-col text-left">
@@ -93,7 +93,7 @@ export function RewardsHubScreen({
         </div>
 
         <div className="flex items-center gap-1.5 rounded-full bg-tg-secondary-bg border border-tg-separator px-3 py-1.5 text-xs font-bold text-tg-text">
-          <Coins className="h-4 w-4 text-amber-500" />
+          <Coins className="h-4 w-4 text-tg-button" />
           <span>{profile.coins.toLocaleString()}</span>
         </div>
       </div>
@@ -101,8 +101,8 @@ export function RewardsHubScreen({
       <div className="rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm text-left">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/15 text-amber-500 ring-1 ring-amber-500/25">
-              <Coins className="h-5 w-5" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
+              <Coins className="h-4 w-4" />
             </div>
             <div>
               <p className="text-sm font-bold text-tg-text">Daily Bonus Coins</p>
@@ -111,7 +111,7 @@ export function RewardsHubScreen({
           </div>
           <span
             data-testid="bonus-coins-remaining-badge"
-            className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-xs font-bold text-amber-400"
+            className="rounded-full bg-tg-button/15 border border-tg-button/25 px-2.5 py-0.5 text-xs font-bold text-tg-button"
           >
             {remainingAds > 0 ? `${remainingAds}/5 remaining today` : 'Daily cap reached (5/5)'}
           </span>
@@ -126,12 +126,12 @@ export function RewardsHubScreen({
           onClick={handleWatchAd}
           disabled={isCapReached || isWatchingAd || !sessionToken}
           data-testid="watch-bonus-ad-button"
-          className="mt-3.5 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-amber-500 px-3 text-xs font-bold text-slate-950 shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
+          className="mt-3.5 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-button px-3 text-xs font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
         >
           {isWatchingAd ? (
-            <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
+            <Loader2 className="h-4 w-4 animate-spin text-tg-button-text" />
           ) : (
-            <Coins className="h-4 w-4 text-slate-950" />
+            <Coins className="h-4 w-4 text-tg-button-text" />
           )}
           <span>{getBonusAdsButtonText(remainingAds, isWatchingAd)}</span>
         </button>
@@ -139,10 +139,10 @@ export function RewardsHubScreen({
         {bonusFeedback && (
           <div
             data-testid="bonus-coins-feedback"
-            className={`mt-2.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
+            className={`mt-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium ${
               bonusFeedback.isSuccess
-                ? 'bg-emerald-500/15 text-emerald-400'
-                : 'bg-amber-500/15 text-amber-300'
+                ? 'bg-tg-button/10 text-tg-button border border-tg-button/20'
+                : 'bg-tg-secondary-bg text-tg-hint border border-tg-separator'
             }`}
           >
             {bonusFeedback.text}
@@ -153,15 +153,11 @@ export function RewardsHubScreen({
       <div className="rounded-2xl bg-tg-section border border-tg-separator p-4 shadow-sm text-left">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className={`flex h-9 w-9 items-center justify-center rounded-lg ring-1 ${
-              isStreakAtRisk
-                ? 'bg-rose-500/15 text-rose-400 ring-rose-500/30'
-                : 'bg-emerald-500/15 text-emerald-400 ring-emerald-500/30'
-            }`}>
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
               {isStreakAtRisk ? (
-                <ShieldAlert className="h-5 w-5" />
+                <ShieldAlert className="h-4 w-4" />
               ) : (
-                <ShieldCheck className="h-5 w-5" />
+                <ShieldCheck className="h-4 w-4" />
               )}
             </div>
             <div>
@@ -174,8 +170,8 @@ export function RewardsHubScreen({
             data-testid="streak-protection-status-badge"
             className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${
               isStreakAtRisk
-                ? 'bg-rose-500/15 border-rose-500/30 text-rose-400'
-                : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                ? 'bg-tg-secondary-bg border-tg-separator text-tg-text'
+                : 'bg-tg-button/15 border-tg-button/25 text-tg-button'
             }`}
           >
             {isStreakAtRisk ? 'At Risk' : 'Not currently needed'}
@@ -184,7 +180,7 @@ export function RewardsHubScreen({
 
         <div className="mt-2.5 text-xs text-tg-hint leading-relaxed">
           {isStreakAtRisk ? (
-            <p className="text-amber-400 font-medium">
+            <p className="text-tg-text font-medium">
               {streakCopy.subtitle}
             </p>
           ) : (
@@ -201,16 +197,16 @@ export function RewardsHubScreen({
             onClick={handleSaveStreak}
             disabled={isSavingStreak || !sessionToken}
             data-testid="watch-streak-save-ad-button"
-            className="mt-3.5 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-amber-500 px-3 text-xs font-bold text-slate-950 shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
+            className="mt-3.5 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-button px-3 text-xs font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
           >
             {isSavingStreak ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
+                <Loader2 className="h-4 w-4 animate-spin text-tg-button-text" />
                 <span>Saving streak...</span>
               </>
             ) : (
               <>
-                <Flame className="h-4 w-4 text-slate-950" />
+                <Flame className="h-4 w-4 fill-current text-tg-button-text" />
                 <span>Save Streak • Watch Ad</span>
               </>
             )}
@@ -220,9 +216,9 @@ export function RewardsHubScreen({
             type="button"
             disabled
             data-testid="streak-save-not-needed-button"
-            className="mt-3.5 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-tg-secondary-bg border border-tg-separator px-3 text-xs font-medium text-tg-hint cursor-not-allowed opacity-75"
+            className="mt-3.5 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-secondary-bg border border-tg-separator px-3 text-xs font-medium text-tg-hint cursor-not-allowed opacity-75"
           >
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+            <CheckCircle2 className="h-4 w-4 text-tg-button" />
             <span>Protection Not Needed • Streak Safe</span>
           </button>
         )}
@@ -230,10 +226,10 @@ export function RewardsHubScreen({
         {streakFeedback && (
           <div
             data-testid="streak-save-feedback"
-            className={`mt-2.5 rounded-lg px-2.5 py-1.5 text-xs font-medium ${
+            className={`mt-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium ${
               streakFeedback.isSuccess
-                ? 'bg-emerald-500/15 text-emerald-400'
-                : 'bg-amber-500/15 text-amber-300'
+                ? 'bg-tg-button/10 text-tg-button border border-tg-button/20'
+                : 'bg-tg-secondary-bg text-tg-hint border border-tg-separator'
             }`}
           >
             {streakFeedback.text}
@@ -249,7 +245,7 @@ export function RewardsHubScreen({
 
         <div className="mt-3 grid grid-cols-1 gap-2.5 text-xs">
           <div className="flex items-start gap-2 rounded-xl bg-tg-secondary-bg p-2.5 border border-tg-separator">
-            <Sparkles className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            <Sparkles className="h-4 w-4 text-tg-button shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-tg-text">Correct Quiz Answers</p>
               <p className="text-[11px] text-tg-hint">+5 coins for every correct flag identified during practice, daily, challenge, and battle runs.</p>
@@ -257,7 +253,7 @@ export function RewardsHubScreen({
           </div>
 
           <div className="flex items-start gap-2 rounded-xl bg-tg-secondary-bg p-2.5 border border-tg-separator">
-            <Coins className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            <Coins className="h-4 w-4 text-tg-button shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-tg-text">Daily Sponsored Videos</p>
               <p className="text-[11px] text-tg-hint">+50 coins per video, up to 5 times per day (+250 coins maximum daily bonus).</p>
@@ -265,7 +261,7 @@ export function RewardsHubScreen({
           </div>
 
           <div className="flex items-start gap-2 rounded-xl bg-tg-secondary-bg p-2.5 border border-tg-separator">
-            <ShoppingBag className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            <ShoppingBag className="h-4 w-4 text-tg-button shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-tg-text">Cosmetic Shop Tiers</p>
               <p className="text-[11px] text-tg-hint">Spend coins on Avatar Frames, Flag Themes, and Profile Banners: Tier 1 (~150 coins), Tier 2 (~400 coins), Tier 3 (~900 coins).</p>
@@ -277,7 +273,7 @@ export function RewardsHubScreen({
           <button
             type="button"
             onClick={onNavigateToShop}
-            className="mt-3.5 flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-tg-button/15 border border-tg-button/30 px-3 text-xs font-semibold text-tg-button hover:bg-tg-button/20 active:opacity-75 transition-colors"
+            className="mt-3.5 flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-tg-button/15 border border-tg-button/30 px-3 text-xs font-semibold text-tg-button hover:bg-tg-button/20 active:opacity-75 transition-colors"
           >
             <ShoppingBag className="h-3.5 w-3.5" />
             <span>Browse Cosmetic Shop</span>
