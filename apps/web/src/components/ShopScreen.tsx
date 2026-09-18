@@ -212,7 +212,7 @@ export function ShopScreen({ profile, sessionToken }: ShopScreenProps) {
                       <div className="flex items-center gap-1.5">
                         <h2 className="text-sm font-bold text-tg-text">{item.name}</h2>
                         {item.isEquipped && (
-                          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30">
+                          <span className="rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-bold text-tg-button border border-tg-button/30">
                             Equipped
                           </span>
                         )}

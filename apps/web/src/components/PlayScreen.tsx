@@ -22,7 +22,7 @@ import { getDailyResultSummary } from './dailyChallengeHelpers.js';
 import { CustomGameModal, type CustomGameConfig } from './CustomGameModal.js';
 import { StreakSaveBanner } from './StreakSaveBanner.js';
 import { getAvatarFrameClass } from './cosmeticHelpers.js';
-import { formatSeasonName, getTierBadgeColors, getTierIcon } from './rankHelpers.js';
+import { formatSeasonName, getTierIcon } from './rankHelpers.js';
 import { TierBadge } from './TierBadge.js';
 
 interface PlayScreenProps {
@@ -78,7 +78,6 @@ export function PlayScreen({
   const currentTier = rankStatus?.tier ?? 'Bronze';
   const currentRating = rankStatus?.battleRating ?? 0;
   const seasonName = formatSeasonName(rankStatus?.season);
-  const tierColors = getTierBadgeColors(currentTier);
   const TierIcon = getTierIcon(currentTier);
 
   return (
@@ -147,16 +146,16 @@ export function PlayScreen({
           }
         }}
         data-testid="play-rank-tier-banner"
-        className={`flex cursor-pointer items-center justify-between rounded-2xl border px-4 py-2.5 transition-all hover:opacity-95 active:scale-[0.99] ${tierColors.bg} ${tierColors.border}`}
+        className="flex cursor-pointer items-center justify-between rounded-2xl bg-tg-section border border-tg-separator px-4 py-2.5 shadow-sm transition-all hover:opacity-95 active:scale-[0.99]"
       >
         <div className="flex items-center gap-2.5">
           <div
-            className={`flex h-8 w-8 items-center justify-center rounded-lg border ${tierColors.badge}`}
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20"
           >
             <TierIcon className="h-4 w-4 fill-current" />
           </div>
           <div className="flex items-center gap-2 text-left">
-            <span className={`text-xs font-extrabold ${tierColors.text}`}>
+            <span className="text-xs font-extrabold text-tg-text">
               {currentTier} Tier
             </span>
             <span className="text-xs font-bold text-tg-text">

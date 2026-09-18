@@ -3,7 +3,6 @@ import { BADGE_CATALOG, type PlayerBadgeResponseItem } from '@flagora/shared';
 import {
   getMergedBadgeItems,
   getBadgeIcon,
-  getBadgeAccentColors,
 } from './badgeHelpers.js';
 
 interface BadgeShowcaseProps {
@@ -42,16 +41,23 @@ export function BadgeShowcase({ badges = [], isLoading = false }: BadgeShowcaseP
       <div className="mt-3.5 flex flex-col gap-2.5">
         {mergedItems.map((item, index) => {
           const Icon = getBadgeIcon(item.id);
-          const colors = getBadgeAccentColors(item.id, item.isEarned);
 
           return (
             <div
               key={`${item.id}-${item.season ?? index}`}
               data-testid={`badge-item-${item.id}`}
-              className={`flex items-start gap-3 rounded-xl border p-3 transition-colors ${colors.card}`}
+              className={`flex items-start gap-3 rounded-xl border p-3 transition-colors ${
+                item.isEarned
+                  ? 'bg-tg-section border-tg-separator'
+                  : 'bg-tg-secondary-bg/50 border-tg-separator/40 opacity-70'
+              }`}
             >
               <div
-                className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${colors.iconContainer}`}
+                className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                  item.isEarned
+                    ? 'bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20'
+                    : 'bg-tg-separator/30 text-tg-hint/60'
+                }`}
               >
                 {item.isEarned ? (
                   <Icon className="h-5 w-5" />
@@ -62,23 +68,23 @@ export function BadgeShowcase({ badges = [], isLoading = false }: BadgeShowcaseP
 
               <div className="flex flex-1 flex-col">
                 <div className="flex items-center justify-between gap-1.5">
-                  <span className={`text-xs font-bold ${colors.title}`}>{item.name}</span>
+                  <span className={`text-xs font-bold ${item.isEarned ? 'text-tg-text' : 'text-tg-hint/90'}`}>{item.name}</span>
                   {item.isEarned ? (
                     <span
-                      className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${colors.badgeTag}`}
+                      className="shrink-0 rounded-full bg-tg-button/15 border border-tg-button/25 px-2 py-0.5 text-[10px] font-bold text-tg-button"
                     >
                       {item.formattedSeason ? item.formattedSeason : 'Earned'}
                     </span>
                   ) : (
                     <span
-                      className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${colors.badgeTag}`}
+                      className="shrink-0 rounded-full bg-tg-secondary-bg border border-tg-separator px-2 py-0.5 text-[10px] font-semibold text-tg-hint"
                     >
                       Locked
                     </span>
                   )}
                 </div>
 
-                <p className={`mt-1 text-[11px] leading-relaxed ${colors.description}`}>
+                <p className="mt-1 text-[11px] leading-relaxed text-tg-hint">
                   {item.description}
                 </p>
 

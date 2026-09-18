@@ -31,7 +31,7 @@ import { StreakSaveBanner } from './StreakSaveBanner.js';
 import { useBonusCoinsAd } from '../hooks/useBonusCoinsAd.js';
 import { getBonusAdsButtonText } from './rewardUiHelpers.js';
 import { getAvatarFrameClass, getProfileBannerClass } from './cosmeticHelpers.js';
-import { formatSeasonName, getTierBadgeColors, getTierIcon } from './rankHelpers.js';
+import { formatSeasonName, getTierIcon } from './rankHelpers.js';
 import { BadgeShowcase } from './BadgeShowcase.js';
 
 export { getDisplayName };
@@ -95,7 +95,6 @@ export function ProfileCard({
   const currentRating = rankStatus?.battleRating ?? 0;
   const currentRank = rankStatus?.rank ?? null;
   const seasonName = formatSeasonName(rankStatus?.season);
-  const tierColors = getTierBadgeColors(currentTier);
   const TierIcon = getTierIcon(currentTier);
 
   const {
@@ -233,26 +232,26 @@ export function ProfileCard({
 
       <div
         data-testid="profile-rank-card"
-        className={`mt-3 flex flex-col rounded-xl border p-3.5 transition-all ${tierColors.bg} ${tierColors.border}`}
+        className="mt-3 flex flex-col rounded-xl bg-tg-secondary-bg border border-tg-separator p-3.5 transition-all"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-xl border ${tierColors.badge}`}
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button ring-1 ring-tg-button/20"
             >
               <TierIcon className="h-5 w-5 fill-current" />
             </div>
             <div className="text-left">
               <div className="flex items-center gap-2">
-                <span className={`text-sm font-extrabold ${tierColors.text}`}>
+                <span className="text-sm font-extrabold text-tg-text">
                   {currentTier} Tier
                 </span>
                 {currentRank ? (
-                  <span className="rounded-full bg-tg-section/70 border border-tg-separator px-2 py-0.5 text-[10px] font-extrabold text-tg-text">
+                  <span className="rounded-full bg-tg-section border border-tg-separator px-2 py-0.5 text-[10px] font-extrabold text-tg-text">
                     #{currentRank}
                   </span>
                 ) : (
-                  <span className="rounded-full bg-tg-section/40 px-2 py-0.5 text-[10px] font-semibold text-tg-hint">
+                  <span className="rounded-full bg-tg-section px-2 py-0.5 text-[10px] font-semibold text-tg-hint">
                     Unranked
                   </span>
                 )}
@@ -338,8 +337,8 @@ export function ProfileCard({
           >
             {referralCopied ? (
               <>
-                <Check className="h-3.5 w-3.5 text-emerald-400" />
-                <span className="text-emerald-400">Copied!</span>
+                <Check className="h-3.5 w-3.5 text-tg-button" />
+                <span className="text-tg-button">Copied!</span>
               </>
             ) : (
               <>

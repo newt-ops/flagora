@@ -160,7 +160,7 @@ export function BattleLobbyScreen({
             <span
               className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                 challengerIsReady
-                  ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30'
+                  ? 'bg-tg-button/15 text-tg-button ring-1 ring-tg-button/30'
                   : 'bg-tg-hint/15 text-tg-hint ring-1 ring-tg-separator'
               }`}
             >
@@ -199,7 +199,7 @@ export function BattleLobbyScreen({
                 <span
                   className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                     opponentIsReady
-                      ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30'
+                      ? 'bg-tg-button/15 text-tg-button ring-1 ring-tg-button/30'
                       : 'bg-tg-hint/15 text-tg-hint ring-1 ring-tg-separator'
                   }`}
                 >
@@ -247,8 +247,8 @@ export function BattleLobbyScreen({
                 >
                   {copied ? (
                     <>
-                      <Check className="h-3.5 w-3.5 text-emerald-400" />
-                      <span className="text-emerald-400">Copied!</span>
+                      <Check className="h-3.5 w-3.5 text-tg-button" />
+                      <span className="text-tg-button">Copied!</span>
                     </>
                   ) : (
                     <>
@@ -270,7 +270,7 @@ export function BattleLobbyScreen({
 
           {bothPlayersPresent && (
             <div className="flex w-full flex-col items-center gap-2">
-              <p className="text-xs font-semibold text-emerald-400">
+              <p className="text-xs font-semibold text-tg-button">
                 Both players connected!
               </p>
               {isReady ? (
@@ -289,7 +289,7 @@ export function BattleLobbyScreen({
               ) : (
                 <>
                   {(isChallenger ? opponentIsReady : challengerIsReady) && (
-                    <p className="text-xs font-medium text-emerald-400 animate-pulse">
+                    <p className="text-xs font-medium text-tg-button animate-pulse">
                       Opponent is ready! Press below to start.
                     </p>
                   )}

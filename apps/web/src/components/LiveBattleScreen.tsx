@@ -230,7 +230,7 @@ export function LiveBattleScreen({
         </div>
       ) : currentFlagIndex >= battleStart.flags.length ? (
         <div className="flex w-full flex-col items-center justify-center gap-3 rounded-2xl bg-tg-section border border-tg-separator p-6 text-center shadow-sm">
-          <Check className="h-8 w-8 text-emerald-400" />
+          <Check className="h-8 w-8 text-tg-button" />
           <p className="text-sm font-bold text-tg-text">All flags completed!</p>
           <p className="text-xs text-tg-hint">Waiting for opponent or battle tally...</p>
           {onCheckFinished && (
