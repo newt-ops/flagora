@@ -7,8 +7,8 @@ import type { Redis as RedisClient } from 'ioredis';
 import type { PlayerProfile } from '@flagora/shared';
 import { initRedis, closeRedis } from '../db/redis.js';
 import {
-  requestBonusCoinsIntent,
-  redeemBonusCoins,
+  requestBonusPinsIntent,
+  redeemBonusPins,
   requestStreakSaveIntent,
   redeemStreakSave,
   getLatestPendingRewardToken,
@@ -57,15 +57,15 @@ describe('Phase 11 Prompt 01: AdsGram Postback Secondary Confirmation', () => {
       },
       findOneAndUpdate: async (
         filter: { telegramUserId: number },
-        update: { $inc?: { coins?: number }; $set?: Record<string, unknown> },
+        update: { $inc?: { pins?: number }; $set?: Record<string, unknown> },
       ) => {
         const existing = profilesMap.get(filter.telegramUserId);
         if (!existing) {
           return null;
         }
         const updated = { ...existing };
-        if (update.$inc?.coins) {
-          updated.coins = (updated.coins || 0) + update.$inc.coins;
+        if (update.$inc?.pins) {
+          updated.pins = (updated.pins || 0) + update.$inc.pins;
         }
         if (update.$set) {
           Object.assign(updated, update.$set);
@@ -130,14 +130,14 @@ describe('Phase 11 Prompt 01: AdsGram Postback Secondary Confirmation', () => {
         }
 
         try {
-          if (payload.rewardType === 'bonus-coins') {
-            const result = await redeemBonusCoins(token, telegramUserId, db, { redis, secret: rewardSecret });
+          if (payload.rewardType === 'bonus-pins') {
+            const result = await redeemBonusPins(token, telegramUserId, db, { redis, secret: rewardSecret });
             res.status(200).json({
               ok: true,
               status: 'redeemed',
-              rewardType: 'bonus-coins',
-              coinsEarned: result.coinsEarned,
-              coins: result.coins,
+              rewardType: 'bonus-pins',
+              pinsEarned: result.pinsEarned,
+              pins: result.pins,
             });
             return;
           }
@@ -214,7 +214,7 @@ describe('Phase 11 Prompt 01: AdsGram Postback Secondary Confirmation', () => {
     profilesMap.set(2001, {
       telegramUserId: 2001,
       firstName: 'Alice',
-      coins: 100,
+      pins: 100,
       xp: 0,
       level: 1,
       currentStreak: 5,
@@ -249,15 +249,15 @@ describe('Phase 11 Prompt 01: AdsGram Postback Secondary Confirmation', () => {
 
   it('Order A: client redeems first, postback arrives second -> postback no-ops cleanly without double credit', async () => {
     const userId = 2001;
-    const intent = await requestBonusCoinsIntent(userId, { redis, secret: rewardSecret });
+    const intent = await requestBonusPinsIntent(userId, { redis, secret: rewardSecret });
     assert.ok(intent.token);
 
-    const clientRedeemResult = await redeemBonusCoins(intent.token, userId, db, {
+    const clientRedeemResult = await redeemBonusPins(intent.token, userId, db, {
       redis,
       secret: rewardSecret,
     });
     assert.equal(clientRedeemResult.ok, true);
-    assert.equal(clientRedeemResult.coins, 150);
+    assert.equal(clientRedeemResult.pins, 150);
 
     const postbackRes = await fetch(`${baseUrl}/api/rewards/adsgram-postback?userid=${userId}`);
     assert.equal(postbackRes.status, 200);
@@ -268,12 +268,12 @@ describe('Phase 11 Prompt 01: AdsGram Postback Secondary Confirmation', () => {
     );
 
     const profile = profilesMap.get(userId);
-    assert.equal(profile?.coins, 150);
+    assert.equal(profile?.pins, 150);
   });
 
   it('Order B: postback arrives first, client redeems second -> postback succeeds, client redeem throws without double credit', async () => {
     const userId = 2001;
-    const intent = await requestBonusCoinsIntent(userId, { redis, secret: rewardSecret });
+    const intent = await requestBonusPinsIntent(userId, { redis, secret: rewardSecret });
     assert.ok(intent.token);
 
     const postbackRes = await fetch(`${baseUrl}/api/rewards/adsgram-postback?userid=${userId}`);
@@ -281,21 +281,21 @@ describe('Phase 11 Prompt 01: AdsGram Postback Secondary Confirmation', () => {
     const postbackData = await postbackRes.json();
     assert.equal(postbackData.ok, true);
     assert.equal(postbackData.status, 'redeemed');
-    assert.equal(postbackData.rewardType, 'bonus-coins');
-    assert.equal(postbackData.coins, 150);
+    assert.equal(postbackData.rewardType, 'bonus-pins');
+    assert.equal(postbackData.pins, 150);
 
     const profileAfterPostback = profilesMap.get(userId);
-    assert.equal(profileAfterPostback?.coins, 150);
+    assert.equal(profileAfterPostback?.pins, 150);
 
     await assert.rejects(
       async () => {
-        await redeemBonusCoins(intent.token, userId, db, { redis, secret: rewardSecret });
+        await redeemBonusPins(intent.token, userId, db, { redis, secret: rewardSecret });
       },
       (err) => err instanceof RewardTokenAlreadyRedeemedError,
     );
 
     const profileFinal = profilesMap.get(userId);
-    assert.equal(profileFinal?.coins, 150);
+    assert.equal(profileFinal?.pins, 150);
   });
 
   it('redeems streak-save reward token via postback when streak is at risk', async () => {

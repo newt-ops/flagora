@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   ShoppingBag,
-  Coins,
+  Coins as Pins,
   CheckCircle2,
   Loader2,
   Sparkles,
@@ -83,8 +83,8 @@ export function ShopScreen({ profile, sessionToken }: ShopScreenProps) {
         </div>
 
         <div className="flex items-center gap-1.5 rounded-full bg-tg-secondary-bg px-3 py-1.5 text-xs font-bold text-tg-text shrink-0">
-          <Coins className="h-4 w-4 text-tg-button" />
-          <span>{profile.coins.toLocaleString()}</span>
+          <Pins className="h-4 w-4 text-tg-button" />
+          <span>{profile.pins.toLocaleString()}</span>
         </div>
       </div>
 
@@ -154,7 +154,7 @@ export function ShopScreen({ profile, sessionToken }: ShopScreenProps) {
           {currentCategoryItems.map((item) => {
             const isItemActionLoading =
               activeActionItemId === item.id && (isPurchasing || isEquipping);
-            const affordability = getItemAffordability(profile.coins, item.price);
+            const affordability = getItemAffordability(profile.pins, item.price);
 
             const frameClass =
               item.category === 'avatarFrame' ? getAvatarFrameClass(item.id) : '';
@@ -229,7 +229,7 @@ export function ShopScreen({ profile, sessionToken }: ShopScreenProps) {
                   </div>
 
                   <div className="flex shrink-0 items-center gap-1 rounded-full bg-tg-secondary-bg px-2.5 py-1 text-xs font-bold text-tg-text">
-                    <Coins className="h-3.5 w-3.5 text-tg-button" />
+                    <Pins className="h-3.5 w-3.5 text-tg-button" />
                     <span>{item.price.toLocaleString()}</span>
                   </div>
                 </div>
@@ -266,15 +266,15 @@ export function ShopScreen({ profile, sessionToken }: ShopScreenProps) {
                       {isItemActionLoading ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <Coins className="h-3.5 w-3.5 text-tg-button-text" />
+                        <Pins className="h-3.5 w-3.5 text-tg-button-text" />
                       )}
-                      <span>Buy for {item.price.toLocaleString()} Coins</span>
+                      <span>Buy for {item.price.toLocaleString()} Pins</span>
                     </button>
                   )}
 
                   {!item.isOwned && !affordability.canAfford && (
                     <div className="flex items-center gap-2 rounded-xl bg-tg-secondary-bg px-3 py-1.5 text-xs font-semibold text-tg-hint cursor-not-allowed">
-                      <Coins className="h-3.5 w-3.5 text-tg-hint" />
+                      <Pins className="h-3.5 w-3.5 text-tg-hint" />
                       <span>{affordability.reasonText}</span>
                     </div>
                   )}

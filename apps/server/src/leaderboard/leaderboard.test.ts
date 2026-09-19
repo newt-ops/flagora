@@ -96,7 +96,7 @@ describe('leaderboard backend and Redis integration', () => {
     const profile: PlayerProfile = {
       telegramUserId: userId,
       firstName: 'BestScoreRunner',
-      coins: 0,
+      pins: 0,
       xp: 0,
       level: 1,
       currentStreak: 0,
@@ -157,7 +157,7 @@ describe('leaderboard backend and Redis integration', () => {
             username: u.user,
             lastName: u.last ?? null,
             photoUrl: `https://example.com/avatar/${u.id}.jpg`,
-            coins: 0,
+            pins: 0,
             xp: 0,
             level: 1,
             currentStreak: 1,
@@ -234,7 +234,7 @@ describe('leaderboard backend and Redis integration', () => {
     await profiles.insertOne({
       telegramUserId: userId,
       firstName: 'FaultTolerantRunner',
-      coins: 0,
+      pins: 0,
       xp: 0,
       level: 1,
       currentStreak: 0,

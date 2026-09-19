@@ -12,13 +12,13 @@ export class ItemAlreadyOwnedError extends Error {
   }
 }
 
-export class InsufficientCoinsError extends Error {
+export class InsufficientPinsError extends Error {
   public readonly required: number;
   public readonly available: number;
 
-  constructor(required: number, available: number, message = 'Insufficient coins') {
+  constructor(required: number, available: number, message = 'Insufficient pins') {
     super(message);
-    this.name = 'InsufficientCoinsError';
+    this.name = 'InsufficientPinsError';
     this.required = required;
     this.available = available;
   }
@@ -35,5 +35,12 @@ export class ProfileNotFoundError extends Error {
   constructor(message = 'Player profile not found') {
     super(message);
     this.name = 'ProfileNotFoundError';
+  }
+}
+
+export class RequiresProSubscriptionError extends Error {
+  constructor(message = 'Requires Flagora Pro') {
+    super(message);
+    this.name = 'RequiresProSubscriptionError';
   }
 }

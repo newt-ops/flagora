@@ -2,14 +2,14 @@ import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   getTodayUtcDateString,
-  getDailyCoinsStorageKey,
-  getStoredDailyBonusCoinsCount,
-  setStoredDailyBonusCoinsCount,
+  getDailyPinsStorageKey,
+  getStoredDailyBonusPinsCount,
+  setStoredDailyBonusPinsCount,
   getRemainingBonusAds,
   getBonusAdsButtonText,
   getStreakSaveBannerCopy,
   formatAdOutcomeFeedback,
-  BONUS_COINS_DEFAULT_CAP,
+  BONUS_PINS_DEFAULT_CAP,
 } from './rewardUiHelpers.js';
 import type { AdOutcome } from '../ads/adsgramTypes.js';
 
@@ -36,17 +36,17 @@ describe('rewardUiHelpers', () => {
   });
 
   it('builds storage key incorporating UTC date', () => {
-    assert.equal(getDailyCoinsStorageKey('2026-09-08'), 'flagora_coins_ads_2026-09-08');
+    assert.equal(getDailyPinsStorageKey('2026-09-08'), 'flagora_pins_ads_2026-09-08');
   });
 
   it('reads and writes daily stored count in localStorage', () => {
-    assert.equal(getStoredDailyBonusCoinsCount('2026-09-08'), 0);
-    setStoredDailyBonusCoinsCount(3, '2026-09-08');
-    assert.equal(getStoredDailyBonusCoinsCount('2026-09-08'), 3);
+    assert.equal(getStoredDailyBonusPinsCount('2026-09-08'), 0);
+    setStoredDailyBonusPinsCount(3, '2026-09-08');
+    assert.equal(getStoredDailyBonusPinsCount('2026-09-08'), 3);
   });
 
   it('calculates remaining bonus ads accurately', () => {
-    assert.equal(getRemainingBonusAds(0), BONUS_COINS_DEFAULT_CAP);
+    assert.equal(getRemainingBonusAds(0), BONUS_PINS_DEFAULT_CAP);
     assert.equal(getRemainingBonusAds(2), 3);
     assert.equal(getRemainingBonusAds(5), 0);
     assert.equal(getRemainingBonusAds(6), 0);
@@ -54,7 +54,7 @@ describe('rewardUiHelpers', () => {
 
   it('returns appropriate button text for watching, available, and exhausted states', () => {
     assert.equal(getBonusAdsButtonText(5, true), 'Loading ad...');
-    assert.equal(getBonusAdsButtonText(3, false), '+50 Coins • Watch Ad');
+    assert.equal(getBonusAdsButtonText(3, false), '+50 Pins • Watch Ad');
     assert.equal(
       getBonusAdsButtonText(0, false),
       'Daily cap reached (5/5) • Come back tomorrow',
@@ -74,11 +74,11 @@ describe('rewardUiHelpers', () => {
   it('formats feedback message accurately for each AdOutcome status', () => {
     const bonusRewarded: AdOutcome = {
       status: 'rewarded',
-      rewardType: 'bonus-coins',
-      data: { ok: true, coinsEarned: 50, coins: 200, telegramUserId: 100 },
+      rewardType: 'bonus-pins',
+      data: { ok: true, pinsEarned: 50, pins: 200, telegramUserId: 100 },
     };
     assert.deepEqual(formatAdOutcomeFeedback(bonusRewarded), {
-      text: '+50 Coins earned! 🎉',
+      text: '+50 Pins earned! 🎉',
       isSuccess: true,
     });
 
@@ -101,7 +101,7 @@ describe('rewardUiHelpers', () => {
 
     const capReached: AdOutcome = {
       status: 'cap_reached',
-      rewardType: 'bonus-coins',
+      rewardType: 'bonus-pins',
       dailyCap: 5,
       usedCount: 5,
       message: 'Daily limit reached',
@@ -123,7 +123,7 @@ describe('rewardUiHelpers', () => {
 
     const unavailable: AdOutcome = {
       status: 'unavailable',
-      rewardType: 'bonus-coins',
+      rewardType: 'bonus-pins',
       message: 'No ad available right now, try again later 🙏',
     };
     assert.deepEqual(formatAdOutcomeFeedback(unavailable), {
@@ -133,7 +133,7 @@ describe('rewardUiHelpers', () => {
 
     const skipped: AdOutcome = {
       status: 'skipped',
-      rewardType: 'bonus-coins',
+      rewardType: 'bonus-pins',
       message: 'Ad was skipped',
     };
     assert.deepEqual(formatAdOutcomeFeedback(skipped), {
@@ -143,7 +143,7 @@ describe('rewardUiHelpers', () => {
 
     const error: AdOutcome = {
       status: 'error',
-      rewardType: 'bonus-coins',
+      rewardType: 'bonus-pins',
       message: 'Network failed',
     };
     assert.deepEqual(formatAdOutcomeFeedback(error), {

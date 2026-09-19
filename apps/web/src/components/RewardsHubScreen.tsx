@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import {
-  Coins,
+  Coins as Pins,
   Flame,
   ShieldCheck,
   ShieldAlert,
@@ -11,7 +11,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import type { PlayerProfile, StreakStatusResponse } from '@flagora/shared';
-import { useBonusCoinsAd } from '../hooks/useBonusCoinsAd.js';
+import { useBonusPinsAd } from '../hooks/useBonusPinsAd.js';
 import { showRewardedAd } from '../ads/adsgram.js';
 import {
   getBonusAdsButtonText,
@@ -42,7 +42,7 @@ export function RewardsHubScreen({
     remainingAds,
     isCapReached,
     handleWatchAd,
-  } = useBonusCoinsAd({
+  } = useBonusPinsAd({
     sessionToken,
     onRewardSuccess: onRefetchProfile,
   });
@@ -84,17 +84,17 @@ export function RewardsHubScreen({
       <div className="flex items-center justify-between flex-wrap gap-2 rounded-2xl bg-tg-section p-4 shadow-sm">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
-            <Coins className="h-5 w-5" />
+            <Pins className="h-5 w-5" />
           </div>
           <div className="flex flex-col text-left min-w-0">
-            <h1 className="text-base font-bold text-tg-text truncate">Earn Free Coins</h1>
+            <h1 className="text-base font-bold text-tg-text truncate">Earn Free Pins</h1>
             <p className="text-xs text-tg-hint truncate">Sponsored rewards & streak protection</p>
           </div>
         </div>
 
         <div className="flex items-center gap-1.5 rounded-full bg-tg-secondary-bg px-3 py-1.5 text-xs font-bold text-tg-text shrink-0">
-          <Coins className="h-4 w-4 text-tg-button" />
-          <span>{profile.coins.toLocaleString()}</span>
+          <Pins className="h-4 w-4 text-tg-button" />
+          <span>{profile.pins.toLocaleString()}</span>
         </div>
       </div>
 
@@ -102,15 +102,15 @@ export function RewardsHubScreen({
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-tg-button/10 text-tg-button">
-              <Coins className="h-4 w-4" />
+              <Pins className="h-4 w-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold text-tg-text truncate">Daily Bonus Coins</p>
-              <p className="text-[11px] text-tg-hint truncate">+50 coins per ad • 5 available daily</p>
+              <p className="text-sm font-bold text-tg-text truncate">Daily Bonus Pins</p>
+              <p className="text-[11px] text-tg-hint truncate">+50 pins per ad • 5 available daily</p>
             </div>
           </div>
           <span
-            data-testid="bonus-coins-remaining-badge"
+            data-testid="bonus-pins-remaining-badge"
             className="rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-bold text-tg-button shrink-0"
           >
             {remainingAds > 0 ? `${remainingAds}/5 remaining today` : 'Daily cap reached (5/5)'}
@@ -118,7 +118,7 @@ export function RewardsHubScreen({
         </div>
 
         <p className="mt-2.5 text-xs text-tg-hint leading-relaxed">
-          Watch a quick sponsored video to receive 50 bonus coins immediately. Resets every day at 00:00 UTC.
+          Watch a quick sponsored video to receive 50 bonus pins immediately. Resets every day at 00:00 UTC.
         </p>
 
         <button
@@ -131,14 +131,14 @@ export function RewardsHubScreen({
           {isWatchingAd ? (
             <Loader2 className="h-4 w-4 animate-spin text-tg-button-text" />
           ) : (
-            <Coins className="h-4 w-4 text-tg-button-text" />
+            <Pins className="h-4 w-4 text-tg-button-text" />
           )}
           <span>{getBonusAdsButtonText(remainingAds, isWatchingAd)}</span>
         </button>
 
         {bonusFeedback && (
           <div
-            data-testid="bonus-coins-feedback"
+            data-testid="bonus-pins-feedback"
             className={`mt-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium ${
               bonusFeedback.isSuccess
                 ? 'bg-tg-button/10 text-tg-button'
@@ -248,15 +248,15 @@ export function RewardsHubScreen({
             <Sparkles className="h-4 w-4 text-tg-button shrink-0 mt-0.5" />
             <div className="min-w-0">
               <p className="font-semibold text-tg-text">Correct Quiz Answers</p>
-              <p className="text-[11px] text-tg-hint">+5 coins for every correct flag identified during practice, daily, challenge, and battle runs.</p>
+              <p className="text-[11px] text-tg-hint">+5 pins for every correct flag identified during practice, daily, challenge, and battle runs.</p>
             </div>
           </div>
 
           <div className="flex items-start gap-2.5 rounded-xl bg-tg-secondary-bg p-3">
-            <Coins className="h-4 w-4 text-tg-button shrink-0 mt-0.5" />
+            <Pins className="h-4 w-4 text-tg-button shrink-0 mt-0.5" />
             <div className="min-w-0">
               <p className="font-semibold text-tg-text">Daily Sponsored Videos</p>
-              <p className="text-[11px] text-tg-hint">+50 coins per video, up to 5 times per day (+250 coins maximum daily bonus).</p>
+              <p className="text-[11px] text-tg-hint">+50 pins per video, up to 5 times per day (+250 pins maximum daily bonus).</p>
             </div>
           </div>
 
@@ -264,7 +264,7 @@ export function RewardsHubScreen({
             <ShoppingBag className="h-4 w-4 text-tg-button shrink-0 mt-0.5" />
             <div className="min-w-0">
               <p className="font-semibold text-tg-text">Cosmetic Shop Tiers</p>
-              <p className="text-[11px] text-tg-hint">Spend coins on Avatar Frames, Flag Themes, and Profile Banners: Tier 1 (~150 coins), Tier 2 (~400 coins), Tier 3 (~900 coins).</p>
+              <p className="text-[11px] text-tg-hint">Spend pins on Avatar Frames, Flag Themes, and Profile Banners: Tier 1 (~150 pins), Tier 2 (~400 pins), Tier 3 (~900 pins).</p>
             </div>
           </div>
         </div>

@@ -13,8 +13,8 @@ import {
   notifyPublicRewardPayout,
 } from '../telegram/telegramService.js';
 import {
-  requestBonusCoinsIntent,
-  redeemBonusCoins,
+  requestBonusPinsIntent,
+  redeemBonusPins,
   requestStreakSaveIntent,
   redeemStreakSave,
   RewardTokenAlreadyRedeemedError,
@@ -63,15 +63,15 @@ describe('Phase 11 Prompt 02: Public Reward-Payout Proof', () => {
       },
       findOneAndUpdate: async (
         filter: { telegramUserId: number },
-        update: { $inc?: { coins?: number }; $set?: Record<string, unknown> },
+        update: { $inc?: { pins?: number }; $set?: Record<string, unknown> },
       ) => {
         const existing = profilesMap.get(filter.telegramUserId);
         if (!existing) {
           return null;
         }
         const updated = { ...existing };
-        if (update.$inc?.coins) {
-          updated.coins = (updated.coins || 0) + update.$inc.coins;
+        if (update.$inc?.pins) {
+          updated.pins = (updated.pins || 0) + update.$inc.pins;
         }
         if (update.$set) {
           Object.assign(updated, update.$set);
@@ -146,7 +146,7 @@ describe('Phase 11 Prompt 02: Public Reward-Payout Proof', () => {
     profilesMap.set(3001, {
       telegramUserId: 3001,
       firstName: 'Bob',
-      coins: 200,
+      pins: 200,
       xp: 0,
       level: 1,
       currentStreak: 4,
@@ -160,13 +160,13 @@ describe('Phase 11 Prompt 02: Public Reward-Payout Proof', () => {
   });
 
   it('notifyPublicRewardPayout sends anonymized confirmation without user details', async () => {
-    await notifyPublicRewardPayout('bonus-coins', { channelId: testChannelId });
+    await notifyPublicRewardPayout('bonus-pins', { channelId: testChannelId });
     await new Promise((r) => setTimeout(r, 50));
 
     assert.equal(sentMessages.length, 1);
     const msg = sentMessages[0];
     assert.equal(msg.chatId, testChannelId);
-    assert.ok(msg.text.includes('50 bonus coins'));
+    assert.ok(msg.text.includes('50 bonus pins'));
     assert.ok(!msg.text.includes('3001'));
     assert.ok(!msg.text.includes('Bob'));
   });
@@ -186,7 +186,7 @@ describe('Phase 11 Prompt 02: Public Reward-Payout Proof', () => {
     delete process.env.PUBLIC_REWARD_CHANNEL_ID;
     delete process.env.REWARD_CONFIRMATION_CHANNEL_ID;
 
-    await notifyPublicRewardPayout('bonus-coins');
+    await notifyPublicRewardPayout('bonus-pins');
     await new Promise((r) => setTimeout(r, 50));
 
     assert.equal(sentMessages.length, 0);
@@ -194,23 +194,23 @@ describe('Phase 11 Prompt 02: Public Reward-Payout Proof', () => {
     process.env.PUBLIC_REWARD_CHANNEL_ID = testChannelId;
   });
 
-  it('redeemBonusCoins triggers exactly one public notification on success', async () => {
+  it('redeemBonusPins triggers exactly one public notification on success', async () => {
     const userId = 3001;
-    const intent = await requestBonusCoinsIntent(userId, { redis, secret: rewardSecret });
+    const intent = await requestBonusPinsIntent(userId, { redis, secret: rewardSecret });
     assert.ok(intent.token);
 
-    const result = await redeemBonusCoins(intent.token, userId, db, {
+    const result = await redeemBonusPins(intent.token, userId, db, {
       redis,
       secret: rewardSecret,
     });
     assert.equal(result.ok, true);
-    assert.equal(result.coins, 250);
+    assert.equal(result.pins, 250);
 
     await new Promise((r) => setTimeout(r, 50));
 
     assert.equal(sentMessages.length, 1);
     assert.equal(sentMessages[0].chatId, testChannelId);
-    assert.ok(sentMessages[0].text.includes('50 bonus coins'));
+    assert.ok(sentMessages[0].text.includes('50 bonus pins'));
   });
 
   it('redeemStreakSave triggers exactly one public notification on success', async () => {
@@ -240,16 +240,16 @@ describe('Phase 11 Prompt 02: Public Reward-Payout Proof', () => {
 
   it('replay redemption throws and does not enqueue duplicate public notification', async () => {
     const userId = 3001;
-    const intent = await requestBonusCoinsIntent(userId, { redis, secret: rewardSecret });
+    const intent = await requestBonusPinsIntent(userId, { redis, secret: rewardSecret });
     assert.ok(intent.token);
 
-    await redeemBonusCoins(intent.token, userId, db, { redis, secret: rewardSecret });
+    await redeemBonusPins(intent.token, userId, db, { redis, secret: rewardSecret });
     await new Promise((r) => setTimeout(r, 50));
     assert.equal(sentMessages.length, 1);
 
     await assert.rejects(
       async () => {
-        await redeemBonusCoins(intent.token, userId, db, { redis, secret: rewardSecret });
+        await redeemBonusPins(intent.token, userId, db, { redis, secret: rewardSecret });
       },
       (err) => err instanceof RewardTokenAlreadyRedeemedError,
     );

@@ -56,25 +56,25 @@ export function getProfileBannerClass(bannerId: string | null | undefined): stri
 
 export interface ItemAffordability {
   canAfford: boolean;
-  coinsNeeded: number;
+  pinsNeeded: number;
   reasonText: string | null;
 }
 
-export function getItemAffordability(coins: number, price: number): ItemAffordability {
-  const safeCoins = Math.max(0, coins);
-  if (safeCoins >= price) {
+export function getItemAffordability(pins: number, price: number): ItemAffordability {
+  const safePins = Math.max(0, pins);
+  if (safePins >= price) {
     return {
       canAfford: true,
-      coinsNeeded: 0,
+      pinsNeeded: 0,
       reasonText: null,
     };
   }
 
-  const coinsNeeded = price - safeCoins;
+  const pinsNeeded = price - safePins;
   return {
     canAfford: false,
-    coinsNeeded,
-    reasonText: `Need ${coinsNeeded.toLocaleString()} more 🪙`,
+    pinsNeeded,
+    reasonText: `Need ${pinsNeeded.toLocaleString()} more 🪙`,
   };
 }
 
@@ -98,6 +98,12 @@ export function groupCatalogByCategory(
     avatarFrame: [],
     flagTheme: [],
     profileBanner: [],
+    nameplate: [],
+    answerButtonStyle: [],
+    resultScreenTheme: [],
+    comboBadge: [],
+    profileEffect: [],
+    battleEntrance: []
   };
 
   for (const item of items) {

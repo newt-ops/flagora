@@ -262,7 +262,7 @@ describe('challenge backend and rules', () => {
       firstName: 'Challenger',
       xp: 0,
       level: 1,
-      coins: 0,
+      pins: 0,
       gamesPlayed: 0,
       bestScore: 0,
       currentStreak: 0,
@@ -334,7 +334,7 @@ describe('challenge backend and rules', () => {
       firstName: 'ScoreChallenger',
       xp: 100,
       level: 1,
-      coins: 20,
+      pins: 20,
       gamesPlayed: 2,
       bestScore: 50,
       currentStreak: 1,
@@ -362,7 +362,7 @@ describe('challenge backend and rules', () => {
     assert.ok(updatedProfile);
     assert.equal(updatedProfile.bestScore, 50);
     assert.ok(updatedProfile.xp > 100);
-    assert.ok(updatedProfile.coins > 20);
+    assert.ok(updatedProfile.pins > 20);
     assert.equal(updatedProfile.gamesPlayed, 3);
 
     const globalRank = await redis.zrevrank('leaderboard:global', challengerId.toString());
@@ -417,7 +417,7 @@ describe('challenge backend and rules', () => {
       firstName: 'Practice',
       xp: 0,
       level: 1,
-      coins: 0,
+      pins: 0,
       gamesPlayed: 0,
       bestScore: 10,
       currentStreak: 0,
@@ -459,7 +459,7 @@ describe('challenge backend and rules', () => {
       lastName: 'Flags',
       xp: 500,
       level: 2,
-      coins: 100,
+      pins: 100,
       gamesPlayed: 5,
       bestScore: 320,
       currentStreak: 2,
@@ -593,7 +593,7 @@ describe('challenge backend and rules', () => {
       firstName: 'Alice',
       xp: 0,
       level: 1,
-      coins: 0,
+      pins: 0,
       gamesPlayed: 0,
       bestScore: 0,
       currentStreak: 0,
@@ -609,7 +609,7 @@ describe('challenge backend and rules', () => {
       firstName: 'Bob',
       xp: 0,
       level: 1,
-      coins: 0,
+      pins: 0,
       gamesPlayed: 0,
       bestScore: 100,
       currentStreak: 0,
@@ -794,7 +794,7 @@ describe('challenge backend and rules', () => {
       firstName: 'Alice',
       xp: 0,
       level: 1,
-      coins: 0,
+      pins: 0,
       gamesPlayed: 0,
       bestScore: 0,
       currentStreak: 0,
@@ -810,7 +810,7 @@ describe('challenge backend and rules', () => {
       firstName: 'Bob',
       xp: 0,
       level: 1,
-      coins: 0,
+      pins: 0,
       gamesPlayed: 0,
       bestScore: 0,
       currentStreak: 0,

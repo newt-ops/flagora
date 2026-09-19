@@ -137,16 +137,16 @@ describe('Phase 9 Prompt 02: Selective Caching', () => {
     };
 
     const initialProfile = await findOrCreatePlayerProfile(testUser, db);
-    assert.equal(initialProfile.coins, 0);
+    assert.equal(initialProfile.pins, 0);
 
     await db.collection('profiles').updateOne(
       { telegramUserId: 881234 },
-      { $set: { coins: 777, bestScore: 9999 } },
+      { $set: { pins: 777, bestScore: 9999 } },
     );
 
     const freshRead = await getPlayerProfileByUserId(881234, db);
     assert.ok(freshRead);
-    assert.equal(freshRead.coins, 777);
+    assert.equal(freshRead.pins, 777);
     assert.equal(freshRead.bestScore, 9999);
   });
 });

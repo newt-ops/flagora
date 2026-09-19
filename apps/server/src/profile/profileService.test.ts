@@ -44,7 +44,7 @@ describe('profileService', () => {
     assert.equal(profile.lastName, 'Wonder');
     assert.equal(profile.username, 'alice_w');
     assert.equal(profile.photoUrl, 'https://example.com/alice.jpg');
-    assert.equal(profile.coins, 0);
+    assert.equal(profile.pins, 0);
     assert.equal(profile.xp, 0);
     assert.equal(profile.level, 1);
     assert.equal(profile.currentStreak, 0);
@@ -60,7 +60,7 @@ describe('profileService', () => {
       { telegramUserId: 1001 },
       {
         $set: {
-          coins: 250,
+          pins: 250,
           xp: 1500,
           level: 4,
           currentStreak: 7,
@@ -83,7 +83,7 @@ describe('profileService', () => {
     assert.equal(profile.firstName, 'AliceUpdated');
     assert.equal(profile.lastName, 'WonderUpdated');
     assert.equal(profile.username, 'alice_super');
-    assert.equal(profile.coins, 250);
+    assert.equal(profile.pins, 250);
     assert.equal(profile.xp, 1500);
     assert.equal(profile.level, 4);
     assert.equal(profile.currentStreak, 7);
@@ -93,7 +93,7 @@ describe('profileService', () => {
     const fetched = await getPlayerProfileByUserId(1001, db);
     assert.ok(fetched);
     assert.equal(fetched.firstName, 'AliceUpdated');
-    assert.equal(fetched.coins, 250);
+    assert.equal(fetched.pins, 250);
   });
 
   it('returns null for non-existent profile', async () => {

@@ -37,13 +37,13 @@ describe('Phase 8 Prompt 01: Reward-Token Infrastructure', () => {
 
   describe('Daily cap config & inspection', () => {
     it('has expected daily caps configured', () => {
-      assert.equal(REWARD_CONFIG['bonus-coins'].dailyCap, 5);
+      assert.equal(REWARD_CONFIG['bonus-pins'].dailyCap, 5);
       assert.equal(REWARD_CONFIG['streak-save'].dailyCap, 1);
     });
 
     it('getRewardDailyCapUsage returns correct initial state', async () => {
-      const usage = await getRewardDailyCapUsage(1001, 'bonus-coins', { redis, secret: testSecret });
-      assert.equal(usage.rewardType, 'bonus-coins');
+      const usage = await getRewardDailyCapUsage(1001, 'bonus-pins', { redis, secret: testSecret });
+      assert.equal(usage.rewardType, 'bonus-pins');
       assert.equal(usage.dailyCap, 5);
       assert.equal(usage.used, 0);
       assert.equal(usage.remaining, 5);
@@ -63,12 +63,12 @@ describe('Phase 8 Prompt 01: Reward-Token Infrastructure', () => {
 
   describe('Issuance under and at cap', () => {
     it('issues a token when under cap and creates pending entry in Redis', async () => {
-      const token = await issueRewardToken(1002, 'bonus-coins', { redis, secret: testSecret });
+      const token = await issueRewardToken(1002, 'bonus-pins', { redis, secret: testSecret });
       assert.ok(typeof token === 'string' && token.length > 20);
 
       const payload = verifyRewardToken(token, { secret: testSecret });
       assert.equal(payload.telegramUserId, 1002);
-      assert.equal(payload.rewardType, 'bonus-coins');
+      assert.equal(payload.rewardType, 'bonus-pins');
       assert.ok(payload.jti);
 
       const pendingKey = `reward:pending:${payload.jti}`;
@@ -83,19 +83,19 @@ describe('Phase 8 Prompt 01: Reward-Token Infrastructure', () => {
       const now = new Date('2026-09-08T12:00:00.000Z');
       const userId = 1003;
 
-      const capKey = `reward:cap:${userId}:bonus-coins:2026-09-08`;
+      const capKey = `reward:cap:${userId}:bonus-pins:2026-09-08`;
       await redis.set(capKey, '5');
 
       const initialKeys = await redis.keys('reward:pending:*');
 
       await assert.rejects(
         async () => {
-          await issueRewardToken(userId, 'bonus-coins', { redis, secret: testSecret, now });
+          await issueRewardToken(userId, 'bonus-pins', { redis, secret: testSecret, now });
         },
         (err: unknown) => {
           assert.ok(err instanceof RewardCapReachedError);
           assert.equal(err.telegramUserId, userId);
-          assert.equal(err.rewardType, 'bonus-coins');
+          assert.equal(err.rewardType, 'bonus-pins');
           assert.equal(err.dailyCap, 5);
           assert.equal(err.usedCount, 5);
           return true;
@@ -125,12 +125,12 @@ describe('Phase 8 Prompt 01: Reward-Token Infrastructure', () => {
     it('redeems a valid token successfully on first attempt and increments cap', async () => {
       const userId = 2001;
       const now = new Date('2026-09-08T10:00:00.000Z');
-      const token = await issueRewardToken(userId, 'bonus-coins', { redis, secret: testSecret, now });
+      const token = await issueRewardToken(userId, 'bonus-pins', { redis, secret: testSecret, now });
 
-      const result = await redeemRewardToken(token, 'bonus-coins', { redis, secret: testSecret, now });
+      const result = await redeemRewardToken(token, 'bonus-pins', { redis, secret: testSecret, now });
       assert.equal(result.telegramUserId, userId);
 
-      const usage = await getRewardDailyCapUsage(userId, 'bonus-coins', { redis, secret: testSecret, now });
+      const usage = await getRewardDailyCapUsage(userId, 'bonus-pins', { redis, secret: testSecret, now });
       assert.equal(usage.used, 1);
       assert.equal(usage.remaining, 4);
 
@@ -142,19 +142,19 @@ describe('Phase 8 Prompt 01: Reward-Token Infrastructure', () => {
     it('rejects a second redemption attempt on the exact same token', async () => {
       const userId = 2002;
       const now = new Date('2026-09-08T10:00:00.000Z');
-      const token = await issueRewardToken(userId, 'bonus-coins', { redis, secret: testSecret, now });
+      const token = await issueRewardToken(userId, 'bonus-pins', { redis, secret: testSecret, now });
 
-      const res1 = await redeemRewardToken(token, 'bonus-coins', { redis, secret: testSecret, now });
+      const res1 = await redeemRewardToken(token, 'bonus-pins', { redis, secret: testSecret, now });
       assert.equal(res1.telegramUserId, userId);
 
       await assert.rejects(
         async () => {
-          await redeemRewardToken(token, 'bonus-coins', { redis, secret: testSecret, now });
+          await redeemRewardToken(token, 'bonus-pins', { redis, secret: testSecret, now });
         },
         RewardTokenAlreadyRedeemedError,
       );
 
-      const usage = await getRewardDailyCapUsage(userId, 'bonus-coins', { redis, secret: testSecret, now });
+      const usage = await getRewardDailyCapUsage(userId, 'bonus-pins', { redis, secret: testSecret, now });
       assert.equal(usage.used, 1);
     });
   });
@@ -168,7 +168,7 @@ describe('Phase 8 Prompt 01: Reward-Token Infrastructure', () => {
         {
           jti,
           telegramUserId: userId,
-          rewardType: 'bonus-coins',
+          rewardType: 'bonus-pins',
         },
         testSecret,
         {
@@ -181,32 +181,32 @@ describe('Phase 8 Prompt 01: Reward-Token Infrastructure', () => {
 
       await assert.rejects(
         async () => {
-          await redeemRewardToken(expiredToken, 'bonus-coins', { redis, secret: testSecret });
+          await redeemRewardToken(expiredToken, 'bonus-pins', { redis, secret: testSecret });
         },
         ExpiredRewardTokenError,
       );
 
-      const usage = await getRewardDailyCapUsage(userId, 'bonus-coins', { redis, secret: testSecret });
+      const usage = await getRewardDailyCapUsage(userId, 'bonus-pins', { redis, secret: testSecret });
       assert.equal(usage.used, 0);
     });
 
     it('rejects malformed or tampered tokens', async () => {
       await assert.rejects(
         async () => {
-          await redeemRewardToken('not-a-valid-token-format', 'bonus-coins', { redis, secret: testSecret });
+          await redeemRewardToken('not-a-valid-token-format', 'bonus-pins', { redis, secret: testSecret });
         },
         InvalidRewardTokenError,
       );
 
       const forgedToken = jwt.sign(
-        { jti: 'forged', telegramUserId: 3002, rewardType: 'bonus-coins' },
+        { jti: 'forged', telegramUserId: 3002, rewardType: 'bonus-pins' },
         'wrong-secret-signature',
         { expiresIn: '120s', algorithm: 'HS256' },
       );
 
       await assert.rejects(
         async () => {
-          await redeemRewardToken(forgedToken, 'bonus-coins', { redis, secret: testSecret });
+          await redeemRewardToken(forgedToken, 'bonus-pins', { redis, secret: testSecret });
         },
         InvalidRewardTokenError,
       );
@@ -214,17 +214,17 @@ describe('Phase 8 Prompt 01: Reward-Token Infrastructure', () => {
   });
 
   describe('Reward type mismatch protection', () => {
-    it('rejects redeeming a streak-save token as bonus-coins', async () => {
+    it('rejects redeeming a streak-save token as bonus-pins', async () => {
       const userId = 4001;
       const streakToken = await issueRewardToken(userId, 'streak-save', { redis, secret: testSecret });
 
       await assert.rejects(
         async () => {
-          await redeemRewardToken(streakToken, 'bonus-coins', { redis, secret: testSecret });
+          await redeemRewardToken(streakToken, 'bonus-pins', { redis, secret: testSecret });
         },
         (err: unknown) => {
           assert.ok(err instanceof RewardTypeMismatchError);
-          assert.equal(err.expectedRewardType, 'bonus-coins');
+          assert.equal(err.expectedRewardType, 'bonus-pins');
           assert.equal(err.actualRewardType, 'streak-save');
           return true;
         },
@@ -238,11 +238,11 @@ describe('Phase 8 Prompt 01: Reward-Token Infrastructure', () => {
   describe('Real Concurrency Race Condition Test', () => {
     it('allows exactly 1 redemption when two concurrent requests race for the same token', async () => {
       const userId = 5001;
-      const token = await issueRewardToken(userId, 'bonus-coins', { redis, secret: testSecret });
+      const token = await issueRewardToken(userId, 'bonus-pins', { redis, secret: testSecret });
 
       const [resA, resB] = await Promise.allSettled([
-        redeemRewardToken(token, 'bonus-coins', { redis, secret: testSecret }),
-        redeemRewardToken(token, 'bonus-coins', { redis, secret: testSecret }),
+        redeemRewardToken(token, 'bonus-pins', { redis, secret: testSecret }),
+        redeemRewardToken(token, 'bonus-pins', { redis, secret: testSecret }),
       ]);
 
       const fulfilled = [resA, resB].filter((r) => r.status === 'fulfilled');
@@ -262,17 +262,17 @@ describe('Phase 8 Prompt 01: Reward-Token Infrastructure', () => {
         );
       }
 
-      const usage = await getRewardDailyCapUsage(userId, 'bonus-coins', { redis, secret: testSecret });
+      const usage = await getRewardDailyCapUsage(userId, 'bonus-pins', { redis, secret: testSecret });
       assert.equal(usage.used, 1, 'Cap counter must only be incremented once');
     });
 
     it('handles 5 concurrent requests on the same token with exactly 1 winner', async () => {
       const userId = 5002;
-      const token = await issueRewardToken(userId, 'bonus-coins', { redis, secret: testSecret });
+      const token = await issueRewardToken(userId, 'bonus-pins', { redis, secret: testSecret });
 
       const results = await Promise.allSettled(
         Array.from({ length: 5 }).map(() =>
-          redeemRewardToken(token, 'bonus-coins', { redis, secret: testSecret }),
+          redeemRewardToken(token, 'bonus-pins', { redis, secret: testSecret }),
         ),
       );
 
@@ -311,18 +311,18 @@ describe('Phase 8 Prompt 01: Reward-Token Infrastructure', () => {
 
       let issuedToken: string;
       try {
-        issuedToken = await issueRewardToken(6001, 'bonus-coins', { redis, secret: testSecret });
-        await redeemRewardToken(issuedToken, 'bonus-coins', { redis, secret: testSecret });
+        issuedToken = await issueRewardToken(6001, 'bonus-pins', { redis, secret: testSecret });
+        await redeemRewardToken(issuedToken, 'bonus-pins', { redis, secret: testSecret });
 
         try {
-          await redeemRewardToken(issuedToken, 'bonus-coins', { redis, secret: testSecret });
+          await redeemRewardToken(issuedToken, 'bonus-pins', { redis, secret: testSecret });
         } catch {
           void 0;
         }
 
         const streakToken = await issueRewardToken(6001, 'streak-save', { redis, secret: testSecret });
         try {
-          await redeemRewardToken(streakToken, 'bonus-coins', { redis, secret: testSecret });
+          await redeemRewardToken(streakToken, 'bonus-pins', { redis, secret: testSecret });
         } catch {
           void 0;
         }
@@ -339,8 +339,8 @@ describe('Phase 8 Prompt 01: Reward-Token Infrastructure', () => {
         'Raw token string must NOT appear in log output',
       );
 
-      assert.ok(allOutput.includes('[Reward] Issued token: user=6001, type=bonus-coins'));
-      assert.ok(allOutput.includes('[Reward] Redeemed token: user=6001, type=bonus-coins'));
+      assert.ok(allOutput.includes('[Reward] Issued token: user=6001, type=bonus-pins'));
+      assert.ok(allOutput.includes('[Reward] Redeemed token: user=6001, type=bonus-pins'));
       assert.ok(allOutput.includes('already redeemed or expired'));
       assert.ok(allOutput.includes('type mismatch'));
     });
@@ -353,22 +353,22 @@ describe('Phase 8 Prompt 01: Reward-Token Infrastructure', () => {
       const day2 = new Date('2026-09-09T00:01:00.000Z');
 
       for (let i = 0; i < 5; i++) {
-        const token = await issueRewardToken(userId, 'bonus-coins', { redis, secret: testSecret, now: day1 });
-        await redeemRewardToken(token, 'bonus-coins', { redis, secret: testSecret, now: day1 });
+        const token = await issueRewardToken(userId, 'bonus-pins', { redis, secret: testSecret, now: day1 });
+        await redeemRewardToken(token, 'bonus-pins', { redis, secret: testSecret, now: day1 });
       }
 
       await assert.rejects(
         async () => {
-          await issueRewardToken(userId, 'bonus-coins', { redis, secret: testSecret, now: day1 });
+          await issueRewardToken(userId, 'bonus-pins', { redis, secret: testSecret, now: day1 });
         },
         RewardCapReachedError,
       );
 
-      const day2Token = await issueRewardToken(userId, 'bonus-coins', { redis, secret: testSecret, now: day2 });
-      const day2Result = await redeemRewardToken(day2Token, 'bonus-coins', { redis, secret: testSecret, now: day2 });
+      const day2Token = await issueRewardToken(userId, 'bonus-pins', { redis, secret: testSecret, now: day2 });
+      const day2Result = await redeemRewardToken(day2Token, 'bonus-pins', { redis, secret: testSecret, now: day2 });
       assert.equal(day2Result.telegramUserId, userId);
 
-      const day2Usage = await getRewardDailyCapUsage(userId, 'bonus-coins', { redis, secret: testSecret, now: day2 });
+      const day2Usage = await getRewardDailyCapUsage(userId, 'bonus-pins', { redis, secret: testSecret, now: day2 });
       assert.equal(day2Usage.used, 1);
       assert.equal(day2Usage.remaining, 4);
     });

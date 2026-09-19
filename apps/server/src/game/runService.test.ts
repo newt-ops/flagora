@@ -7,7 +7,7 @@ import {
   calculateFlagPoints,
   calculateLeftoverBonus,
   calculateXpEarned,
-  calculateCoinsEarned,
+  calculatePinsEarned,
   calculateLevel,
   getUtcDateString,
   SCORING_CONFIG,
@@ -78,7 +78,7 @@ describe('runService and Variant C scoring with profile progression', () => {
     assert.equal(calculateLeftoverBonus(60000), 600);
   });
 
-  it('calculates progression formulas accurately for xp, coins, and level', () => {
+  it('calculates progression formulas accurately for xp, pins, and level', () => {
     assert.equal(calculateXpEarned(0), 0);
     assert.equal(calculateXpEarned(-10), 0);
     assert.equal(calculateXpEarned(9), 0);
@@ -86,11 +86,11 @@ describe('runService and Variant C scoring with profile progression', () => {
     assert.equal(calculateXpEarned(763), 76);
     assert.equal(calculateXpEarned(1024), 102);
 
-    assert.equal(calculateCoinsEarned(0), 0);
-    assert.equal(calculateCoinsEarned(-1), 0);
-    assert.equal(calculateCoinsEarned(1), 5);
-    assert.equal(calculateCoinsEarned(8), 40);
-    assert.equal(calculateCoinsEarned(10), 50);
+    assert.equal(calculatePinsEarned(0), 0);
+    assert.equal(calculatePinsEarned(-1), 0);
+    assert.equal(calculatePinsEarned(1), 5);
+    assert.equal(calculatePinsEarned(8), 40);
+    assert.equal(calculatePinsEarned(10), 50);
 
     assert.equal(calculateLevel(0), 1);
     assert.equal(calculateLevel(-50), 1);
@@ -332,7 +332,7 @@ describe('runService and Variant C scoring with profile progression', () => {
       firstName: 'Speedy',
       lastName: null,
       photoUrl: null,
-      coins: 50,
+      pins: 50,
       xp: 100,
       level: 1,
       currentStreak: 4,
@@ -355,20 +355,20 @@ describe('runService and Variant C scoring with profile progression', () => {
     const finish1 = await finishRun(start.runId, userId, db);
 
     const expectedXpEarned = Math.floor(finish1.totalScore * PROGRESSION_CONFIG.xpPerScorePoint);
-    const expectedCoinsEarned = 2 * PROGRESSION_CONFIG.coinsPerCorrect;
+    const expectedPinsEarned = 2 * PROGRESSION_CONFIG.pinsPerCorrect;
 
     assert.equal(finish1.correctCount, 2);
     assert.equal(finish1.xpEarned, expectedXpEarned);
-    assert.equal(finish1.coinsEarned, expectedCoinsEarned);
+    assert.equal(finish1.pinsEarned, expectedPinsEarned);
     assert.equal(finish1.newXp, 100 + expectedXpEarned);
-    assert.equal(finish1.newCoins, 50 + expectedCoinsEarned);
+    assert.equal(finish1.newPins, 50 + expectedPinsEarned);
     assert.equal(finish1.newLevel, calculateLevel(100 + expectedXpEarned));
     assert.equal(finish1.bestScore, Math.max(200, finish1.totalScore));
 
     const updatedProfile1 = await profilesCollection.findOne({ telegramUserId: userId });
     assert.ok(updatedProfile1);
     assert.equal(updatedProfile1.xp, 100 + expectedXpEarned);
-    assert.equal(updatedProfile1.coins, 50 + expectedCoinsEarned);
+    assert.equal(updatedProfile1.pins, 50 + expectedPinsEarned);
     assert.equal(updatedProfile1.gamesPlayed, 4);
     assert.equal(updatedProfile1.currentStreak, 4);
     assert.equal(updatedProfile1.longestStreak, 7);
@@ -379,7 +379,7 @@ describe('runService and Variant C scoring with profile progression', () => {
     const updatedProfile2 = await profilesCollection.findOne({ telegramUserId: userId });
     assert.ok(updatedProfile2);
     assert.equal(updatedProfile2.xp, 100 + expectedXpEarned);
-    assert.equal(updatedProfile2.coins, 50 + expectedCoinsEarned);
+    assert.equal(updatedProfile2.pins, 50 + expectedPinsEarned);
     assert.equal(updatedProfile2.gamesPlayed, 4);
     assert.equal(updatedProfile2.currentStreak, 4);
     assert.equal(updatedProfile2.longestStreak, 7);
@@ -392,7 +392,7 @@ describe('runService and Variant C scoring with profile progression', () => {
     const initialProfile: PlayerProfile = {
       telegramUserId: userId,
       firstName: 'BestScoreTester',
-      coins: 0,
+      pins: 0,
       xp: 0,
       level: 1,
       currentStreak: 0,
@@ -452,7 +452,7 @@ describe('runService and Variant C scoring with profile progression', () => {
     const initialProfile: PlayerProfile = {
       telegramUserId: userId,
       firstName: 'LevelUpTester',
-      coins: 0,
+      pins: 0,
       xp: 450,
       level: 1,
       currentStreak: 1,
@@ -491,7 +491,7 @@ describe('runService and Variant C scoring with profile progression', () => {
     const initialProfile: PlayerProfile = {
       telegramUserId: userId,
       firstName: 'ConcurrentTester',
-      coins: 10,
+      pins: 10,
       xp: 100,
       level: 1,
       currentStreak: 2,
@@ -535,12 +535,12 @@ describe('runService and Variant C scoring with profile progression', () => {
     ]);
 
     const totalExpectedXp = 100 + res1.xpEarned + res2.xpEarned;
-    const totalExpectedCoins = 10 + res1.coinsEarned + res2.coinsEarned;
+    const totalExpectedPins = 10 + res1.pinsEarned + res2.pinsEarned;
 
     const finalProfile = await profilesCollection.findOne({ telegramUserId: userId });
     assert.ok(finalProfile);
     assert.equal(finalProfile.xp, totalExpectedXp);
-    assert.equal(finalProfile.coins, totalExpectedCoins);
+    assert.equal(finalProfile.pins, totalExpectedPins);
     assert.equal(finalProfile.gamesPlayed, 3);
     assert.equal(finalProfile.bestScore, 500);
     assert.equal(finalProfile.currentStreak, 2);

@@ -13,8 +13,8 @@ import {
   initReferralCollection,
   registerReferralSignup,
   processReferralOnFirstRun,
-  REFERRAL_INVITER_COIN_REWARD,
-  REFERRAL_NEW_PLAYER_COIN_REWARD,
+  REFERRAL_INVITER_PIN_REWARD,
+  REFERRAL_NEW_PLAYER_PIN_REWARD,
   REFERRAL_DAILY_INVITER_CAP,
 } from './referralService.js';
 import { finishRun } from '../game/runService.js';
@@ -48,7 +48,7 @@ describe('Phase 11 Prompt 04: Referral Abuse Hardening', () => {
         filter: { telegramUserId: number; referredBy?: unknown },
         update: {
           $set?: Record<string, unknown>;
-          $inc?: { coins?: number; referralCount?: number };
+          $inc?: { pins?: number; referralCount?: number };
         },
       ) => {
         const existing = profilesMap.get(filter.telegramUserId);
@@ -63,8 +63,8 @@ describe('Phase 11 Prompt 04: Referral Abuse Hardening', () => {
           Object.assign(updated, update.$set);
         }
         if (update.$inc) {
-          if (update.$inc.coins) {
-            updated.coins = (updated.coins || 0) + update.$inc.coins;
+          if (update.$inc.pins) {
+            updated.pins = (updated.pins || 0) + update.$inc.pins;
           }
           if (update.$inc.referralCount) {
             updated.referralCount = (updated.referralCount || 0) + update.$inc.referralCount;
@@ -174,14 +174,14 @@ describe('Phase 11 Prompt 04: Referral Abuse Hardening', () => {
     } as unknown as Db;
   }
 
-  function createTestPlayer(id: number, coins = 0, gamesPlayed = 0): PlayerProfile {
+  function createTestPlayer(id: number, pins = 0, gamesPlayed = 0): PlayerProfile {
     return {
       telegramUserId: id,
       username: `user_${id}`,
       firstName: `Player ${id}`,
       lastName: null,
       photoUrl: null,
-      coins,
+      pins,
       xp: 0,
       level: 1,
       currentStreak: 0,
@@ -294,7 +294,7 @@ describe('Phase 11 Prompt 04: Referral Abuse Hardening', () => {
     }
   });
 
-  it('signup alone creates pending-first-run referral record and credits zero coins to both parties', async () => {
+  it('signup alone creates pending-first-run referral record and credits zero pins to both parties', async () => {
     const inviterId = 1001;
     const newPlayerId = 2001;
 
@@ -309,11 +309,11 @@ describe('Phase 11 Prompt 04: Referral Abuse Hardening', () => {
     assert.equal(referral.completedAt, null);
 
     const inviterProfile = profilesMap.get(inviterId);
-    assert.equal(inviterProfile?.coins, 250);
+    assert.equal(inviterProfile?.pins, 250);
     assert.equal(inviterProfile?.referralCount, 0);
 
     const newPlayerProfile = profilesMap.get(newPlayerId);
-    assert.equal(newPlayerProfile?.coins, 0);
+    assert.equal(newPlayerProfile?.pins, 0);
     assert.equal(newPlayerProfile?.referredBy, inviterId);
 
     assert.equal(sentNotifications.length, 0);
@@ -336,11 +336,11 @@ describe('Phase 11 Prompt 04: Referral Abuse Hardening', () => {
 
     const newPlayerProfile = profilesMap.get(newPlayerId);
     assert.ok(newPlayerProfile);
-    assert.equal(newPlayerProfile.coins, finishResult.coinsEarned + REFERRAL_NEW_PLAYER_COIN_REWARD);
+    assert.equal(newPlayerProfile.pins, finishResult.pinsEarned + REFERRAL_NEW_PLAYER_PIN_REWARD);
 
     const inviterProfile = profilesMap.get(inviterId);
     assert.ok(inviterProfile);
-    assert.equal(inviterProfile.coins, 100 + REFERRAL_INVITER_COIN_REWARD);
+    assert.equal(inviterProfile.pins, 100 + REFERRAL_INVITER_PIN_REWARD);
     assert.equal(inviterProfile.referralCount, 1);
 
     const savedReferral = referralsMap.get(newPlayerId);
@@ -351,10 +351,10 @@ describe('Phase 11 Prompt 04: Referral Abuse Hardening', () => {
     await new Promise((r) => setTimeout(r, 60));
     assert.equal(sentNotifications.length, 1);
     assert.equal(sentNotifications[0].chatId, inviterId);
-    assert.ok(sentNotifications[0].text.includes('+100 Coins'));
+    assert.ok(sentNotifications[0].text.includes('+100 Pins'));
   });
 
-  it('subsequent runs by the referred player do not award duplicate referral coins', async () => {
+  it('subsequent runs by the referred player do not award duplicate referral pins', async () => {
     const inviterId = 1003;
     const newPlayerId = 2003;
 
@@ -367,19 +367,19 @@ describe('Phase 11 Prompt 04: Referral Abuse Hardening', () => {
     runsMap.set(run1, createTestRun(run1, newPlayerId));
     await finishRun(run1, newPlayerId, db, redis);
 
-    const inviterCoinsAfterRun1 = profilesMap.get(inviterId)?.coins ?? 0;
-    const newPlayerCoinsAfterRun1 = profilesMap.get(newPlayerId)?.coins ?? 0;
-    assert.equal(inviterCoinsAfterRun1, 100);
+    const inviterPinsAfterRun1 = profilesMap.get(inviterId)?.pins ?? 0;
+    const newPlayerPinsAfterRun1 = profilesMap.get(newPlayerId)?.pins ?? 0;
+    assert.equal(inviterPinsAfterRun1, 100);
 
     const run2 = 'run_subsequent_002';
     runsMap.set(run2, createTestRun(run2, newPlayerId));
     const finish2 = await finishRun(run2, newPlayerId, db, redis);
 
-    const inviterCoinsAfterRun2 = profilesMap.get(inviterId)?.coins ?? 0;
-    const newPlayerCoinsAfterRun2 = profilesMap.get(newPlayerId)?.coins ?? 0;
+    const inviterPinsAfterRun2 = profilesMap.get(inviterId)?.pins ?? 0;
+    const newPlayerPinsAfterRun2 = profilesMap.get(newPlayerId)?.pins ?? 0;
 
-    assert.equal(inviterCoinsAfterRun2, 100);
-    assert.equal(newPlayerCoinsAfterRun2, newPlayerCoinsAfterRun1 + finish2.coinsEarned);
+    assert.equal(inviterPinsAfterRun2, 100);
+    assert.equal(newPlayerPinsAfterRun2, newPlayerPinsAfterRun1 + finish2.pinsEarned);
   });
 
   it('enforces per-inviter daily cap of 10: 11th referral awards only new player welcome bonus', async () => {
@@ -397,7 +397,7 @@ describe('Phase 11 Prompt 04: Referral Abuse Hardening', () => {
 
     const inviterAtCap = profilesMap.get(inviterId);
     assert.ok(inviterAtCap);
-    assert.equal(inviterAtCap.coins, REFERRAL_DAILY_INVITER_CAP * REFERRAL_INVITER_COIN_REWARD);
+    assert.equal(inviterAtCap.pins, REFERRAL_DAILY_INVITER_CAP * REFERRAL_INVITER_PIN_REWARD);
     assert.equal(inviterAtCap.referralCount, REFERRAL_DAILY_INVITER_CAP);
 
     const player11Id = 2111;
@@ -409,11 +409,11 @@ describe('Phase 11 Prompt 04: Referral Abuse Hardening', () => {
 
     const player11 = profilesMap.get(player11Id);
     assert.ok(player11);
-    assert.equal(player11.coins, finish11.coinsEarned + REFERRAL_NEW_PLAYER_COIN_REWARD);
+    assert.equal(player11.pins, finish11.pinsEarned + REFERRAL_NEW_PLAYER_PIN_REWARD);
 
     const inviterAfter11 = profilesMap.get(inviterId);
     assert.ok(inviterAfter11);
-    assert.equal(inviterAfter11.coins, REFERRAL_DAILY_INVITER_CAP * REFERRAL_INVITER_COIN_REWARD);
+    assert.equal(inviterAfter11.pins, REFERRAL_DAILY_INVITER_CAP * REFERRAL_INVITER_PIN_REWARD);
     assert.equal(inviterAfter11.referralCount, REFERRAL_DAILY_INVITER_CAP);
 
     const referral11 = referralsMap.get(player11Id);
@@ -435,7 +435,7 @@ describe('Phase 11 Prompt 04: Referral Abuse Hardening', () => {
       await processReferralOnFirstRun(playerId, db, redis, { now: day1 });
     }
 
-    assert.equal(profilesMap.get(inviterId)?.coins, 1000);
+    assert.equal(profilesMap.get(inviterId)?.pins, 1000);
 
     const nextDayPlayerId = 2211;
     profilesMap.set(nextDayPlayerId, createTestPlayer(nextDayPlayerId, 0));
@@ -446,7 +446,7 @@ describe('Phase 11 Prompt 04: Referral Abuse Hardening', () => {
     assert.equal(resultNextDay.creditedNewPlayer, true);
     assert.equal(resultNextDay.creditedInviter, true);
     assert.equal(resultNextDay.inviterCapped, false);
-    assert.equal(profilesMap.get(inviterId)?.coins, 1100);
+    assert.equal(profilesMap.get(inviterId)?.pins, 1100);
   });
 
   it('rejects re-attribution to a second inviter enforcing first-touch-wins', async () => {
@@ -484,8 +484,8 @@ describe('Phase 11 Prompt 04: Referral Abuse Hardening', () => {
     assert.equal(referral.status, 'pending-first-run');
     assert.equal(referral.completedAt, null);
 
-    assert.equal(profilesMap.get(inviterId)?.coins, 500);
-    assert.equal(profilesMap.get(idlePlayerId)?.coins, 0);
+    assert.equal(profilesMap.get(inviterId)?.pins, 500);
+    assert.equal(profilesMap.get(idlePlayerId)?.pins, 0);
     assert.equal(sentNotifications.length, 0);
   });
 

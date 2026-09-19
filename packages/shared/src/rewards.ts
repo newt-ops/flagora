@@ -1,15 +1,15 @@
-export const BONUS_COINS_REWARD_AMOUNT = 50;
-export const BONUS_COINS_DAILY_CAP = 5;
+export const BONUS_PINS_REWARD_AMOUNT = 50;
+export const BONUS_PINS_DAILY_CAP = 5;
 
-export interface BonusCoinsIntentSuccessResponse {
+export interface BonusPinsIntentSuccessResponse {
   ok: true;
   token: string;
-  rewardType: 'bonus-coins';
+  rewardType: 'bonus-pins';
   dailyCap: number;
-  coins: number;
+  pins: number;
 }
 
-export interface BonusCoinsIntentCapReachedResponse {
+export interface BonusPinsIntentCapReachedResponse {
   ok: false;
   error: string;
   message: string;
@@ -18,22 +18,22 @@ export interface BonusCoinsIntentCapReachedResponse {
   resetAtUtc: string;
 }
 
-export type BonusCoinsIntentResponse =
-  | BonusCoinsIntentSuccessResponse
-  | BonusCoinsIntentCapReachedResponse;
+export type BonusPinsIntentResponse =
+  | BonusPinsIntentSuccessResponse
+  | BonusPinsIntentCapReachedResponse;
 
-export interface BonusCoinsRedeemRequest {
+export interface BonusPinsRedeemRequest {
   token: string;
 }
 
-export interface BonusCoinsRedeemSuccessResponse {
+export interface BonusPinsRedeemSuccessResponse {
   ok: true;
-  coinsEarned: number;
-  coins: number;
+  pinsEarned: number;
+  pins: number;
   telegramUserId: number;
 }
 
-export interface BonusCoinsRedeemErrorResponse {
+export interface BonusPinsRedeemErrorResponse {
   error: string;
   message: string;
 }

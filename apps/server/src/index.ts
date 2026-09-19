@@ -26,8 +26,9 @@ import {
 import {
   CosmeticItemNotFoundError,
   ItemAlreadyOwnedError,
-  InsufficientCoinsError,
+  InsufficientPinsError,
   ItemNotOwnedError,
+  RequiresProSubscriptionError,
 } from './shop/shopTypes.js';
 import { getRankStatus, getRankedLeaderboard } from './rank/rankService.js';
 import { getPlayerBadges, initBadgeCollection } from './badge/badgeService.js';
@@ -83,8 +84,8 @@ import {
   type InlineKeyboardButton,
 } from './telegram/telegramService.js';
 import {
-  requestBonusCoinsIntent,
-  redeemBonusCoins,
+  requestBonusPinsIntent,
+  redeemBonusPins,
   getStreakStatus,
   requestStreakSaveIntent,
   redeemStreakSave,
@@ -105,6 +106,9 @@ import {
   initReferralCollection,
   registerReferralSignup,
 } from './referral/referralService.js';
+import { proRouter } from './pro/proRoutes.js';
+import { answerPreCheckoutQuery } from './telegram/telegramService.js';
+import { processSuccessfulPayment } from './subscription/subscriptionService.js';
 
 dotenv.config();
 
@@ -139,6 +143,8 @@ app.use((req, res, next) => {
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
 });
+
+app.use('/api/pro', proRouter);
 
 async function bootstrap() {
   let db;
@@ -590,7 +596,7 @@ async function bootstrap() {
   });
 
   app.post(
-    '/api/rewards/bonus-coins/intent',
+    '/api/rewards/bonus-pins/intent',
     sessionMiddleware,
     rateLimit({ endpoint: 'reward_intent', limit: 20, windowSeconds: 60 }),
     async (req: AuthenticatedSessionRequest, res) => {
@@ -601,7 +607,7 @@ async function bootstrap() {
           return;
         }
 
-        const result = await requestBonusCoinsIntent(telegramUserId, { redis });
+        const result = await requestBonusPinsIntent(telegramUserId, { redis });
         res.status(200).json(result);
       } catch (error) {
         if (error instanceof RewardCapReachedError) {
@@ -622,7 +628,7 @@ async function bootstrap() {
   );
 
   app.post(
-    '/api/rewards/bonus-coins/redeem',
+    '/api/rewards/bonus-pins/redeem',
     sessionMiddleware,
     rateLimit({ endpoint: 'reward_redeem', limit: 20, windowSeconds: 60 }),
     async (req: AuthenticatedSessionRequest, res) => {
@@ -639,7 +645,7 @@ async function bootstrap() {
           return;
         }
 
-        const result = await redeemBonusCoins(token, telegramUserId, db, { redis });
+        const result = await redeemBonusPins(token, telegramUserId, db, { redis });
         res.status(200).json(result);
       } catch (error) {
         if (error instanceof UnauthorizedTokenRedemptionError) {
@@ -823,14 +829,14 @@ async function bootstrap() {
         }
 
         try {
-          if (payload.rewardType === 'bonus-coins') {
-            const result = await redeemBonusCoins(token, telegramUserId, db, { redis });
+          if (payload.rewardType === 'bonus-pins') {
+            const result = await redeemBonusPins(token, telegramUserId, db, { redis });
             res.status(200).json({
               ok: true,
               status: 'redeemed',
-              rewardType: 'bonus-coins',
-              coinsEarned: result.coinsEarned,
-              coins: result.coins,
+              rewardType: 'bonus-pins',
+              pinsEarned: result.pinsEarned,
+              pins: result.pins,
             });
             return;
           }
@@ -936,13 +942,17 @@ async function bootstrap() {
         res.status(400).json({ error: 'Already owned', message: error.message });
         return;
       }
-      if (error instanceof InsufficientCoinsError) {
+      if (error instanceof InsufficientPinsError) {
         res.status(400).json({
-          error: 'Insufficient coins',
+          error: 'Insufficient pins',
           message: error.message,
           required: error.required,
           available: error.available,
         });
+        return;
+      }
+      if (error instanceof RequiresProSubscriptionError) {
+        res.status(403).json({ error: 'Requires Pro', message: error.message });
         return;
       }
       const message = error instanceof Error ? error.message : 'Failed to purchase cosmetic item';
@@ -973,6 +983,10 @@ async function bootstrap() {
       }
       if (error instanceof ItemNotOwnedError) {
         res.status(400).json({ error: 'Not owned', message: error.message });
+        return;
+      }
+      if (error instanceof RequiresProSubscriptionError) {
+        res.status(403).json({ error: 'Requires Pro', message: error.message });
         return;
       }
       const message = error instanceof Error ? error.message : 'Failed to equip cosmetic item';
@@ -1112,7 +1126,7 @@ async function bootstrap() {
             .collection<PlayerProfile>('profiles')
             .findOne({ telegramUserId: Number(fromUser.id) });
           const statsText = profile
-            ? `📊 <b>Your Flagora Stats:</b>\n\n👤 <b>Name:</b> ${getDisplayName(profile)}\n⭐ <b>Level:</b> ${profile.level}\n✨ <b>XP:</b> ${profile.xp}\n🪙 <b>Coins:</b> ${profile.coins}\n🔥 <b>Current Streak:</b> ${profile.currentStreak} days\n🏆 <b>Best Score:</b> ${profile.bestScore}\n🎮 <b>Games Played:</b> ${profile.gamesPlayed}\n👥 <b>Friends Invited:</b> ${profile.referralCount ?? 0}`
+            ? `📊 <b>Your Flagora Stats:</b>\n\n👤 <b>Name:</b> ${getDisplayName(profile)}\n⭐ <b>Level:</b> ${profile.level}\n✨ <b>XP:</b> ${profile.xp}\n🪙 <b>Pins:</b> ${profile.pins}\n🔥 <b>Current Streak:</b> ${profile.currentStreak} days\n🏆 <b>Best Score:</b> ${profile.bestScore}\n🎮 <b>Games Played:</b> ${profile.gamesPlayed}\n👥 <b>Friends Invited:</b> ${profile.referralCount ?? 0}`
             : `📊 <b>Your Flagora Stats:</b>\n\nYou haven't played yet! Tap Launch Flagora to start your journey.`;
           await editTelegramMessage({
             chatId,
@@ -1162,7 +1176,7 @@ async function bootstrap() {
             'Join me on Flagora and test your flag knowledge in live battles! 🚩🌍',
           );
           const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(inviteLink)}&text=${shareText}`;
-          const inviteText = `🎁 <b>Invite Friends & Earn Rewards!</b>\n\nInvite your friends to Flagora and earn <b>+100 Coins</b> 🪙 for each friend who joins!\nYour friend also gets a <b>+50 Coin</b> welcome bonus.\n\n🔗 <b>Your Personal Invite Link:</b>\n<code>${inviteLink}</code>`;
+          const inviteText = `🎁 <b>Invite Friends & Earn Rewards!</b>\n\nInvite your friends to Flagora and earn <b>+100 Pins</b> 🪙 for each friend who joins!\nYour friend also gets a <b>+50 Pin</b> welcome bonus.\n\n🔗 <b>Your Personal Invite Link:</b>\n<code>${inviteLink}</code>`;
           await editTelegramMessage({
             chatId,
             messageId,
@@ -1189,7 +1203,34 @@ async function bootstrap() {
         return;
       }
 
+      if (update?.pre_checkout_query) {
+        const query = update.pre_checkout_query;
+        void answerPreCheckoutQuery(query.id, true);
+        return;
+      }
+
       const message = update?.message;
+
+      if (message?.successful_payment) {
+        const payment = message.successful_payment;
+        const telegramUserId = Number(message.from?.id);
+        const chargeId = payment.telegram_payment_charge_id;
+        if (telegramUserId && chargeId) {
+          try {
+            await processSuccessfulPayment(telegramUserId, chargeId);
+            const profileCol = db.collection<PlayerProfile>('profiles');
+            await profileCol.updateOne(
+              { telegramUserId },
+              { $inc: { pins: 1000 } }
+            );
+          } catch (e) {
+            const errMessage = e instanceof Error ? e.message : String(e);
+            process.stderr.write(`Warning: Failed to process successful payment: ${errMessage}\n`);
+          }
+        }
+        return;
+      }
+
       if (message?.text && typeof message.text === 'string') {
         const chatId = Number(message.chat.id);
         const text = message.text.trim();

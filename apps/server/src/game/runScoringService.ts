@@ -2,7 +2,7 @@ import {
   calculateFlagPoints,
   calculateLeftoverBonus,
   calculateXpEarned,
-  calculateCoinsEarned,
+  calculatePinsEarned,
 } from '@flagora/shared';
 import {
   type GameRun,
@@ -30,7 +30,7 @@ export interface FinalizedRunResult {
   correctCount: number;
   totalScore: number;
   xpEarned: number;
-  coinsEarned: number;
+  pinsEarned: number;
   finishedAt: Date;
 }
 
@@ -87,7 +87,7 @@ export function finalizeRun(
   const correctCount = run.flags.filter((f) => f.correct).length;
   const totalScore = run.runningTotal + leftoverBonus;
   const xpEarned = calculateXpEarned(totalScore);
-  const coinsEarned = calculateCoinsEarned(correctCount);
+  const pinsEarned = calculatePinsEarned(correctCount);
 
   return {
     elapsedMs,
@@ -97,7 +97,7 @@ export function finalizeRun(
     correctCount,
     totalScore,
     xpEarned,
-    coinsEarned,
+    pinsEarned,
     finishedAt: new Date(serverNowMs),
   };
 }

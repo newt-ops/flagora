@@ -7,7 +7,7 @@ import {
   CheckCircle2,
   Swords,
   Zap,
-  Coins,
+  Coins as Pins,
   Globe,
   Sliders,
 } from 'lucide-react';
@@ -125,8 +125,8 @@ export function PlayScreen({
 
         <div className="flex items-center gap-2 shrink-0">
           <div className="flex items-center gap-1.5 rounded-full bg-tg-secondary-bg px-2.5 py-1 text-xs font-bold text-tg-text">
-            <Coins className="h-3.5 w-3.5 text-tg-button" />
-            <span>{profile.coins.toLocaleString()}</span>
+            <Pins className="h-3.5 w-3.5 text-tg-button" />
+            <span>{profile.pins.toLocaleString()}</span>
           </div>
 
           <div className="flex items-center gap-1.5 rounded-full bg-tg-secondary-bg px-2.5 py-1 text-xs font-bold text-tg-text">

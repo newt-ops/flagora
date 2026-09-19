@@ -417,7 +417,7 @@ export async function notifyReferralReward(
   overrides?: TelegramServiceOverrides,
 ): Promise<void> {
   try {
-    const message = `🎉 <b>New Referral Reward!</b>\n<b>${invitedName}</b> joined Flagora with your invite link.\nYou earned <b>+100 Coins</b>! 🪙`;
+    const message = `🎉 <b>New Referral Reward!</b>\n<b>${invitedName}</b> joined Flagora with your invite link.\nYou earned <b>+100 Pins</b>! 🪙`;
     await enqueueTelegramNotification({
       chatId: referrerUserId,
       text: message,
@@ -436,7 +436,7 @@ export interface PublicRewardNotificationOverrides extends TelegramServiceOverri
 }
 
 export async function notifyPublicRewardPayout(
-  rewardType: 'bonus-coins' | 'streak-save',
+  rewardType: 'bonus-pins' | 'streak-save',
   overrides?: PublicRewardNotificationOverrides,
 ): Promise<void> {
   try {
@@ -454,8 +454,8 @@ export async function notifyPublicRewardPayout(
     }
 
     const message =
-      rewardType === 'bonus-coins'
-        ? 'A player just earned 50 bonus coins for watching an ad in Flagora.'
+      rewardType === 'bonus-pins'
+        ? 'A player just earned 50 bonus pins for watching an ad in Flagora.'
         : 'A player just rescued their daily streak by watching an ad in Flagora.';
 
     await enqueueTelegramNotification({
@@ -471,3 +471,70 @@ export async function notifyPublicRewardPayout(
   }
 }
 
+export async function createInvoiceLink(
+  title: string,
+  description: string,
+  payload: string,
+  currency: string,
+  prices: { label: string, amount: number }[],
+  botToken?: string,
+  apiBaseUrl?: string,
+): Promise<string | null> {
+  const token = botToken ?? process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return null;
+  const base = apiBaseUrl ?? process.env.TELEGRAM_API_BASE_URL ?? 'https://api.telegram.org';
+
+  try {
+    const res = await fetch(`${base}/bot${token}/createInvoiceLink`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title,
+        description,
+        payload,
+        provider_token: "",
+        currency,
+        prices,
+      }),
+    });
+    if (!res.ok) {
+      process.stderr.write(`Warning: createInvoiceLink failed: ${await res.text()}\n`);
+      return null;
+    }
+    const data = await res.json();
+    return data.ok ? data.result : null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`Warning: createInvoiceLink error: ${message}\n`);
+    return null;
+  }
+}
+
+export async function answerPreCheckoutQuery(
+  preCheckoutQueryId: string,
+  ok: boolean,
+  errorMessage?: string,
+  botToken?: string,
+  apiBaseUrl?: string,
+): Promise<boolean> {
+  const token = botToken ?? process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return false;
+  const base = apiBaseUrl ?? process.env.TELEGRAM_API_BASE_URL ?? 'https://api.telegram.org';
+
+  try {
+    const res = await fetch(`${base}/bot${token}/answerPreCheckoutQuery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pre_checkout_query_id: preCheckoutQueryId,
+        ok,
+        error_message: errorMessage,
+      }),
+    });
+    return res.ok;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`Warning: answerPreCheckoutQuery error: ${message}\n`);
+    return false;
+  }
+}

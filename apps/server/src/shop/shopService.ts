@@ -10,10 +10,12 @@ import { getCachedCosmeticCatalog, getCachedCosmeticItem } from './cosmeticCache
 import {
   CosmeticItemNotFoundError,
   ItemAlreadyOwnedError,
-  InsufficientCoinsError,
+  InsufficientPinsError,
   ItemNotOwnedError,
   ProfileNotFoundError,
+  RequiresProSubscriptionError,
 } from './shopTypes.js';
+import { hasActiveSubscription } from '../subscription/subscriptionService.js';
 
 export async function getShopCatalog(
   telegramUserId: number,
@@ -57,6 +59,13 @@ export async function purchaseCosmeticItem(
     throw new CosmeticItemNotFoundError();
   }
 
+  if (item.proOnly) {
+    const isPro = await hasActiveSubscription(telegramUserId);
+    if (!isPro) {
+      throw new RequiresProSubscriptionError();
+    }
+  }
+
   const profile = await db.collection<PlayerProfile>('profiles').findOne({ telegramUserId });
   if (!profile) {
     throw new ProfileNotFoundError();
@@ -66,18 +75,18 @@ export async function purchaseCosmeticItem(
     throw new ItemAlreadyOwnedError();
   }
 
-  if (profile.coins < item.price) {
-    throw new InsufficientCoinsError(item.price, profile.coins);
+  if (profile.pins < item.price) {
+    throw new InsufficientPinsError(item.price, profile.pins);
   }
 
   const updateResult = await db.collection<PlayerProfile>('profiles').findOneAndUpdate(
     {
       telegramUserId,
-      coins: { $gte: item.price },
+      pins: { $gte: item.price },
       ownedItemIds: { $ne: itemId },
     },
     {
-      $inc: { coins: -item.price },
+      $inc: { pins: -item.price },
       $addToSet: { ownedItemIds: itemId },
       $set: { updatedAt: new Date() },
     },
@@ -92,16 +101,16 @@ export async function purchaseCosmeticItem(
     if ((refreshed.ownedItemIds ?? []).includes(itemId)) {
       throw new ItemAlreadyOwnedError();
     }
-    if (refreshed.coins < item.price) {
-      throw new InsufficientCoinsError(item.price, refreshed.coins);
+    if (refreshed.pins < item.price) {
+      throw new InsufficientPinsError(item.price, refreshed.pins);
     }
-    throw new InsufficientCoinsError(item.price, refreshed.coins);
+    throw new InsufficientPinsError(item.price, refreshed.pins);
   }
 
   return {
     success: true,
     itemId: item.id,
-    newCoins: updateResult.coins,
+    newPins: updateResult.pins,
     profile: updateResult,
   };
 }
@@ -118,6 +127,13 @@ export async function equipCosmeticItem(
   const item = getCachedCosmeticItem(itemId);
   if (!item) {
     throw new CosmeticItemNotFoundError();
+  }
+
+  if (item.proOnly) {
+    const isPro = await hasActiveSubscription(telegramUserId);
+    if (!isPro) {
+      throw new RequiresProSubscriptionError();
+    }
   }
 
   const profile = await db.collection<PlayerProfile>('profiles').findOne({ telegramUserId });

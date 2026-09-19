@@ -1,23 +1,23 @@
 import { getUtcDateString } from '@flagora/shared';
 import type { AdOutcome } from '../ads/adsgramTypes.js';
 
-export const BONUS_COINS_DEFAULT_CAP = 5;
+export const BONUS_PINS_DEFAULT_CAP = 5;
 
 export function getTodayUtcDateString(now?: Date): string {
   return getUtcDateString(now);
 }
 
-export function getDailyCoinsStorageKey(dateStr?: string): string {
+export function getDailyPinsStorageKey(dateStr?: string): string {
   const d = dateStr || getTodayUtcDateString();
-  return `flagora_coins_ads_${d}`;
+  return `flagora_pins_ads_${d}`;
 }
 
-export function getStoredDailyBonusCoinsCount(dateStr?: string): number {
+export function getStoredDailyBonusPinsCount(dateStr?: string): number {
   if (typeof window === 'undefined' || !window.localStorage) {
     return 0;
   }
   try {
-    const raw = window.localStorage.getItem(getDailyCoinsStorageKey(dateStr));
+    const raw = window.localStorage.getItem(getDailyPinsStorageKey(dateStr));
     if (!raw) return 0;
     const parsed = parseInt(raw, 10);
     return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
@@ -26,13 +26,13 @@ export function getStoredDailyBonusCoinsCount(dateStr?: string): number {
   }
 }
 
-export function setStoredDailyBonusCoinsCount(count: number, dateStr?: string): void {
+export function setStoredDailyBonusPinsCount(count: number, dateStr?: string): void {
   if (typeof window === 'undefined' || !window.localStorage) {
     return;
   }
   try {
     window.localStorage.setItem(
-      getDailyCoinsStorageKey(dateStr),
+      getDailyPinsStorageKey(dateStr),
       String(Math.max(0, count)),
     );
   } catch {
@@ -42,7 +42,7 @@ export function setStoredDailyBonusCoinsCount(count: number, dateStr?: string): 
 
 export function getRemainingBonusAds(
   usedCount: number,
-  dailyCap = BONUS_COINS_DEFAULT_CAP,
+  dailyCap = BONUS_PINS_DEFAULT_CAP,
 ): number {
   return Math.max(0, dailyCap - Math.max(0, usedCount));
 }
@@ -57,7 +57,7 @@ export function getBonusAdsButtonText(
   if (remaining <= 0) {
     return 'Daily cap reached (5/5) • Come back tomorrow';
   }
-  return '+50 Coins • Watch Ad';
+  return '+50 Pins • Watch Ad';
 }
 
 export function getStreakSaveBannerCopy(streak: number): {
@@ -75,8 +75,8 @@ export function formatAdOutcomeFeedback(
 ): { text: string; isSuccess: boolean } | null {
   switch (outcome.status) {
     case 'rewarded':
-      if (outcome.rewardType === 'bonus-coins') {
-        return { text: '+50 Coins earned! 🎉', isSuccess: true };
+      if (outcome.rewardType === 'bonus-pins') {
+        return { text: '+50 Pins earned! 🎉', isSuccess: true };
       }
       return {
         text: 'Streak saved! Play a game today to extend it 🚩',

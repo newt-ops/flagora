@@ -4,7 +4,7 @@ export interface PlayerProfile {
   firstName: string;
   lastName?: string | null;
   photoUrl?: string | null;
-  coins: number;
+  pins: number;
   xp: number;
   level: number;
   currentStreak: number;

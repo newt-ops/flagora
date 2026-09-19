@@ -116,7 +116,7 @@ describe('Ranked Tiers and Battle Rating Backend', () => {
       firstName: `User ${userId}`,
       lastName: null,
       photoUrl: null,
-      coins: 100,
+      pins: 100,
       xp: 0,
       level: 1,
       currentStreak: 0,

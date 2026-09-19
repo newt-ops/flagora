@@ -71,9 +71,9 @@ export interface FinishRunResponse {
   leftoverBonus: number;
   totalScore: number;
   xpEarned: number;
-  coinsEarned: number;
+  pinsEarned: number;
   newXp: number;
-  newCoins: number;
+  newPins: number;
   newLevel: number;
   leveledUp: boolean;
   bestScore: number;

@@ -1,18 +1,18 @@
-import { BONUS_COINS_REWARD_AMOUNT, BONUS_COINS_DAILY_CAP } from '@flagora/shared';
+import { BONUS_PINS_REWARD_AMOUNT, BONUS_PINS_DAILY_CAP } from '@flagora/shared';
 
-export { BONUS_COINS_REWARD_AMOUNT, BONUS_COINS_DAILY_CAP };
+export { BONUS_PINS_REWARD_AMOUNT, BONUS_PINS_DAILY_CAP };
 
-export type RewardType = 'bonus-coins' | 'streak-save';
+export type RewardType = 'bonus-pins' | 'streak-save';
 
 export interface RewardTypeConfig {
   dailyCap: number;
-  rewardCoins?: number;
+  rewardPins?: number;
 }
 
 export const REWARD_CONFIG: Record<RewardType, RewardTypeConfig> = {
-  'bonus-coins': {
-    dailyCap: BONUS_COINS_DAILY_CAP,
-    rewardCoins: BONUS_COINS_REWARD_AMOUNT,
+  'bonus-pins': {
+    dailyCap: BONUS_PINS_DAILY_CAP,
+    rewardPins: BONUS_PINS_REWARD_AMOUNT,
   },
   'streak-save': {
     dailyCap: 1,

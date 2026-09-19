@@ -9,9 +9,9 @@ import { initRedis, closeRedis } from '../db/redis.js';
 import { createRequireSessionMiddleware, type AuthenticatedSessionRequest } from '../session/requireSession.js';
 import { createSessionToken } from '../session/tokens.js';
 import {
-  requestBonusCoinsIntent,
-  redeemBonusCoins,
-} from './bonusCoinsService.js';
+  requestBonusPinsIntent,
+  redeemBonusPins,
+} from './bonusPinsService.js';
 import {
   RewardCapReachedError,
   RewardTokenError,
@@ -21,16 +21,16 @@ import {
   RewardTypeMismatchError,
   InvalidRewardTokenError,
 } from './rewardErrors.js';
-import { BONUS_COINS_REWARD_AMOUNT, BONUS_COINS_DAILY_CAP } from './rewardConfig.js';
+import { BONUS_PINS_REWARD_AMOUNT, BONUS_PINS_DAILY_CAP } from './rewardConfig.js';
 
-describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
+describe('Phase 8 Prompt 02: Bonus Pins Reward', () => {
   let db: Db;
   let redis: RedisClient;
   let server: http.Server;
   let baseUrl: string;
   const profilesMap = new Map<number, PlayerProfile>();
-  const sessionSecret = 'test-secret-bonus-coins-session-key';
-  const rewardSecret = 'test-secret-bonus-coins-reward-key';
+  const sessionSecret = 'test-secret-bonus-pins-session-key';
+  const rewardSecret = 'test-secret-bonus-pins-reward-key';
 
   function createMockDb(): Db {
     const mockCollection = {
@@ -49,15 +49,15 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
       },
       findOneAndUpdate: async (
         filter: { telegramUserId: number },
-        update: { $inc?: { coins?: number }; $set?: Record<string, unknown> },
+        update: { $inc?: { pins?: number }; $set?: Record<string, unknown> },
       ) => {
         const existing = profilesMap.get(filter.telegramUserId);
         if (!existing) {
           return null;
         }
         const updated = { ...existing };
-        if (update.$inc?.coins) {
-          updated.coins = (updated.coins || 0) + update.$inc.coins;
+        if (update.$inc?.pins) {
+          updated.pins = (updated.pins || 0) + update.$inc.pins;
         }
         if (update.$set) {
           Object.assign(updated, update.$set);
@@ -86,7 +86,7 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
     const sessionMiddleware = createRequireSessionMiddleware(sessionSecret);
 
     app.post(
-      '/api/rewards/bonus-coins/intent',
+      '/api/rewards/bonus-pins/intent',
       sessionMiddleware,
       async (req: AuthenticatedSessionRequest, res) => {
         try {
@@ -96,7 +96,7 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
             return;
           }
 
-          const result = await requestBonusCoinsIntent(telegramUserId, { redis, secret: rewardSecret });
+          const result = await requestBonusPinsIntent(telegramUserId, { redis, secret: rewardSecret });
           res.status(200).json(result);
         } catch (error) {
           if (error instanceof RewardCapReachedError) {
@@ -117,7 +117,7 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
     );
 
     app.post(
-      '/api/rewards/bonus-coins/redeem',
+      '/api/rewards/bonus-pins/redeem',
       sessionMiddleware,
       async (req: AuthenticatedSessionRequest, res) => {
         try {
@@ -133,7 +133,7 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
             return;
           }
 
-          const result = await redeemBonusCoins(token, telegramUserId, db, { redis, secret: rewardSecret });
+          const result = await redeemBonusPins(token, telegramUserId, db, { redis, secret: rewardSecret });
           res.status(200).json(result);
         } catch (error) {
           if (error instanceof UnauthorizedTokenRedemptionError) {
@@ -189,11 +189,11 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
     profilesMap.clear();
   });
 
-  async function createTestPlayer(telegramUserId: number, initialCoins = 100): Promise<string> {
+  async function createTestPlayer(telegramUserId: number, initialPins = 100): Promise<string> {
     const profile: PlayerProfile = {
       telegramUserId,
       firstName: `User_${telegramUserId}`,
-      coins: initialCoins,
+      pins: initialPins,
       xp: 0,
       level: 1,
       currentStreak: 0,
@@ -208,11 +208,11 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
     return createSessionToken(telegramUserId, sessionSecret);
   }
 
-  it('successful intent-then-redeem sequence correctly credits exactly 50 coins', async () => {
+  it('successful intent-then-redeem sequence correctly credits exactly 50 pins', async () => {
     const userId = 1001;
     const sessionToken = await createTestPlayer(userId, 100);
 
-    const intentRes = await fetch(`${baseUrl}/api/rewards/bonus-coins/intent`, {
+    const intentRes = await fetch(`${baseUrl}/api/rewards/bonus-pins/intent`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${sessionToken}`,
@@ -224,14 +224,14 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
       ok: boolean;
       token: string;
       dailyCap: number;
-      coins: number;
+      pins: number;
     };
     assert.equal(intentData.ok, true);
     assert.ok(intentData.token);
-    assert.equal(intentData.dailyCap, BONUS_COINS_DAILY_CAP);
-    assert.equal(intentData.coins, BONUS_COINS_REWARD_AMOUNT);
+    assert.equal(intentData.dailyCap, BONUS_PINS_DAILY_CAP);
+    assert.equal(intentData.pins, BONUS_PINS_REWARD_AMOUNT);
 
-    const redeemRes = await fetch(`${baseUrl}/api/rewards/bonus-coins/redeem`, {
+    const redeemRes = await fetch(`${baseUrl}/api/rewards/bonus-pins/redeem`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -243,30 +243,30 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
     assert.equal(redeemRes.status, 200);
     const redeemData = (await redeemRes.json()) as {
       ok: boolean;
-      coinsEarned: number;
-      coins: number;
+      pinsEarned: number;
+      pins: number;
       telegramUserId: number;
     };
     assert.equal(redeemData.ok, true);
-    assert.equal(redeemData.coinsEarned, 50);
-    assert.equal(redeemData.coins, 150);
+    assert.equal(redeemData.pinsEarned, 50);
+    assert.equal(redeemData.pins, 150);
     assert.equal(redeemData.telegramUserId, userId);
 
     const updatedProfile = profilesMap.get(userId);
-    assert.equal(updatedProfile?.coins, 150);
+    assert.equal(updatedProfile?.pins, 150);
   });
 
-  it('attempting to redeem the same token twice credits coins only once and rejects second attempt', async () => {
+  it('attempting to redeem the same token twice credits pins only once and rejects second attempt', async () => {
     const userId = 1002;
     const sessionToken = await createTestPlayer(userId, 50);
 
-    const intentRes = await fetch(`${baseUrl}/api/rewards/bonus-coins/intent`, {
+    const intentRes = await fetch(`${baseUrl}/api/rewards/bonus-pins/intent`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${sessionToken}` },
     });
     const { token } = (await intentRes.json()) as { token: string };
 
-    const firstRedeem = await fetch(`${baseUrl}/api/rewards/bonus-coins/redeem`, {
+    const firstRedeem = await fetch(`${baseUrl}/api/rewards/bonus-pins/redeem`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -276,7 +276,7 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
     });
     assert.equal(firstRedeem.status, 200);
 
-    const secondRedeem = await fetch(`${baseUrl}/api/rewards/bonus-coins/redeem`, {
+    const secondRedeem = await fetch(`${baseUrl}/api/rewards/bonus-pins/redeem`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -290,14 +290,14 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
     assert.equal(secondData.error, 'Token already redeemed');
 
     const updatedProfile = profilesMap.get(userId);
-    assert.equal(updatedProfile?.coins, 100);
+    assert.equal(updatedProfile?.pins, 100);
   });
 
   it('attempting to redeem without ever calling intent is rejected and credits nothing', async () => {
     const userId = 1003;
     const sessionToken = await createTestPlayer(userId, 200);
 
-    const fakeRedeem = await fetch(`${baseUrl}/api/rewards/bonus-coins/redeem`, {
+    const fakeRedeem = await fetch(`${baseUrl}/api/rewards/bonus-pins/redeem`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -311,7 +311,7 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
     assert.equal(fakeData.error, 'Invalid token');
 
     const profile = profilesMap.get(userId);
-    assert.equal(profile?.coins, 200);
+    assert.equal(profile?.pins, 200);
   });
 
   it('rejects 6th intent in the same UTC day with cap-reached response', async () => {
@@ -319,14 +319,14 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
     const sessionToken = await createTestPlayer(userId, 0);
 
     for (let i = 1; i <= 5; i++) {
-      const intentRes = await fetch(`${baseUrl}/api/rewards/bonus-coins/intent`, {
+      const intentRes = await fetch(`${baseUrl}/api/rewards/bonus-pins/intent`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${sessionToken}` },
       });
       assert.equal(intentRes.status, 200);
       const { token } = (await intentRes.json()) as { token: string };
 
-      const redeemRes = await fetch(`${baseUrl}/api/rewards/bonus-coins/redeem`, {
+      const redeemRes = await fetch(`${baseUrl}/api/rewards/bonus-pins/redeem`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -337,7 +337,7 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
       assert.equal(redeemRes.status, 200);
     }
 
-    const sixthIntentRes = await fetch(`${baseUrl}/api/rewards/bonus-coins/intent`, {
+    const sixthIntentRes = await fetch(`${baseUrl}/api/rewards/bonus-pins/intent`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${sessionToken}` },
     });
@@ -357,7 +357,7 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
     assert.ok(sixthData.resetAtUtc);
 
     const profile = profilesMap.get(userId);
-    assert.equal(profile?.coins, 250);
+    assert.equal(profile?.pins, 250);
   });
 
   it('rejects cross-user redemption attempt when user B uses user A token', async () => {
@@ -366,13 +366,13 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
     const tokenA = await createTestPlayer(userA, 100);
     const tokenB = await createTestPlayer(userB, 100);
 
-    const intentRes = await fetch(`${baseUrl}/api/rewards/bonus-coins/intent`, {
+    const intentRes = await fetch(`${baseUrl}/api/rewards/bonus-pins/intent`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${tokenA}` },
     });
     const { token: rewardTokenA } = (await intentRes.json()) as { token: string };
 
-    const stealAttempt = await fetch(`${baseUrl}/api/rewards/bonus-coins/redeem`, {
+    const stealAttempt = await fetch(`${baseUrl}/api/rewards/bonus-pins/redeem`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -387,15 +387,15 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
 
     const profileA = profilesMap.get(userA);
     const profileB = profilesMap.get(userB);
-    assert.equal(profileA?.coins, 100);
-    assert.equal(profileB?.coins, 100);
+    assert.equal(profileA?.pins, 100);
+    assert.equal(profileB?.pins, 100);
   });
 
   it('rejects redeem request with missing or empty token', async () => {
     const userId = 3001;
     const sessionToken = await createTestPlayer(userId, 50);
 
-    const emptyRes = await fetch(`${baseUrl}/api/rewards/bonus-coins/redeem`, {
+    const emptyRes = await fetch(`${baseUrl}/api/rewards/bonus-pins/redeem`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -410,12 +410,12 @@ describe('Phase 8 Prompt 02: Bonus Coins Reward', () => {
   });
 
   it('rejects unauthenticated intent and redeem requests', async () => {
-    const unauthIntent = await fetch(`${baseUrl}/api/rewards/bonus-coins/intent`, {
+    const unauthIntent = await fetch(`${baseUrl}/api/rewards/bonus-pins/intent`, {
       method: 'POST',
     });
     assert.equal(unauthIntent.status, 401);
 
-    const unauthRedeem = await fetch(`${baseUrl}/api/rewards/bonus-coins/redeem`, {
+    const unauthRedeem = await fetch(`${baseUrl}/api/rewards/bonus-pins/redeem`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: 'test' }),

@@ -59,7 +59,7 @@ export async function findOrCreatePlayerProfile(
     firstName: telegramUser.firstName,
     lastName: telegramUser.lastName,
     photoUrl: telegramUser.photoUrl,
-    coins: 0,
+    pins: 0,
     xp: 0,
     level: 1,
     currentStreak: 0,

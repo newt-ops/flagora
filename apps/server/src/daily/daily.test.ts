@@ -185,7 +185,7 @@ describe('daily challenge backend and rules', () => {
     await db.collection<PlayerProfile>('profiles').insertOne({
       telegramUserId: userId,
       firstName: 'DailyTester',
-      coins: 0,
+      pins: 0,
       xp: 0,
       level: 1,
       currentStreak: 0,
@@ -212,7 +212,7 @@ describe('daily challenge backend and rules', () => {
     assert.equal(finishResult.bestScore, 500);
     assert.ok(finishResult.totalScore > 0);
     assert.ok(finishResult.xpEarned > 0);
-    assert.ok(finishResult.coinsEarned > 0);
+    assert.ok(finishResult.pinsEarned > 0);
     assert.equal(finishResult.currentStreak, 1);
 
     const profileAfter = await db.collection<PlayerProfile>('profiles').findOne({ telegramUserId: userId });
@@ -261,7 +261,7 @@ describe('daily challenge backend and rules', () => {
         telegramUserId: userA,
         username: 'alice_daily',
         firstName: 'Alice',
-        coins: 0,
+        pins: 0,
         xp: 0,
         level: 1,
         currentStreak: 0,
@@ -275,7 +275,7 @@ describe('daily challenge backend and rules', () => {
       {
         telegramUserId: userB,
         firstName: 'Bob',
-        coins: 0,
+        pins: 0,
         xp: 0,
         level: 1,
         currentStreak: 0,

@@ -225,7 +225,7 @@ export async function finishRun(
   const totalScore = finalized.totalScore;
 
   const xpEarned = finalized.xpEarned;
-  const coinsEarned = finalized.coinsEarned;
+  const pinsEarned = finalized.pinsEarned;
 
   const claimResult = await collection.findOneAndUpdate(
     { runId, telegramUserId, profileCredited: { $ne: true } },
@@ -267,7 +267,7 @@ export async function finishRun(
   const updateFields: Record<string, unknown> = {
     $inc: {
       xp: xpEarned,
-      coins: coinsEarned,
+      pins: pinsEarned,
       gamesPlayed: 1,
     },
     $set: {
@@ -291,14 +291,14 @@ export async function finishRun(
   );
 
   let newXp = xpEarned;
-  let newCoins = coinsEarned;
+  let newPins = pinsEarned;
   let newLevel = calculateLevel(xpEarned);
   let leveledUp = false;
   let bestScore = isPractice ? totalScore : previousBest;
 
   if (profileUpdate) {
     newXp = profileUpdate.xp;
-    newCoins = profileUpdate.coins;
+    newPins = profileUpdate.pins;
     bestScore = profileUpdate.bestScore;
     newLevel = calculateLevel(newXp);
     const previousLevel = profileUpdate.level;
@@ -320,7 +320,7 @@ export async function finishRun(
   try {
     const referralOutcome = await processReferralOnFirstRun(telegramUserId, db, redis);
     if (referralOutcome?.creditedNewPlayer) {
-      newCoins += 50;
+      newPins += 50;
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -341,9 +341,9 @@ export async function finishRun(
           maxCombo: run.maxCombo,
           leftoverBonus,
           xpEarned,
-          coinsEarned,
+          pinsEarned,
           newXp,
-          newCoins,
+          newPins,
           newLevel,
           leveledUp,
           currentStreak: streakResult.currentStreak,
@@ -451,9 +451,9 @@ export async function finishRun(
     leftoverBonus,
     totalScore,
     xpEarned,
-    coinsEarned,
+    pinsEarned,
     newXp,
-    newCoins,
+    newPins,
     newLevel,
     leveledUp,
     bestScore,

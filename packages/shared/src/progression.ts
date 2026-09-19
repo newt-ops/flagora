@@ -1,12 +1,12 @@
 export interface ProgressionConfig {
   xpPerScorePoint: number;
-  coinsPerCorrect: number;
+  pinsPerCorrect: number;
   xpPerLevel: number;
 }
 
 export const PROGRESSION_CONFIG: ProgressionConfig = {
   xpPerScorePoint: 0.1,
-  coinsPerCorrect: 5,
+  pinsPerCorrect: 5,
   xpPerLevel: 500,
 };
 
@@ -17,11 +17,11 @@ export function calculateXpEarned(totalScore: number): number {
   return Math.floor(totalScore * PROGRESSION_CONFIG.xpPerScorePoint);
 }
 
-export function calculateCoinsEarned(correctCount: number): number {
+export function calculatePinsEarned(correctCount: number): number {
   if (correctCount <= 0) {
     return 0;
   }
-  return correctCount * PROGRESSION_CONFIG.coinsPerCorrect;
+  return correctCount * PROGRESSION_CONFIG.pinsPerCorrect;
 }
 
 export function calculateLevel(totalXp: number): number {

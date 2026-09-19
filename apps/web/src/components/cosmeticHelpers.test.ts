@@ -60,31 +60,31 @@ describe('cosmeticHelpers', () => {
   });
 
   describe('getItemAffordability', () => {
-    it('returns canAfford true when player has exact price in coins', () => {
+    it('returns canAfford true when player has exact price in pins', () => {
       const result = getItemAffordability(150, 150);
       assert.equal(result.canAfford, true);
-      assert.equal(result.coinsNeeded, 0);
+      assert.equal(result.pinsNeeded, 0);
       assert.equal(result.reasonText, null);
     });
 
-    it('returns canAfford true when player has more than price in coins', () => {
+    it('returns canAfford true when player has more than price in pins', () => {
       const result = getItemAffordability(500, 150);
       assert.equal(result.canAfford, true);
-      assert.equal(result.coinsNeeded, 0);
+      assert.equal(result.pinsNeeded, 0);
       assert.equal(result.reasonText, null);
     });
 
-    it('returns canAfford false with accurate reason when player is short on coins', () => {
+    it('returns canAfford false with accurate reason when player is short on pins', () => {
       const result = getItemAffordability(100, 250);
       assert.equal(result.canAfford, false);
-      assert.equal(result.coinsNeeded, 150);
+      assert.equal(result.pinsNeeded, 150);
       assert.equal(result.reasonText, 'Need 150 more 🪙');
     });
 
-    it('handles negative or zero coin edge cases gracefully', () => {
+    it('handles negative or zero pin edge cases gracefully', () => {
       const result = getItemAffordability(-10, 100);
       assert.equal(result.canAfford, false);
-      assert.equal(result.coinsNeeded, 100);
+      assert.equal(result.pinsNeeded, 100);
       assert.equal(result.reasonText, 'Need 100 more 🪙');
     });
   });
@@ -108,6 +108,7 @@ describe('cosmeticHelpers', () => {
           price: 100,
           isOwned: false,
           isEquipped: false,
+          rarity: 'common',
         },
         {
           id: 'theme-midnight-ocean',
@@ -117,6 +118,7 @@ describe('cosmeticHelpers', () => {
           price: 150,
           isOwned: true,
           isEquipped: true,
+          rarity: 'common',
         },
         {
           id: 'banner-aurora-borealis',
@@ -126,6 +128,7 @@ describe('cosmeticHelpers', () => {
           price: 100,
           isOwned: false,
           isEquipped: false,
+          rarity: 'common',
         },
       ];
 

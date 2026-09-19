@@ -7,11 +7,11 @@ import {
   getBonusAdsButtonText,
   getStreakSaveBannerCopy,
   formatAdOutcomeFeedback,
-  getDailyCoinsStorageKey,
-  getStoredDailyBonusCoinsCount,
-  setStoredDailyBonusCoinsCount,
+  getDailyPinsStorageKey,
+  getStoredDailyBonusPinsCount,
+  setStoredDailyBonusPinsCount,
   getTodayUtcDateString,
-  BONUS_COINS_DEFAULT_CAP,
+  BONUS_PINS_DEFAULT_CAP,
 } from '../components/rewardUiHelpers.js';
 import { StreakSaveBanner } from '../components/StreakSaveBanner.js';
 import { ProfileCard } from '../components/ProfileCard.js';
@@ -55,7 +55,7 @@ describe('Phase 8 Prompt 05: Reward UI Entry Points', () => {
     firstName: 'Test',
     lastName: 'Player',
     photoUrl: null,
-    coins: 250,
+    pins: 250,
     xp: 1500,
     level: 3,
     bestScore: 850,
@@ -68,27 +68,27 @@ describe('Phase 8 Prompt 05: Reward UI Entry Points', () => {
     updatedAt: '2026-09-06T00:00:00.000Z',
   };
 
-  describe('Bonus Coins UI State & Helpers', () => {
+  describe('Bonus Pins UI State & Helpers', () => {
     it('initializes with 5 remaining ads and 0 used in storage', () => {
-      const todayKey = getDailyCoinsStorageKey();
-      assert.equal(getStoredDailyBonusCoinsCount(), 0);
+      const todayKey = getDailyPinsStorageKey();
+      assert.equal(getStoredDailyBonusPinsCount(), 0);
       assert.equal(getRemainingBonusAds(0), 5);
-      assert.equal(getBonusAdsButtonText(5, false), '+50 Coins • Watch Ad');
+      assert.equal(getBonusAdsButtonText(5, false), '+50 Pins • Watch Ad');
       assert.equal(mockStorage[todayKey], undefined);
     });
 
     it('decrements remaining count as ads are stored', () => {
-      setStoredDailyBonusCoinsCount(1);
-      assert.equal(getStoredDailyBonusCoinsCount(), 1);
+      setStoredDailyBonusPinsCount(1);
+      assert.equal(getStoredDailyBonusPinsCount(), 1);
       assert.equal(getRemainingBonusAds(1), 4);
-      assert.equal(getBonusAdsButtonText(4, false), '+50 Coins • Watch Ad');
+      assert.equal(getBonusAdsButtonText(4, false), '+50 Pins • Watch Ad');
 
-      setStoredDailyBonusCoinsCount(3);
-      assert.equal(getStoredDailyBonusCoinsCount(), 3);
+      setStoredDailyBonusPinsCount(3);
+      assert.equal(getStoredDailyBonusPinsCount(), 3);
       assert.equal(getRemainingBonusAds(3), 2);
 
-      setStoredDailyBonusCoinsCount(5);
-      assert.equal(getStoredDailyBonusCoinsCount(), 5);
+      setStoredDailyBonusPinsCount(5);
+      assert.equal(getStoredDailyBonusPinsCount(), 5);
       assert.equal(getRemainingBonusAds(5), 0);
       assert.equal(
         getBonusAdsButtonText(0, false),
@@ -103,24 +103,24 @@ describe('Phase 8 Prompt 05: Reward UI Entry Points', () => {
 
     it('clamps remaining ads to 0 when count exceeds cap', () => {
       assert.equal(getRemainingBonusAds(10), 0);
-      assert.equal(getRemainingBonusAds(-1), BONUS_COINS_DEFAULT_CAP);
+      assert.equal(getRemainingBonusAds(-1), BONUS_PINS_DEFAULT_CAP);
     });
 
     it('formats positive feedback upon rewarded outcome', () => {
       const outcome: AdOutcome = {
         status: 'rewarded',
-        rewardType: 'bonus-coins',
+        rewardType: 'bonus-pins',
         data: {
           ok: true,
-          coinsEarned: 50,
-          coins: 300,
+          pinsEarned: 50,
+          pins: 300,
           telegramUserId: 1234567,
         },
       };
 
       const feedback = formatAdOutcomeFeedback(outcome);
       assert.deepEqual(feedback, {
-        text: '+50 Coins earned! 🎉',
+        text: '+50 Pins earned! 🎉',
         isSuccess: true,
       });
     });
@@ -128,16 +128,16 @@ describe('Phase 8 Prompt 05: Reward UI Entry Points', () => {
     it('formats cap reached feedback with backend message', () => {
       const outcome: AdOutcome = {
         status: 'cap_reached',
-        rewardType: 'bonus-coins',
+        rewardType: 'bonus-pins',
         dailyCap: 5,
         usedCount: 5,
         resetAtUtc: '2026-09-09T00:00:00.000Z',
-        message: 'Daily bonus coins limit reached (5/5). Resets at 00:00 UTC.',
+        message: 'Daily bonus pins limit reached (5/5). Resets at 00:00 UTC.',
       };
 
       const feedback = formatAdOutcomeFeedback(outcome);
       assert.deepEqual(feedback, {
-        text: 'Daily bonus coins limit reached (5/5). Resets at 00:00 UTC.',
+        text: 'Daily bonus pins limit reached (5/5). Resets at 00:00 UTC.',
         isSuccess: false,
       });
     });
@@ -145,7 +145,7 @@ describe('Phase 8 Prompt 05: Reward UI Entry Points', () => {
     it('formats skipped feedback without error panic', () => {
       const outcome: AdOutcome = {
         status: 'skipped',
-        rewardType: 'bonus-coins',
+        rewardType: 'bonus-pins',
         message: 'Ad was skipped',
       };
 
@@ -159,7 +159,7 @@ describe('Phase 8 Prompt 05: Reward UI Entry Points', () => {
     it('formats unavailable ad feedback with polite retry message', () => {
       const outcome: AdOutcome = {
         status: 'unavailable',
-        rewardType: 'bonus-coins',
+        rewardType: 'bonus-pins',
         message: 'No ad available right now, try again later',
       };
 
@@ -273,7 +273,7 @@ describe('Phase 8 Prompt 05: Reward UI Entry Points', () => {
   });
 
   describe('ProfileCard Reward Section Rendering', () => {
-    it('renders ProfileCard with bonus coins elements and streak banner when at risk', () => {
+    it('renders ProfileCard with bonus pins elements and streak banner when at risk', () => {
       const html = renderToStaticMarkup(
         React.createElement(ProfileCard, {
           profile: dummyProfile,
@@ -287,8 +287,8 @@ describe('Phase 8 Prompt 05: Reward UI Entry Points', () => {
         }),
       );
 
-      assert.ok(html.includes('Bonus Coins'));
-      assert.ok(html.includes('data-testid="bonus-coins-remaining-badge"'));
+      assert.ok(html.includes('Bonus Pins'));
+      assert.ok(html.includes('data-testid="bonus-pins-remaining-badge"'));
       assert.ok(html.includes('5/5 remaining today'));
       assert.ok(html.includes('data-testid="watch-bonus-ad-button"'));
       assert.ok(html.includes('data-testid="streak-save-banner"'));
@@ -308,7 +308,7 @@ describe('Phase 8 Prompt 05: Reward UI Entry Points', () => {
         }),
       );
 
-      assert.ok(html.includes('Bonus Coins'));
+      assert.ok(html.includes('Bonus Pins'));
       assert.ok(html.includes('data-testid="watch-bonus-ad-button"'));
       assert.ok(!html.includes('data-testid="streak-save-banner"'));
     });

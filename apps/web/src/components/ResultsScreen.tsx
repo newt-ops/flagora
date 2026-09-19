@@ -7,7 +7,7 @@ import {
   RotateCcw,
   User,
   Sparkles,
-  Coins,
+  Coins as Pins,
   Flame,
   Share2,
   Award,
@@ -118,10 +118,10 @@ export function ResultsScreen({
 
           <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg p-3">
             <div className="flex items-center gap-1 text-xs text-tg-hint">
-              <Coins className="h-3.5 w-3.5 text-tg-button" />
-              <span>Coins</span>
+              <Pins className="h-3.5 w-3.5 text-tg-button" />
+              <span>Pins</span>
             </div>
-            <p className="mt-1 text-lg font-bold text-tg-text">+{result.coinsEarned}</p>
+            <p className="mt-1 text-lg font-bold text-tg-text">+{result.pinsEarned}</p>
           </div>
 
           <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg p-3">

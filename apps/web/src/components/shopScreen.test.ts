@@ -19,42 +19,47 @@ describe('ShopScreen Logic', () => {
       price: 100,
       isOwned: true,
       isEquipped: true,
+      rarity: 'common',
     },
     {
       id: 'frame-amber-gold',
       category: 'avatarFrame',
-      name: 'Golden Radiance',
+      name: 'Amber Gold Frame',
       cssVars: {},
-      price: 150,
+      price: 300,
       isOwned: true,
       isEquipped: false,
+      rarity: 'common',
     },
     {
-      id: 'frame-crimson-blaze',
+      id: 'frame-neon-cyan',
       category: 'avatarFrame',
-      name: 'Crimson Flame',
+      name: 'Neon Cyan Frame',
       cssVars: {},
-      price: 250,
+      price: 150,
       isOwned: false,
       isEquipped: false,
+      rarity: 'common',
     },
     {
       id: 'theme-midnight-ocean',
       category: 'flagTheme',
-      name: 'Midnight Ocean',
+      name: 'Midnight Ocean Theme',
       cssVars: {},
-      price: 150,
+      price: 250,
       isOwned: false,
       isEquipped: false,
+      rarity: 'common',
     },
     {
       id: 'banner-aurora-borealis',
       category: 'profileBanner',
-      name: 'Northern Aurora',
+      name: 'Aurora Borealis Banner',
       cssVars: {},
-      price: 200,
+      price: 150,
       isOwned: false,
       isEquipped: false,
+      rarity: 'common',
     },
   ];
 
@@ -66,7 +71,7 @@ describe('ShopScreen Logic', () => {
   });
 
   it('correctly distinguishes equipped, owned, affordable, and unaffordable items', () => {
-    const playerCoins = 180;
+    const playerPins = 180;
     const grouped = groupCatalogByCategory(mockCatalog);
     const frames = grouped.avatarFrame;
 
@@ -83,19 +88,19 @@ describe('ShopScreen Logic', () => {
     const unownedItem = frames.find((i) => i.id === 'frame-crimson-blaze');
     assert.ok(unownedItem);
     assert.equal(unownedItem.isOwned, false);
-    const affordability = getItemAffordability(playerCoins, unownedItem.price);
+    const affordability = getItemAffordability(playerPins, unownedItem.price);
     assert.equal(affordability.canAfford, false);
-    assert.equal(affordability.coinsNeeded, 70);
+    assert.equal(affordability.pinsNeeded, 70);
     assert.equal(affordability.reasonText, 'Need 70 more 🪙');
   });
 
   it('correctly calculates affordability for items player can purchase', () => {
-    const playerCoins = 180;
+    const playerPins = 180;
     const affordableTheme = mockCatalog.find((i) => i.id === 'theme-midnight-ocean');
     assert.ok(affordableTheme);
-    const affordability = getItemAffordability(playerCoins, affordableTheme.price);
+    const affordability = getItemAffordability(playerPins, affordableTheme.price);
     assert.equal(affordability.canAfford, true);
-    assert.equal(affordability.coinsNeeded, 0);
+    assert.equal(affordability.pinsNeeded, 0);
     assert.equal(affordability.reasonText, null);
   });
 

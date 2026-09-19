@@ -1,6 +1,6 @@
 import {
-  requestBonusCoinsIntent,
-  redeemBonusCoins,
+  requestBonusPinsIntent,
+  redeemBonusPins,
   requestStreakSaveIntent,
   redeemStreakSave,
   RewardCapReachedApiError,
@@ -109,8 +109,8 @@ export async function showRewardedAd(
   let intentToken: string;
 
   try {
-    if (rewardType === 'bonus-coins') {
-      const intent = await requestBonusCoinsIntent(sessionToken);
+    if (rewardType === 'bonus-pins') {
+      const intent = await requestBonusPinsIntent(sessionToken);
       intentToken = intent.token;
     } else {
       const intent = await requestStreakSaveIntent(sessionToken);
@@ -244,11 +244,11 @@ export async function showRewardedAd(
   }
 
   try {
-    if (rewardType === 'bonus-coins') {
-      const data = await redeemBonusCoins(sessionToken, intentToken);
+    if (rewardType === 'bonus-pins') {
+      const data = await redeemBonusPins(sessionToken, intentToken);
       return {
         status: 'rewarded',
-        rewardType: 'bonus-coins',
+        rewardType: 'bonus-pins',
         data,
       };
     }

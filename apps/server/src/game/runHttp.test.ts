@@ -300,9 +300,9 @@ describe('run HTTP endpoints', () => {
     const finishBody = await finishRes.json();
     assert.equal(typeof finishBody.totalScore, 'number');
     assert.equal(typeof finishBody.xpEarned, 'number');
-    assert.equal(typeof finishBody.coinsEarned, 'number');
+    assert.equal(typeof finishBody.pinsEarned, 'number');
     assert.equal(typeof finishBody.newXp, 'number');
-    assert.equal(typeof finishBody.newCoins, 'number');
+    assert.equal(typeof finishBody.newPins, 'number');
     assert.equal(typeof finishBody.newLevel, 'number');
     assert.equal(typeof finishBody.bestScore, 'number');
 

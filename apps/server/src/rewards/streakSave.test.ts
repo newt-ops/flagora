@@ -385,7 +385,7 @@ describe('Phase 8 Prompt 03: Streak-Save Reward Backend', () => {
       firstName: `User ${telegramUserId}`,
       lastName: null,
       photoUrl: null,
-      coins: 100,
+      pins: 100,
       xp: 50,
       level: 1,
       currentStreak: 0,
@@ -686,11 +686,11 @@ describe('Phase 8 Prompt 03: Streak-Save Reward Backend', () => {
       assert.equal(data.error, 'Forbidden');
     });
 
-    it('returns 400 when attempting to redeem bonus-coins token as streak-save', async () => {
+    it('returns 400 when attempting to redeem bonus-pins token as streak-save', async () => {
       const userId = 7205;
       seedProfile(userId, { currentStreak: 5, lastPlayedDate: '2020-01-01' });
 
-      const bonusToken = await issueRewardToken(userId, 'bonus-coins', {
+      const bonusToken = await issueRewardToken(userId, 'bonus-pins', {
         redis,
         secret: rewardSecret,
       });

@@ -241,7 +241,7 @@ describe('battle invite, view, join and room presence', () => {
       username: 'alice_flags',
       firstName: 'Alice',
       photoUrl: 'https://example.com/alice.jpg',
-      coins: 100,
+      pins: 100,
       xp: 200,
       level: 2,
       currentStreak: 1,
@@ -420,7 +420,7 @@ describe('battle invite, view, join and room presence', () => {
         telegramUserId: challengerId,
         username: 'challenger_pro',
         firstName: 'Challenger',
-        coins: 10,
+        pins: 10,
         xp: 10,
         level: 1,
         currentStreak: 1,
@@ -435,7 +435,7 @@ describe('battle invite, view, join and room presence', () => {
         telegramUserId: opponentId,
         username: 'opponent_ace',
         firstName: 'Opponent',
-        coins: 20,
+        pins: 20,
         xp: 20,
         level: 1,
         currentStreak: 2,
@@ -835,7 +835,7 @@ describe('battle invite, view, join and room presence', () => {
       assert.equal(finalized.totalScore, 900);
       assert.equal(finalized.correctCount, 2);
       assert.ok(finalized.xpEarned > 0);
-      assert.ok(finalized.coinsEarned > 0);
+      assert.ok(finalized.pinsEarned > 0);
     });
   });
 
@@ -848,7 +848,7 @@ describe('battle invite, view, join and room presence', () => {
           username: `challenger_${challengerId}`,
           displayName: `Challenger ${challengerId}`,
           xp: 0,
-          coins: 0,
+          pins: 0,
           level: 1,
           bestScore: 0,
           gamesPlayed: 0,
@@ -860,7 +860,7 @@ describe('battle invite, view, join and room presence', () => {
           username: `opponent_${opponentId}`,
           displayName: `Opponent ${opponentId}`,
           xp: 0,
-          coins: 0,
+          pins: 0,
           level: 1,
           bestScore: 0,
           gamesPlayed: 0,
@@ -933,7 +933,7 @@ describe('battle invite, view, join and room presence', () => {
         telegramUserId: soloUserId,
         displayName: 'Solo Player',
         xp: 0,
-        coins: 0,
+        pins: 0,
         level: 1,
         bestScore: 0,
         gamesPlayed: 0,
@@ -1137,7 +1137,7 @@ describe('battle invite, view, join and room presence', () => {
           username: `challenger_${challengerId}`,
           displayName: `Challenger ${challengerId}`,
           xp: 0,
-          coins: 0,
+          pins: 0,
           level: 1,
           bestScore: 0,
           gamesPlayed: 0,
@@ -1149,7 +1149,7 @@ describe('battle invite, view, join and room presence', () => {
           username: `opponent_${opponentId}`,
           displayName: `Opponent ${opponentId}`,
           xp: 0,
-          coins: 0,
+          pins: 0,
           level: 1,
           bestScore: 0,
           gamesPlayed: 0,
@@ -1332,7 +1332,7 @@ describe('battle invite, view, join and room presence', () => {
         lastName: 'Player',
         username: 'progression_player',
         xp: 100,
-        coins: 50,
+        pins: 50,
         level: 1,
         currentStreak: 0,
         longestStreak: 0,
@@ -1375,7 +1375,7 @@ describe('battle invite, view, join and room presence', () => {
       assert.ok(updatedProfile);
       assert.equal(updatedProfile.bestScore, 500);
       assert.ok(updatedProfile.xp > 100);
-      assert.ok(updatedProfile.coins > 50);
+      assert.ok(updatedProfile.pins > 50);
       assert.equal(updatedProfile.gamesPlayed, 3);
     });
 

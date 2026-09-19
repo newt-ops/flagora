@@ -16,8 +16,8 @@ import type {
   BattleInfoResponse,
   JoinBattleResponse,
   StreakStatusResponse,
-  BonusCoinsIntentSuccessResponse,
-  BonusCoinsRedeemSuccessResponse,
+  BonusPinsIntentSuccessResponse,
+  BonusPinsRedeemSuccessResponse,
   StreakSaveIntentSuccessResponse,
   StreakSaveRedeemSuccessResponse,
   ShopCatalogResponse,
@@ -564,10 +564,10 @@ export async function getStreakStatus(
   return response.json();
 }
 
-export async function requestBonusCoinsIntent(
+export async function requestBonusPinsIntent(
   sessionToken: string,
-): Promise<BonusCoinsIntentSuccessResponse> {
-  const response = await fetch(`${API_URL}/api/rewards/bonus-coins/intent`, {
+): Promise<BonusPinsIntentSuccessResponse> {
+  const response = await fetch(`${API_URL}/api/rewards/bonus-pins/intent`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${sessionToken}`,
@@ -575,7 +575,7 @@ export async function requestBonusCoinsIntent(
   });
 
   if (!response.ok) {
-    let message = `Failed to request bonus coins intent: status ${response.status}`;
+    let message = `Failed to request bonus pins intent: status ${response.status}`;
     let body: RewardErrorPayload | null = null;
     try {
       body = await response.json();
@@ -601,11 +601,11 @@ export async function requestBonusCoinsIntent(
   return response.json();
 }
 
-export async function redeemBonusCoins(
+export async function redeemBonusPins(
   sessionToken: string,
   token: string,
-): Promise<BonusCoinsRedeemSuccessResponse> {
-  const response = await fetch(`${API_URL}/api/rewards/bonus-coins/redeem`, {
+): Promise<BonusPinsRedeemSuccessResponse> {
+  const response = await fetch(`${API_URL}/api/rewards/bonus-pins/redeem`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -615,7 +615,7 @@ export async function redeemBonusCoins(
   });
 
   if (!response.ok) {
-    let message = `Failed to redeem bonus coins: status ${response.status}`;
+    let message = `Failed to redeem bonus pins: status ${response.status}`;
     try {
       const data: RewardErrorPayload = await response.json();
       if (data?.message) {

@@ -75,7 +75,7 @@ describe('Phase 8 Prompt 04: AdsGram SDK Integration', () => {
     return { controller, get showCalls() { return showCalls; } };
   }
 
-  it('successful bonus-coins ad watch requests intent, shows ad, and redeems token', async () => {
+  it('successful bonus-pins ad watch requests intent, shows ad, and redeems token', async () => {
     const mockController = createMockController({
       resolveWith: {
         done: true,
@@ -86,24 +86,24 @@ describe('Phase 8 Prompt 04: AdsGram SDK Integration', () => {
     });
 
     fetchHandler = async (url) => {
-      if (url.includes('/api/rewards/bonus-coins/intent')) {
+      if (url.includes('/api/rewards/bonus-pins/intent')) {
         return new Response(
           JSON.stringify({
             ok: true,
             token: 'test-reward-token-abc',
-            rewardType: 'bonus-coins',
+            rewardType: 'bonus-pins',
             dailyCap: 5,
-            coins: 50,
+            pins: 50,
           }),
           { status: 200 },
         );
       }
-      if (url.includes('/api/rewards/bonus-coins/redeem')) {
+      if (url.includes('/api/rewards/bonus-pins/redeem')) {
         return new Response(
           JSON.stringify({
             ok: true,
-            coinsEarned: 50,
-            coins: 150,
+            pinsEarned: 50,
+            pins: 150,
             telegramUserId: 1001,
           }),
           { status: 200 },
@@ -112,22 +112,22 @@ describe('Phase 8 Prompt 04: AdsGram SDK Integration', () => {
       return new Response('Not Found', { status: 404 });
     };
 
-    const outcome = await showRewardedAd('bonus-coins', dummySessionToken, {
+    const outcome = await showRewardedAd('bonus-pins', dummySessionToken, {
       controller: mockController.controller,
     });
 
     assert.equal(outcome.status, 'rewarded');
     if (outcome.status === 'rewarded') {
-      assert.equal(outcome.rewardType, 'bonus-coins');
-      assert.equal(outcome.data.coinsEarned, 50);
-      assert.equal(outcome.data.coins, 150);
+      assert.equal(outcome.rewardType, 'bonus-pins');
+      assert.equal(outcome.data.pinsEarned, 50);
+      assert.equal(outcome.data.pins, 150);
       assert.equal(outcome.data.telegramUserId, 1001);
     }
 
     assert.equal(mockController.showCalls, 1);
     assert.equal(fetchCalls.length, 2);
-    assert.ok(fetchCalls[0].url.includes('/api/rewards/bonus-coins/intent'));
-    assert.ok(fetchCalls[1].url.includes('/api/rewards/bonus-coins/redeem'));
+    assert.ok(fetchCalls[0].url.includes('/api/rewards/bonus-pins/intent'));
+    assert.ok(fetchCalls[1].url.includes('/api/rewards/bonus-pins/redeem'));
     assert.deepEqual(fetchCalls[1].body, { token: 'test-reward-token-abc' });
   });
 
@@ -201,14 +201,14 @@ describe('Phase 8 Prompt 04: AdsGram SDK Integration', () => {
     });
 
     fetchHandler = async (url) => {
-      if (url.includes('/api/rewards/bonus-coins/intent')) {
+      if (url.includes('/api/rewards/bonus-pins/intent')) {
         return new Response(
           JSON.stringify({
             ok: true,
             token: 'test-token-to-skip',
-            rewardType: 'bonus-coins',
+            rewardType: 'bonus-pins',
             dailyCap: 5,
-            coins: 50,
+            pins: 50,
           }),
           { status: 200 },
         );
@@ -216,17 +216,17 @@ describe('Phase 8 Prompt 04: AdsGram SDK Integration', () => {
       return new Response('Should not be called', { status: 500 });
     };
 
-    const outcome = await showRewardedAd('bonus-coins', dummySessionToken, {
+    const outcome = await showRewardedAd('bonus-pins', dummySessionToken, {
       controller: mockController.controller,
     });
 
     assert.equal(outcome.status, 'skipped');
-    assert.equal(outcome.rewardType, 'bonus-coins');
+    assert.equal(outcome.rewardType, 'bonus-pins');
     assert.equal(outcome.message, 'Ad was skipped');
 
     assert.equal(mockController.showCalls, 1);
     assert.equal(fetchCalls.length, 1);
-    assert.ok(fetchCalls[0].url.includes('/api/rewards/bonus-coins/intent'));
+    assert.ok(fetchCalls[0].url.includes('/api/rewards/bonus-pins/intent'));
   });
 
   it('ad load failure or no-fill results in zero redeem calls and resolves with unavailable outcome', async () => {
@@ -240,14 +240,14 @@ describe('Phase 8 Prompt 04: AdsGram SDK Integration', () => {
     });
 
     fetchHandler = async (url) => {
-      if (url.includes('/api/rewards/bonus-coins/intent')) {
+      if (url.includes('/api/rewards/bonus-pins/intent')) {
         return new Response(
           JSON.stringify({
             ok: true,
             token: 'test-token-no-fill',
-            rewardType: 'bonus-coins',
+            rewardType: 'bonus-pins',
             dailyCap: 5,
-            coins: 50,
+            pins: 50,
           }),
           { status: 200 },
         );
@@ -255,12 +255,12 @@ describe('Phase 8 Prompt 04: AdsGram SDK Integration', () => {
       return new Response('Should not be called', { status: 500 });
     };
 
-    const outcome = await showRewardedAd('bonus-coins', dummySessionToken, {
+    const outcome = await showRewardedAd('bonus-pins', dummySessionToken, {
       controller: mockController.controller,
     });
 
     assert.equal(outcome.status, 'unavailable');
-    assert.equal(outcome.rewardType, 'bonus-coins');
+    assert.equal(outcome.rewardType, 'bonus-pins');
     assert.equal(outcome.message, 'No ad available right now, try again later');
 
     assert.equal(mockController.showCalls, 1);
@@ -278,14 +278,14 @@ describe('Phase 8 Prompt 04: AdsGram SDK Integration', () => {
     });
 
     fetchHandler = async (url) => {
-      if (url.includes('/api/rewards/bonus-coins/intent')) {
+      if (url.includes('/api/rewards/bonus-pins/intent')) {
         return new Response(
           JSON.stringify({
             ok: true,
             token: 'test-token-playback-err',
-            rewardType: 'bonus-coins',
+            rewardType: 'bonus-pins',
             dailyCap: 5,
-            coins: 50,
+            pins: 50,
           }),
           { status: 200 },
         );
@@ -293,12 +293,12 @@ describe('Phase 8 Prompt 04: AdsGram SDK Integration', () => {
       return new Response('Should not be called', { status: 500 });
     };
 
-    const outcome = await showRewardedAd('bonus-coins', dummySessionToken, {
+    const outcome = await showRewardedAd('bonus-pins', dummySessionToken, {
       controller: mockController.controller,
     });
 
     assert.equal(outcome.status, 'error');
-    assert.equal(outcome.rewardType, 'bonus-coins');
+    assert.equal(outcome.rewardType, 'bonus-pins');
     assert.equal(outcome.message, 'Error during playing ad');
 
     assert.equal(mockController.showCalls, 1);
@@ -316,12 +316,12 @@ describe('Phase 8 Prompt 04: AdsGram SDK Integration', () => {
     });
 
     fetchHandler = async (url) => {
-      if (url.includes('/api/rewards/bonus-coins/intent')) {
+      if (url.includes('/api/rewards/bonus-pins/intent')) {
         return new Response(
           JSON.stringify({
             ok: false,
             error: 'Daily cap reached',
-            message: 'Daily cap reached for bonus coins',
+            message: 'Daily cap reached for bonus pins',
             dailyCap: 5,
             usedCount: 5,
             resetAtUtc: '2026-09-09T00:00:00.000Z',
@@ -332,17 +332,17 @@ describe('Phase 8 Prompt 04: AdsGram SDK Integration', () => {
       return new Response('Should not be called', { status: 500 });
     };
 
-    const outcome = await showRewardedAd('bonus-coins', dummySessionToken, {
+    const outcome = await showRewardedAd('bonus-pins', dummySessionToken, {
       controller: mockController.controller,
     });
 
     assert.equal(outcome.status, 'cap_reached');
     if (outcome.status === 'cap_reached') {
-      assert.equal(outcome.rewardType, 'bonus-coins');
+      assert.equal(outcome.rewardType, 'bonus-pins');
       assert.equal(outcome.dailyCap, 5);
       assert.equal(outcome.usedCount, 5);
       assert.equal(outcome.resetAtUtc, '2026-09-09T00:00:00.000Z');
-      assert.equal(outcome.message, 'Daily cap reached for bonus coins');
+      assert.equal(outcome.message, 'Daily cap reached for bonus pins');
     }
 
     assert.equal(mockController.showCalls, 0);
@@ -390,14 +390,14 @@ describe('Phase 8 Prompt 04: AdsGram SDK Integration', () => {
     (globalThis as unknown as { window?: unknown }).window = {};
 
     fetchHandler = async (url) => {
-      if (url.includes('/api/rewards/bonus-coins/intent')) {
+      if (url.includes('/api/rewards/bonus-pins/intent')) {
         return new Response(
           JSON.stringify({
             ok: true,
             token: 'test-token-no-sdk',
-            rewardType: 'bonus-coins',
+            rewardType: 'bonus-pins',
             dailyCap: 5,
-            coins: 50,
+            pins: 50,
           }),
           { status: 200 },
         );
@@ -405,10 +405,10 @@ describe('Phase 8 Prompt 04: AdsGram SDK Integration', () => {
       return new Response('Should not be called', { status: 500 });
     };
 
-    const outcome = await showRewardedAd('bonus-coins', dummySessionToken);
+    const outcome = await showRewardedAd('bonus-pins', dummySessionToken);
 
     assert.equal(outcome.status, 'unavailable');
-    assert.equal(outcome.rewardType, 'bonus-coins');
+    assert.equal(outcome.rewardType, 'bonus-pins');
     assert.equal(outcome.message, 'No ad available right now, try again later');
     assert.equal(fetchCalls.length, 1);
   });

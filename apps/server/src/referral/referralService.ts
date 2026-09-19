@@ -3,8 +3,8 @@ import type { Redis as RedisClient } from 'ioredis';
 import type { Referral, PlayerProfile } from '@flagora/shared';
 import { notifyReferralReward } from '../telegram/telegramService.js';
 
-export const REFERRAL_INVITER_COIN_REWARD = 100;
-export const REFERRAL_NEW_PLAYER_COIN_REWARD = 50;
+export const REFERRAL_INVITER_PIN_REWARD = 100;
+export const REFERRAL_NEW_PLAYER_PIN_REWARD = 50;
 export const REFERRAL_DAILY_INVITER_CAP = 10;
 
 export async function initReferralCollection(db: Db): Promise<void> {
@@ -87,7 +87,7 @@ export async function processReferralOnFirstRun(
 
   await db.collection<PlayerProfile>('profiles').updateOne(
     { telegramUserId: newPlayerUserId },
-    { $inc: { coins: REFERRAL_NEW_PLAYER_COIN_REWARD } },
+    { $inc: { pins: REFERRAL_NEW_PLAYER_PIN_REWARD } },
   );
 
   let isUnderCap = true;
@@ -104,7 +104,7 @@ export async function processReferralOnFirstRun(
   if (isUnderCap) {
     await db.collection<PlayerProfile>('profiles').updateOne(
       { telegramUserId: updated.inviterTelegramUserId },
-      { $inc: { coins: REFERRAL_INVITER_COIN_REWARD, referralCount: 1 } },
+      { $inc: { pins: REFERRAL_INVITER_PIN_REWARD, referralCount: 1 } },
     );
 
     const newPlayerProfile = await db

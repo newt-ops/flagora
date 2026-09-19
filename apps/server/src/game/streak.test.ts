@@ -88,7 +88,7 @@ describe('daily play streak rules and integration', () => {
       const profile: PlayerProfile = {
         telegramUserId: userId,
         firstName: 'FirstTimer',
-        coins: 0,
+        pins: 0,
         xp: 0,
         level: 1,
         currentStreak: 0,
@@ -122,7 +122,7 @@ describe('daily play streak rules and integration', () => {
       const profile: PlayerProfile = {
         telegramUserId: userId,
         firstName: 'SameDayRunner',
-        coins: 10,
+        pins: 10,
         xp: 50,
         level: 1,
         currentStreak: 3,
@@ -156,7 +156,7 @@ describe('daily play streak rules and integration', () => {
       const profile: PlayerProfile = {
         telegramUserId: userId,
         firstName: 'ConsecutiveRunner',
-        coins: 20,
+        pins: 20,
         xp: 100,
         level: 1,
         currentStreak: 4,
@@ -190,7 +190,7 @@ describe('daily play streak rules and integration', () => {
       const profile: PlayerProfile = {
         telegramUserId: userId,
         firstName: 'GapRunner',
-        coins: 50,
+        pins: 50,
         xp: 300,
         level: 1,
         currentStreak: 6,
@@ -224,7 +224,7 @@ describe('daily play streak rules and integration', () => {
       const profile: PlayerProfile = {
         telegramUserId: userId,
         firstName: 'RecordHolder',
-        coins: 100,
+        pins: 100,
         xp: 800,
         level: 2,
         currentStreak: 12,
@@ -257,7 +257,7 @@ describe('daily play streak rules and integration', () => {
       const profile: PlayerProfile = {
         telegramUserId: userId,
         firstName: 'RetryTester',
-        coins: 20,
+        pins: 20,
         xp: 100,
         level: 1,
         currentStreak: 2,

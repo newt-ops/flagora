@@ -28,7 +28,7 @@ import {
 import {
   CosmeticItemNotFoundError,
   ItemAlreadyOwnedError,
-  InsufficientCoinsError,
+  InsufficientPinsError,
   ItemNotOwnedError,
   ProfileNotFoundError,
 } from './shopTypes.js';
@@ -40,7 +40,7 @@ function createTestProfile(userId: number, overrides: Partial<PlayerProfile> = {
     firstName: `User ${userId}`,
     lastName: null,
     photoUrl: null,
-    coins: 0,
+    pins: 0,
     xp: 0,
     level: 1,
     bestScore: 0,
@@ -125,9 +125,9 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
             res.status(400).json({ error: 'Already owned', message: error.message });
             return;
           }
-          if (error instanceof InsufficientCoinsError) {
+          if (error instanceof InsufficientPinsError) {
             res.status(400).json({
-              error: 'Insufficient coins',
+              error: 'Insufficient pins',
               message: error.message,
               required: error.required,
               available: error.available,
@@ -290,6 +290,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
       category: 'avatarFrame',
       price: 999,
       cssVars: { '--avatar-frame-border': '2px solid #ff00ff' },
+      rarity: 'rare',
     });
 
     const reloadRes = await fetch(`${baseUrl}/api/admin/shop/reload`, {
@@ -313,7 +314,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     const userId = 1001;
     await db.collection<PlayerProfile>('profiles').insertOne(
       createTestProfile(userId, {
-        coins: 500,
+        pins: 500,
         ownedItemIds: ['frame-neon-cyan', 'theme-midnight-ocean'],
         equipped: {
           avatarFrame: 'frame-neon-cyan',
@@ -347,7 +348,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     assert.equal(unownedBanner.isEquipped, false);
   });
 
-  it('purchases an item successfully with exact coin balance leaving 0 coins', async () => {
+  it('purchases an item successfully with exact pin balance leaving 0 pins', async () => {
     await seedCosmetics(db);
     await initCosmeticCache(db);
 
@@ -355,7 +356,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     const itemPrice = 150;
     await db.collection<PlayerProfile>('profiles').insertOne(
       createTestProfile(userId, {
-        coins: itemPrice,
+        pins: itemPrice,
       }),
     );
 
@@ -370,18 +371,18 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     });
 
     assert.equal(res.status, 200);
-    const data = (await res.json()) as { success: boolean; itemId: string; newCoins: number };
+    const data = (await res.json()) as { success: boolean; itemId: string; newPins: number };
     assert.equal(data.success, true);
     assert.equal(data.itemId, 'frame-neon-cyan');
-    assert.equal(data.newCoins, 0);
+    assert.equal(data.newPins, 0);
 
     const updatedProfile = await db.collection<PlayerProfile>('profiles').findOne({ telegramUserId: userId });
     assert.ok(updatedProfile);
-    assert.equal(updatedProfile.coins, 0);
+    assert.equal(updatedProfile.pins, 0);
     assert.deepEqual(updatedProfile.ownedItemIds, ['frame-neon-cyan']);
   });
 
-  it('rejects purchase when 1 coin short and leaves coins untouched', async () => {
+  it('rejects purchase when 1 pin short and leaves pins untouched', async () => {
     await seedCosmetics(db);
     await initCosmeticCache(db);
 
@@ -389,7 +390,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     const itemPrice = 150;
     await db.collection<PlayerProfile>('profiles').insertOne(
       createTestProfile(userId, {
-        coins: itemPrice - 1,
+        pins: itemPrice - 1,
       }),
     );
 
@@ -405,13 +406,13 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
 
     assert.equal(res.status, 400);
     const body = (await res.json()) as { error: string; required: number; available: number };
-    assert.equal(body.error, 'Insufficient coins');
+    assert.equal(body.error, 'Insufficient pins');
     assert.equal(body.required, 150);
     assert.equal(body.available, 149);
 
     const profile = await db.collection<PlayerProfile>('profiles').findOne({ telegramUserId: userId });
     assert.ok(profile);
-    assert.equal(profile.coins, 149);
+    assert.equal(profile.pins, 149);
     assert.deepEqual(profile.ownedItemIds, []);
   });
 
@@ -422,7 +423,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     const userId = 1004;
     await db.collection<PlayerProfile>('profiles').insertOne(
       createTestProfile(userId, {
-        coins: 500,
+        pins: 500,
         ownedItemIds: ['frame-neon-cyan'],
       }),
     );
@@ -443,7 +444,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
 
     const profile = await db.collection<PlayerProfile>('profiles').findOne({ telegramUserId: userId });
     assert.ok(profile);
-    assert.equal(profile.coins, 500);
+    assert.equal(profile.pins, 500);
     assert.deepEqual(profile.ownedItemIds, ['frame-neon-cyan']);
   });
 
@@ -454,7 +455,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     const userId = 1005;
     await db.collection<PlayerProfile>('profiles').insertOne(
       createTestProfile(userId, {
-        coins: 1000,
+        pins: 1000,
       }),
     );
 
@@ -481,7 +482,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     const price = 150;
     await db.collection<PlayerProfile>('profiles').insertOne(
       createTestProfile(userId, {
-        coins: price,
+        pins: price,
       }),
     );
 
@@ -503,7 +504,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
 
     const profile = await db.collection<PlayerProfile>('profiles').findOne({ telegramUserId: userId });
     assert.ok(profile);
-    assert.equal(profile.coins, 0);
+    assert.equal(profile.pins, 0);
     assert.deepEqual(profile.ownedItemIds, ['frame-neon-cyan']);
   });
 
@@ -514,7 +515,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     const userId = 1007;
     await db.collection<PlayerProfile>('profiles').insertOne(
       createTestProfile(userId, {
-        coins: 1000,
+        pins: 1000,
         ownedItemIds: [
           'frame-neon-cyan',
           'frame-amber-gold',
@@ -568,7 +569,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     const userId = 1008;
     await db.collection<PlayerProfile>('profiles').insertOne(
       createTestProfile(userId, {
-        coins: 1000,
+        pins: 1000,
       }),
     );
 
@@ -585,5 +586,69 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     assert.equal(res.status, 400);
     const body = (await res.json()) as { error: string };
     assert.equal(body.error, 'Not owned');
+  });
+
+  it('rejects purchasing a proOnly item without an active subscription', async () => {
+    await seedCosmetics(db);
+    await initCosmeticCache(db);
+
+    const userId = 1009;
+    await db.collection<PlayerProfile>('profiles').insertOne(
+      createTestProfile(userId, {
+        pins: 10000,
+      }),
+    );
+
+    const token = createSessionToken(userId, sessionSecret);
+    const res = await fetch(`${baseUrl}/api/shop/purchase`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ itemId: 'frame-pro-animated-diamond' }),
+    });
+
+    assert.equal(res.status, 403);
+    const body = (await res.json()) as { error: string };
+    assert.equal(body.error, 'Requires Pro');
+  });
+
+  it('allows purchasing a proOnly item with an active subscription', async () => {
+    await seedCosmetics(db);
+    await initCosmeticCache(db);
+
+    const userId = 1010;
+    await db.collection<PlayerProfile>('profiles').insertOne(
+      createTestProfile(userId, {
+        pins: 10000,
+      }),
+    );
+
+    const futureDate = new Date();
+    futureDate.setMonth(futureDate.getMonth() + 1);
+
+    await db.collection('subscriptions').insertOne({
+      telegramUserId: userId,
+      status: 'active',
+      currentPeriodEnd: futureDate,
+      telegramChargeId: 'test_charge',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    const token = createSessionToken(userId, sessionSecret);
+    const res = await fetch(`${baseUrl}/api/shop/purchase`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ itemId: 'frame-pro-animated-diamond' }),
+    });
+
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { success: boolean };
+    assert.equal(body.success, true);
   });
 });

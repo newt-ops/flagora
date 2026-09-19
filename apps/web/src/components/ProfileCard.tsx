@@ -7,7 +7,7 @@ import {
   CheckCircle2,
   Swords,
   Zap,
-  Coins,
+  Coins as Pins,
   Gamepad2,
   Users,
   Gift,
@@ -28,7 +28,7 @@ import {
 import { getProfileStreakDisplay } from './streakDisplayHelpers.js';
 import { getDailyResultSummary } from './dailyChallengeHelpers.js';
 import { StreakSaveBanner } from './StreakSaveBanner.js';
-import { useBonusCoinsAd } from '../hooks/useBonusCoinsAd.js';
+import { useBonusPinsAd } from '../hooks/useBonusPinsAd.js';
 import { getBonusAdsButtonText } from './rewardUiHelpers.js';
 import { getAvatarFrameClass, getProfileBannerClass } from './cosmeticHelpers.js';
 import { formatSeasonName, getTierIcon } from './rankHelpers.js';
@@ -103,7 +103,7 @@ export function ProfileCard({
     remainingAds,
     isCapReached,
     handleWatchAd,
-  } = useBonusCoinsAd({
+  } = useBonusPinsAd({
     sessionToken,
     onRewardSuccess: onRefetchProfile,
   });
@@ -133,7 +133,7 @@ export function ProfileCard({
   };
 
   const handleShareReferral = () => {
-    const text = 'Join me on Flagora! Test your flag knowledge, battle real players in real-time, and get +50 coins!';
+    const text = 'Join me on Flagora! Test your flag knowledge, battle real players in real-time, and get +50 pins!';
     const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(text)}`;
     if (typeof window !== 'undefined') {
       const tg = (window as unknown as { Telegram?: { WebApp?: { openTelegramLink?: (url: string) => void } } })
@@ -279,10 +279,10 @@ export function ProfileCard({
       <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg p-3 text-center">
           <div className="flex items-center gap-1.5 text-tg-hint">
-            <Coins className="h-4 w-4 text-tg-button" />
-            <span className="text-xs font-medium">Coins</span>
+            <Pins className="h-4 w-4 text-tg-button" />
+            <span className="text-xs font-medium">Pins</span>
           </div>
-          <p className="mt-1.5 text-lg font-bold text-tg-text">{profile.coins.toLocaleString()}</p>
+          <p className="mt-1.5 text-lg font-bold text-tg-text">{profile.pins.toLocaleString()}</p>
         </div>
 
         <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg p-3 text-center">
@@ -320,7 +320,7 @@ export function ProfileCard({
             </div>
             <div className="min-w-0">
               <p className="text-sm font-bold text-tg-text truncate">Invite & Earn</p>
-              <p className="text-[11px] text-tg-hint truncate">+100 coins for you, +50 for friends</p>
+              <p className="text-[11px] text-tg-hint truncate">+100 pins for you, +50 for friends</p>
             </div>
           </div>
           <div className="flex items-center gap-1 rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-bold text-tg-button shrink-0">
@@ -362,15 +362,15 @@ export function ProfileCard({
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-tg-button/10 text-tg-button">
-              <Coins className="h-5 w-5" />
+              <Pins className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold text-tg-text truncate">Bonus Coins</p>
-              <p className="text-[11px] text-tg-hint truncate">+50 coins per ad</p>
+              <p className="text-sm font-bold text-tg-text truncate">Bonus Pins</p>
+              <p className="text-[11px] text-tg-hint truncate">+50 pins per ad</p>
             </div>
           </div>
           <span
-            data-testid="bonus-coins-remaining-badge"
+            data-testid="bonus-pins-remaining-badge"
             className="rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-bold text-tg-button shrink-0"
           >
             {remainingAds > 0 ? `${remainingAds}/5 remaining today` : 'Daily cap reached (5/5)'}
@@ -387,14 +387,14 @@ export function ProfileCard({
           {isWatchingAd ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
-            <Coins className="h-3.5 w-3.5" />
+            <Pins className="h-3.5 w-3.5" />
           )}
           <span>{getBonusAdsButtonText(remainingAds, isWatchingAd)}</span>
         </button>
 
         {bonusFeedback && (
           <div
-            data-testid="bonus-coins-feedback"
+            data-testid="bonus-pins-feedback"
             className={`mt-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium ${
               bonusFeedback.isSuccess
                 ? 'bg-tg-button/10 text-tg-button'

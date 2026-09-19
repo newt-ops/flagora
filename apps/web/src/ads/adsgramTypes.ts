@@ -1,9 +1,9 @@
 import type {
-  BonusCoinsRedeemSuccessResponse,
+  BonusPinsRedeemSuccessResponse,
   StreakSaveRedeemSuccessResponse,
 } from '@flagora/shared';
 
-export type RewardType = 'bonus-coins' | 'streak-save';
+export type RewardType = 'bonus-pins' | 'streak-save';
 
 export interface ShowPromiseResult {
   done: boolean;
@@ -37,8 +37,8 @@ export interface AdsgramInitOptions {
 export type AdOutcome =
   | {
       status: 'rewarded';
-      rewardType: 'bonus-coins';
-      data: BonusCoinsRedeemSuccessResponse;
+      rewardType: 'bonus-pins';
+      data: BonusPinsRedeemSuccessResponse;
     }
   | {
       status: 'rewarded';

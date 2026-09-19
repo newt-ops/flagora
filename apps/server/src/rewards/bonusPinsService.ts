@@ -1,10 +1,10 @@
 import type { Db } from 'mongodb';
 import {
   type PlayerProfile,
-  type BonusCoinsIntentSuccessResponse,
-  type BonusCoinsRedeemSuccessResponse,
-  BONUS_COINS_REWARD_AMOUNT,
-  BONUS_COINS_DAILY_CAP,
+  type BonusPinsIntentSuccessResponse,
+  type BonusPinsRedeemSuccessResponse,
+  BONUS_PINS_REWARD_AMOUNT,
+  BONUS_PINS_DAILY_CAP,
 } from '@flagora/shared';
 import {
   issueRewardToken,
@@ -15,32 +15,32 @@ import {
 import { UnauthorizedTokenRedemptionError } from './rewardErrors.js';
 import { notifyPublicRewardPayout } from '../telegram/telegramService.js';
 
-export async function requestBonusCoinsIntent(
+export async function requestBonusPinsIntent(
   telegramUserId: number,
   options?: RewardTokenServiceOptions,
-): Promise<BonusCoinsIntentSuccessResponse> {
-  const token = await issueRewardToken(telegramUserId, 'bonus-coins', options);
+): Promise<BonusPinsIntentSuccessResponse> {
+  const token = await issueRewardToken(telegramUserId, 'bonus-pins', options);
   return {
     ok: true,
     token,
-    rewardType: 'bonus-coins',
-    dailyCap: BONUS_COINS_DAILY_CAP,
-    coins: BONUS_COINS_REWARD_AMOUNT,
+    rewardType: 'bonus-pins',
+    dailyCap: BONUS_PINS_DAILY_CAP,
+    pins: BONUS_PINS_REWARD_AMOUNT,
   };
 }
 
-export async function redeemBonusCoins(
+export async function redeemBonusPins(
   token: string,
   callerUserId: number,
   db: Db,
   options?: RewardTokenServiceOptions,
-): Promise<BonusCoinsRedeemSuccessResponse> {
+): Promise<BonusPinsRedeemSuccessResponse> {
   const preview = verifyRewardToken(token, options);
   if (preview.telegramUserId !== callerUserId) {
     throw new UnauthorizedTokenRedemptionError();
   }
 
-  const verified = await redeemRewardToken(token, 'bonus-coins', options);
+  const verified = await redeemRewardToken(token, 'bonus-pins', options);
 
   if (verified.telegramUserId !== callerUserId) {
     throw new UnauthorizedTokenRedemptionError();
@@ -50,23 +50,23 @@ export async function redeemBonusCoins(
   const updateResult = await profilesCollection.findOneAndUpdate(
     { telegramUserId: callerUserId },
     {
-      $inc: { coins: BONUS_COINS_REWARD_AMOUNT },
+      $inc: { pins: BONUS_PINS_REWARD_AMOUNT },
       $set: { updatedAt: new Date() },
     },
     { returnDocument: 'after' },
   );
 
-  const finalCoins = updateResult?.coins ?? BONUS_COINS_REWARD_AMOUNT;
+  const finalPins = updateResult?.pins ?? BONUS_PINS_REWARD_AMOUNT;
 
   void notifyPublicRewardPayout(
-    'bonus-coins',
+    'bonus-pins',
     options ? { channelId: (options as { channelId?: string | number }).channelId } : undefined,
   );
 
   return {
     ok: true,
-    coinsEarned: BONUS_COINS_REWARD_AMOUNT,
-    coins: finalCoins,
+    pinsEarned: BONUS_PINS_REWARD_AMOUNT,
+    pins: finalPins,
     telegramUserId: callerUserId,
   };
 }

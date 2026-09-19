@@ -12,7 +12,7 @@ export const playerProfileSchema = z.object({
   firstName: z.string(),
   lastName: z.string().nullable().optional(),
   photoUrl: z.string().nullable().optional(),
-  coins: z.number().int().default(0),
+  pins: z.number().int().default(0),
   xp: z.number().int().default(0),
   level: z.number().int().default(1),
   currentStreak: z.number().int().default(0),
