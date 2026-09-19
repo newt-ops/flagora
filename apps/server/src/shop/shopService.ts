@@ -60,7 +60,7 @@ export async function purchaseCosmeticItem(
   }
 
   if (item.proOnly) {
-    const isPro = await hasActiveSubscription(telegramUserId);
+    const isPro = await hasActiveSubscription(telegramUserId, db);
     if (!isPro) {
       throw new RequiresProSubscriptionError();
     }
@@ -130,7 +130,7 @@ export async function equipCosmeticItem(
   }
 
   if (item.proOnly) {
-    const isPro = await hasActiveSubscription(telegramUserId);
+    const isPro = await hasActiveSubscription(telegramUserId, db);
     if (!isPro) {
       throw new RequiresProSubscriptionError();
     }

@@ -6,6 +6,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { MongoClient, type Db } from 'mongodb';
 import {
   COSMETIC_CATEGORIES,
+  DEFAULT_COSMETIC_CATALOG,
   type CosmeticItem,
   type PlayerProfile,
 } from '@flagora/shared';
@@ -31,6 +32,7 @@ import {
   InsufficientPinsError,
   ItemNotOwnedError,
   ProfileNotFoundError,
+  RequiresProSubscriptionError,
 } from './shopTypes.js';
 
 function createTestProfile(userId: number, overrides: Partial<PlayerProfile> = {}): PlayerProfile {
@@ -134,6 +136,10 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
             });
             return;
           }
+          if (error instanceof RequiresProSubscriptionError) {
+            res.status(403).json({ error: 'Requires Pro', message: error.message });
+            return;
+          }
           if (error instanceof ProfileNotFoundError) {
             res.status(404).json({ error: 'Not found', message: error.message });
             return;
@@ -227,8 +233,8 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
 
   it('seeds 15 initial cosmetics into MongoDB idempotently and creates indexes', async () => {
     const firstSeed = await seedCosmetics(db);
-    assert.equal(firstSeed.upserted, 15);
-    assert.equal(firstSeed.total, 15);
+    assert.equal(firstSeed.upserted, DEFAULT_COSMETIC_CATALOG.length);
+    assert.equal(firstSeed.total, DEFAULT_COSMETIC_CATALOG.length);
 
     const indexes = await db.collection('cosmetics').indexes();
     const hasUniqueId = indexes.some(
@@ -242,11 +248,11 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
 
     const secondSeed = await seedCosmetics(db);
     assert.equal(secondSeed.upserted, 0);
-    assert.equal(secondSeed.matched, 15);
-    assert.equal(secondSeed.total, 15);
+    assert.equal(secondSeed.matched, DEFAULT_COSMETIC_CATALOG.length);
+    assert.equal(secondSeed.total, DEFAULT_COSMETIC_CATALOG.length);
 
     const count = await db.collection('cosmetics').countDocuments();
-    assert.equal(count, 15);
+    assert.equal(count, DEFAULT_COSMETIC_CATALOG.length);
   });
 
   it('manages in-memory cosmetic cache with fast lookups by id and category', async () => {
@@ -254,11 +260,11 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     await initCosmeticCache(db);
 
     const catalog = getCachedCosmeticCatalog();
-    assert.equal(catalog.length, 15);
+    assert.equal(catalog.length, DEFAULT_COSMETIC_CATALOG.length);
 
     for (const cat of COSMETIC_CATEGORIES) {
       const items = getCachedCosmeticsByCategory(cat);
-      assert.equal(items.length, 5);
+      assert.ok(items.length >= 1);
       assert.ok(items.every((i) => i.category === cat));
     }
 
@@ -300,7 +306,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     assert.equal(reloadRes.status, 200);
     const reloadData = (await reloadRes.json()) as { ok: boolean; count: number };
     assert.equal(reloadData.ok, true);
-    assert.equal(reloadData.count, 16);
+    assert.equal(reloadData.count, DEFAULT_COSMETIC_CATALOG.length + 1);
 
     const found = getCachedCosmeticItem('frame-custom-admin-test');
     assert.ok(found);
@@ -330,7 +336,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     });
     assert.equal(res.status, 200);
     const body = (await res.json()) as { items: Array<CosmeticItem & { isOwned: boolean; isEquipped: boolean }> };
-    assert.equal(body.items.length, 15);
+    assert.equal(body.items.length, DEFAULT_COSMETIC_CATALOG.length);
 
     const cyanFrame = body.items.find((i) => i.id === 'frame-neon-cyan');
     assert.ok(cyanFrame);

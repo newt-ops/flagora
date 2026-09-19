@@ -16,6 +16,7 @@ import {
   Check,
   Loader2,
   Award,
+  Crown,
 } from 'lucide-react';
 import {
   type PlayerProfile,
@@ -23,6 +24,7 @@ import {
   type StreakStatusResponse,
   type RankStatusResponse,
   type PlayerBadgeResponseItem,
+  type ProStatusResponse,
   getDisplayName,
 } from '@flagora/shared';
 import { getProfileStreakDisplay } from './streakDisplayHelpers.js';
@@ -33,6 +35,7 @@ import { getBonusAdsButtonText } from './rewardUiHelpers.js';
 import { getAvatarFrameClass, getProfileBannerClass } from './cosmeticHelpers.js';
 import { formatSeasonName, getTierIcon } from './rankHelpers.js';
 import { BadgeShowcase } from './BadgeShowcase.js';
+import { ProUpgradeModal } from './ProUpgradeModal.js';
 
 export { getDisplayName };
 
@@ -41,6 +44,7 @@ interface ProfileCardProps {
   dailyStatus?: DailyChallengeStatusResponse | null;
   streakStatus?: StreakStatusResponse | null;
   rankStatus?: RankStatusResponse | null;
+  proStatus?: ProStatusResponse | null;
   badges?: PlayerBadgeResponseItem[];
   isLoadingBadges?: boolean;
   sessionToken?: string | null;
@@ -53,6 +57,7 @@ interface ProfileCardProps {
   onNavigateToRewards?: () => void;
   onRefetchProfile?: () => void;
   onRefetchStreakStatus?: () => void;
+  onRefetchProStatus?: () => void;
   isStarting?: boolean;
   isStartingDaily?: boolean;
   isStartingChallenge?: boolean;
@@ -65,6 +70,7 @@ export function ProfileCard({
   dailyStatus,
   streakStatus,
   rankStatus,
+  proStatus = null,
   badges = [],
   isLoadingBadges = false,
   sessionToken,
@@ -77,6 +83,7 @@ export function ProfileCard({
   onNavigateToRewards,
   onRefetchProfile,
   onRefetchStreakStatus,
+  onRefetchProStatus,
   isStarting = false,
   isStartingDaily = false,
   isStartingChallenge = false,
@@ -84,6 +91,7 @@ export function ProfileCard({
   showGameActions = true,
 }: ProfileCardProps) {
   const [referralCopied, setReferralCopied] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const displayName = getDisplayName(profile);
   const initial = profile.firstName ? profile.firstName.charAt(0).toUpperCase() : 'P';
   const streakInfo = getProfileStreakDisplay(profile.currentStreak, profile.longestStreak);
@@ -197,6 +205,26 @@ export function ProfileCard({
           </p>
         )}
         <p className="mt-1 text-xs font-semibold text-tg-hint">Level {profile.level} Player</p>
+        {proStatus?.isActive ? (
+          <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-3 py-1 text-xs font-bold text-amber-400">
+            <Crown className="h-3.5 w-3.5 fill-current" />
+            <span>
+              Pro until{' '}
+              {proStatus.currentPeriodEnd
+                ? new Date(proStatus.currentPeriodEnd).toLocaleDateString()
+                : 'Active'}
+            </span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsUpgradeModalOpen(true)}
+            className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 px-3.5 py-1 text-xs font-bold text-amber-400 transition-transform active:scale-95 hover:bg-amber-500/15"
+          >
+            <Crown className="h-3.5 w-3.5 fill-current" />
+            <span>Upgrade to Flagora Pro</span>
+          </button>
+        )}
       </div>
 
       <div className="mt-5 flex items-center justify-between flex-wrap gap-2 rounded-xl bg-tg-secondary-bg px-4 py-3">
@@ -522,6 +550,16 @@ export function ProfileCard({
         </>
       )}
       </div>
+
+      <ProUpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        sessionToken={sessionToken ?? null}
+        onSuccess={() => {
+          onRefetchProfile?.();
+          onRefetchProStatus?.();
+        }}
+      />
     </div>
   );
 }

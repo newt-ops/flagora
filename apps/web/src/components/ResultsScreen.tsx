@@ -114,6 +114,14 @@ export function ResultsScreen({
               <span>XP Earned</span>
             </div>
             <p className="mt-1 text-lg font-bold text-tg-text">+{result.xpEarned}</p>
+            {result.doubleXpApplied && (
+              <span
+                data-testid="double-xp-indicator"
+                className="mt-0.5 text-[10px] font-bold text-amber-400"
+              >
+                2× XP this weekend
+              </span>
+            )}
           </div>
 
           <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg p-3">

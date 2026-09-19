@@ -78,6 +78,7 @@ export async function findOrCreatePlayerProfile(
     battleRating: 0,
     currentSeason: null,
     tier4CorrectCount: 0,
+    pinnedIsoCodes: [],
     createdAt: now,
     updatedAt: now,
   };
@@ -97,4 +98,29 @@ export async function getPlayerProfileByUserId(
     return null;
   }
   return playerProfileSchema.parse(profile);
+}
+
+export async function updatePinnedFlags(
+  telegramUserId: number,
+  pinnedIsoCodes: string[],
+  db: Db,
+): Promise<PlayerProfile> {
+  const collection = db.collection<PlayerProfile>('profiles');
+  const now = new Date();
+  const result = await collection.findOneAndUpdate(
+    { telegramUserId },
+    {
+      $set: {
+        pinnedIsoCodes,
+        updatedAt: now,
+      },
+    },
+    { returnDocument: 'after' },
+  );
+
+  if (!result) {
+    throw new Error('Profile not found');
+  }
+
+  return playerProfileSchema.parse(result);
 }

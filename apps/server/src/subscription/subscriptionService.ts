@@ -1,5 +1,5 @@
 import { getDatabase } from '../db/mongo.js';
-import { Collection } from 'mongodb';
+import type { Collection, Db } from 'mongodb';
 
 export interface Subscription {
   telegramUserId: number;
@@ -12,41 +12,58 @@ export interface Subscription {
 
 const COLLECTION_NAME = 'subscriptions';
 
-function getCollection(): Collection<Subscription> {
-  const db = getDatabase();
-  if (!db) {
+function getCollection(db?: Db): Collection<Subscription> {
+  const targetDb = db ?? getDatabase();
+  if (!targetDb) {
     throw new Error('Database connection not established');
   }
-  return db.collection<Subscription>(COLLECTION_NAME);
+  return targetDb.collection<Subscription>(COLLECTION_NAME);
 }
 
-export async function getSubscription(telegramUserId: number): Promise<Subscription | null> {
-  const db = getDatabase();
-  const result = await db.collection<Subscription>('subscriptions').findOne({ telegramUserId });
-  return result;
+export async function getSubscription(telegramUserId: number, db?: Db): Promise<Subscription | null> {
+  try {
+    const collection = getCollection(db);
+    const result = await collection.findOne({ telegramUserId });
+    return result;
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message.includes('Unexpected collection')) {
+      return null;
+    }
+    throw err;
+  }
 }
 
-export async function hasActiveSubscription(telegramUserId: number): Promise<boolean> {
-  const sub = await getSubscription(telegramUserId);
+export async function hasActiveSubscription(telegramUserId: number, db?: Db): Promise<boolean> {
+  const sub = await getSubscription(telegramUserId, db);
   if (!sub) return false;
   return sub.status === 'active' && sub.currentPeriodEnd > new Date();
 }
 
+export async function hasEarlyAccess(
+  playerOrUserId: number | { telegramUserId: number },
+  db?: Db,
+): Promise<boolean> {
+  const telegramUserId =
+    typeof playerOrUserId === 'number'
+      ? playerOrUserId
+      : playerOrUserId.telegramUserId;
+  return hasActiveSubscription(telegramUserId, db);
+}
+
 export async function processSuccessfulPayment(
-  telegramUserId: number, 
-  telegramChargeId: string
+  telegramUserId: number,
+  telegramChargeId: string,
+  db?: Db,
 ): Promise<Subscription> {
-  const collection = getCollection();
-  const existingSub = await getSubscription(telegramUserId);
+  const collection = getCollection(db);
+  const existingSub = await getSubscription(telegramUserId, db);
   const now = new Date();
-  
+
   let newPeriodEnd: Date;
   if (existingSub && existingSub.currentPeriodEnd > now) {
-    // Extend existing
     newPeriodEnd = new Date(existingSub.currentPeriodEnd);
     newPeriodEnd.setMonth(newPeriodEnd.getMonth() + 1);
   } else {
-    // Start new
     newPeriodEnd = new Date(now);
     newPeriodEnd.setMonth(newPeriodEnd.getMonth() + 1);
   }
@@ -58,13 +75,13 @@ export async function processSuccessfulPayment(
         status: 'active',
         currentPeriodEnd: newPeriodEnd,
         telegramChargeId,
-        updatedAt: now
+        updatedAt: now,
       },
       $setOnInsert: {
-        createdAt: now
-      }
+        createdAt: now,
+      },
     },
-    { upsert: true, returnDocument: 'after' }
+    { upsert: true, returnDocument: 'after' },
   );
 
   if (!result) {

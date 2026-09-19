@@ -7,12 +7,16 @@ import {
   DEFAULT_RUN_TIER_MIX,
   SCORING_CONFIG,
   calculateLevel,
+  calculateAwardedXp,
+  isDoubleXpActive,
   getUtcDateString,
   calculateStreak,
   type StartRunResponse,
   type AnswerRunResponse,
   type FinishRunResponse,
   type PlayerProfile,
+  type RunHistoryResponse,
+  type RunHistoryItem,
   type Challenge,
   type ChallengeWinner,
   type Continent,
@@ -26,6 +30,7 @@ import type { TypedSocketServer } from '../multiplayer/socketTypes.js';
 import { checkAndFinalizeBattle } from '../battle/battleService.js';
 import { evaluateBadges } from '../badge/badgeService.js';
 import { processReferralOnFirstRun } from '../referral/referralService.js';
+import { hasActiveSubscription } from '../subscription/subscriptionService.js';
 import {
   type GameRun,
   type RunFlagItem,
@@ -63,9 +68,20 @@ export async function createRun(
   const targetCount = options?.flagCount ?? 10;
   const flagsPool = countryPool.length >= targetCount ? countryPool : getCachedFlags();
 
+  let pinnedIsoCodes: string[] = [];
+  if (mode === 'practice') {
+    const isPro = await hasActiveSubscription(telegramUserId, db);
+    if (isPro) {
+      const profile = await db.collection<PlayerProfile>('profiles').findOne({ telegramUserId });
+      if (profile?.pinnedIsoCodes && profile.pinnedIsoCodes.length > 0) {
+        pinnedIsoCodes = profile.pinnedIsoCodes;
+      }
+    }
+  }
+
   const flags: RunFlagItem[] =
     options?.flags ??
-    selectRunFlags(DEFAULT_RUN_TIER_MIX, [], flagsPool, targetCount).map((flag, index) => {
+    selectRunFlags(DEFAULT_RUN_TIER_MIX, [], flagsPool, targetCount, pinnedIsoCodes).map((flag, index) => {
       const choices = generateChoices(flag, flagsPool.length >= 4 ? flagsPool : getCachedFlags());
       return {
         flagIndex: index,
@@ -224,7 +240,9 @@ export async function finishRun(
   const correctCount = finalized.correctCount;
   const totalScore = finalized.totalScore;
 
-  const xpEarned = finalized.xpEarned;
+  const isPro = await hasActiveSubscription(telegramUserId, db);
+  const doubleXpApplied = isPro && isDoubleXpActive(new Date(now));
+  const xpEarned = calculateAwardedXp(finalized.xpEarned, isPro, new Date(now));
   const pinsEarned = finalized.pinsEarned;
 
   const claimResult = await collection.findOneAndUpdate(
@@ -461,6 +479,7 @@ export async function finishRun(
     currentStreak: streakResult.currentStreak,
     longestStreak: streakResult.longestStreak,
     streakChange: streakResult.streakChange,
+    doubleXpApplied,
     ...(newlyAwardedBadges.length > 0 ? { newBadges: newlyAwardedBadges } : {}),
   };
 
@@ -475,4 +494,109 @@ export async function finishRun(
   );
 
   return finalScore;
+}
+
+export async function getRunHistory(
+  telegramUserId: number,
+  db: Db,
+  options?: { page?: number; limit?: number },
+): Promise<RunHistoryResponse> {
+  const isPro = await hasActiveSubscription(telegramUserId, db);
+  const requestedPage =
+    typeof options?.page === 'number' && options.page > 0 ? Math.floor(options.page) : 1;
+  const requestedLimit =
+    typeof options?.limit === 'number' && options.limit > 0 ? Math.floor(options.limit) : 10;
+
+  const filter: import('mongodb').Filter<GameRun> = {
+    telegramUserId,
+    status: { $in: ['finished', 'expired'] as const },
+    finalScore: { $exists: true },
+  };
+
+  const runsCollection = db.collection<GameRun>('runs');
+  const actualFinishedCount = await runsCollection.countDocuments(filter);
+
+  if (!isPro) {
+    const cappedTotal = Math.min(actualFinishedCount, 10);
+    const effectiveLimit = Math.min(requestedLimit, 10);
+    const skip = (requestedPage - 1) * effectiveLimit;
+
+    if (skip >= cappedTotal) {
+      return {
+        runs: [],
+        total: cappedTotal,
+        page: requestedPage,
+        limit: effectiveLimit,
+        hasMore: false,
+      };
+    }
+
+    const fetchLimit = Math.min(effectiveLimit, cappedTotal - skip);
+    const rawRuns = await runsCollection
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(fetchLimit)
+      .toArray();
+
+    const runs: RunHistoryItem[] = rawRuns.map((r) => {
+      const score = r.finalScore?.totalScore ?? r.runningTotal;
+      const date = (r.finishedAt ?? r.createdAt).toISOString();
+      return {
+        runId: r.runId,
+        mode: r.mode ?? 'practice',
+        score,
+        totalScore: score,
+        date,
+        correctCount: r.finalScore?.correctCount ?? r.flags.filter((f) => f.correct).length,
+        timeUsedMs: r.finalScore?.timeUsedMs ?? 0,
+        xpEarned: r.finalScore?.xpEarned ?? 0,
+        pinsEarned: r.finalScore?.pinsEarned ?? 0,
+      };
+    });
+
+    const hasMore = skip + runs.length < cappedTotal;
+
+    return {
+      runs,
+      total: cappedTotal,
+      page: requestedPage,
+      limit: effectiveLimit,
+      hasMore,
+    };
+  }
+
+  const skip = (requestedPage - 1) * requestedLimit;
+  const rawRuns = await runsCollection
+    .find(filter)
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(requestedLimit)
+    .toArray();
+
+  const runs: RunHistoryItem[] = rawRuns.map((r) => {
+    const score = r.finalScore?.totalScore ?? r.runningTotal;
+    const date = (r.finishedAt ?? r.createdAt).toISOString();
+    return {
+      runId: r.runId,
+      mode: r.mode ?? 'practice',
+      score,
+      totalScore: score,
+      date,
+      correctCount: r.finalScore?.correctCount ?? r.flags.filter((f) => f.correct).length,
+      timeUsedMs: r.finalScore?.timeUsedMs ?? 0,
+      xpEarned: r.finalScore?.xpEarned ?? 0,
+      pinsEarned: r.finalScore?.pinsEarned ?? 0,
+    };
+  });
+
+  const hasMore = skip + runs.length < actualFinishedCount;
+
+  return {
+    runs,
+    total: actualFinishedCount,
+    page: requestedPage,
+    limit: requestedLimit,
+    hasMore,
+  };
 }

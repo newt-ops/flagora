@@ -7,13 +7,14 @@ import type { AuthenticatedRequest } from './auth/types.js';
 import { initDatabase } from './db/mongo.js';
 import { initRedis } from './db/redis.js';
 import { initNotificationQueue, closeNotificationQueue } from './notifications/notificationQueue.js';
-import { findOrCreatePlayerProfile, getPlayerProfileByUserId } from './profile/profileService.js';
+import { findOrCreatePlayerProfile, getPlayerProfileByUserId, updatePinnedFlags } from './profile/profileService.js';
 import {
   createRequireSessionMiddleware,
   type AuthenticatedSessionRequest,
 } from './session/requireSession.js';
 import { createSessionToken } from './session/tokens.js';
-import { createRun, submitAnswer, finishRun } from './game/runService.js';
+import { createRun, submitAnswer, finishRun, getRunHistory } from './game/runService.js';
+import { hasActiveSubscription } from './subscription/subscriptionService.js';
 import { seedFlags } from './game/seedFlags.js';
 import { initFlagCache, reloadFlagCache } from './game/flagCache.js';
 import { initCosmeticCache, reloadCosmeticCache } from './shop/cosmeticCache.js';
@@ -238,6 +239,55 @@ async function bootstrap() {
       res.status(200).json({ profile });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to fetch profile';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.post('/api/profile/pinned-flags', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const { pinnedIsoCodes } = req.body ?? {};
+      if (!Array.isArray(pinnedIsoCodes) || pinnedIsoCodes.some((code) => typeof code !== 'string')) {
+        res.status(400).json({ error: 'Bad request', message: 'pinnedIsoCodes must be an array of strings' });
+        return;
+      }
+
+      const isPro = await hasActiveSubscription(telegramUserId, db);
+      if (!isPro) {
+        res.status(403).json({ error: 'Forbidden', message: 'Active Pro subscription required to pin flags' });
+        return;
+      }
+
+      const updated = await updatePinnedFlags(telegramUserId, pinnedIsoCodes, db);
+      res.status(200).json({ success: true, pinnedIsoCodes: updated.pinnedIsoCodes ?? [], profile: updated });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update pinned flags';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.get('/api/runs/history', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const rawPage = Number(req.query.page);
+      const rawLimit = Number(req.query.limit);
+      const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 10;
+
+      const history = await getRunHistory(telegramUserId, db, { page, limit });
+      res.status(200).json(history);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch run history';
       res.status(500).json({ error: 'Internal server error', message });
     }
   });

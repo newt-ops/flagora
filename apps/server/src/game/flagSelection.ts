@@ -13,13 +13,37 @@ function shuffleArray<T>(array: T[]): T[] {
   return copy;
 }
 
+function sampleCandidates(
+  candidates: CountryFlag[],
+  count: number,
+  pinnedSet: Set<string>,
+): CountryFlag[] {
+  if (candidates.length <= count) {
+    return shuffleArray(candidates);
+  }
+  if (pinnedSet.size === 0) {
+    return shuffleArray(candidates).slice(0, count);
+  }
+  const weighted = candidates.map((item) => {
+    const isPinned = pinnedSet.has(item.isoCode.toUpperCase());
+    const weight = isPinned ? 4 : 1;
+    const u = Math.max(0.00001, Math.random());
+    const key = Math.pow(u, 1 / weight);
+    return { item, key };
+  });
+  weighted.sort((a, b) => b.key - a.key);
+  return weighted.slice(0, count).map((w) => w.item);
+}
+
 export function selectRunFlags(
   tierMix: RunTierMix = DEFAULT_RUN_TIER_MIX,
   excludeIsoCodes: string[] = [],
   allFlags: CountryFlag[] = getCachedFlags(),
   targetCount?: number,
+  pinnedIsoCodes: string[] = [],
 ): CountryFlag[] {
   const excludeSet = new Set(excludeIsoCodes);
+  const pinnedSet = new Set(pinnedIsoCodes.map((c) => c.toUpperCase()));
   const selectedFlags: CountryFlag[] = [];
   const selectedIsoCodes = new Set<string>();
 
@@ -47,8 +71,7 @@ export function selectRunFlags(
       (f) => !excludeSet.has(f.isoCode) && !selectedIsoCodes.has(f.isoCode),
     );
 
-    const shuffledPreferred = shuffleArray(preferredCandidates);
-    const picked = shuffledPreferred.slice(0, count);
+    const picked = sampleCandidates(preferredCandidates, count, pinnedSet);
 
     for (const flag of picked) {
       selectedFlags.push(flag);
@@ -58,8 +81,7 @@ export function selectRunFlags(
     const remainingNeeded = count - picked.length;
     if (remainingNeeded > 0) {
       const fallbackCandidates = tierFlags.filter((f) => !selectedIsoCodes.has(f.isoCode));
-      const shuffledFallback = shuffleArray(fallbackCandidates);
-      const fallbackPicked = shuffledFallback.slice(0, remainingNeeded);
+      const fallbackPicked = sampleCandidates(fallbackCandidates, remainingNeeded, pinnedSet);
       for (const flag of fallbackPicked) {
         selectedFlags.push(flag);
         selectedIsoCodes.add(flag.isoCode);
@@ -74,8 +96,8 @@ export function selectRunFlags(
   if (selectedFlags.length < totalDesired) {
     const remainingNeeded = totalDesired - selectedFlags.length;
     const anyFallbackCandidates = allFlags.filter((f) => !selectedIsoCodes.has(f.isoCode));
-    const shuffledAny = shuffleArray(anyFallbackCandidates);
-    for (const flag of shuffledAny.slice(0, remainingNeeded)) {
+    const anyPicked = sampleCandidates(anyFallbackCandidates, remainingNeeded, pinnedSet);
+    for (const flag of anyPicked) {
       selectedFlags.push(flag);
       selectedIsoCodes.add(flag.isoCode);
     }
@@ -123,6 +145,7 @@ export function selectFlagsForRun(options?: {
   continent?: Continent;
   flagCount?: number;
   excludeIsoCodes?: string[];
+  pinnedIsoCodes?: string[];
 }): CountryFlag[] {
   const pool = getCachedFlagsByContinent(options?.continent);
   const targetCount = options?.flagCount ?? 10;
@@ -131,5 +154,6 @@ export function selectFlagsForRun(options?: {
     options?.excludeIsoCodes ?? [],
     pool.length >= targetCount ? pool : getCachedFlags(),
     targetCount,
+    options?.pinnedIsoCodes ?? [],
   );
 }

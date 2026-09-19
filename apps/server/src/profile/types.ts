@@ -27,6 +27,7 @@ export const playerProfileSchema = z.object({
   battleRating: z.number().int().min(0).default(0),
   currentSeason: z.string().nullable().optional().default(null),
   tier4CorrectCount: z.number().int().min(0).default(0),
+  pinnedIsoCodes: z.array(z.string()).default([]),
   createdAt: z.date(),
   updatedAt: z.date(),
 });

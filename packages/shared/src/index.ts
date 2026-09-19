@@ -19,8 +19,29 @@ export interface PlayerProfile {
   battleRating?: number;
   currentSeason?: string | null;
   tier4CorrectCount?: number;
+  pinnedIsoCodes?: string[];
   createdAt: Date | string;
   updatedAt: Date | string;
+}
+
+export interface RunHistoryItem {
+  runId: string;
+  mode: string;
+  score: number;
+  totalScore: number;
+  date: string;
+  correctCount: number;
+  timeUsedMs: number;
+  xpEarned: number;
+  pinsEarned: number;
+}
+
+export interface RunHistoryResponse {
+  runs: RunHistoryItem[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
 }
 
 export interface SessionResponse {
@@ -30,6 +51,15 @@ export interface SessionResponse {
 
 export interface ProfileResponse {
   profile: PlayerProfile;
+}
+
+export interface ProStatusResponse {
+  isActive: boolean;
+  currentPeriodEnd: string | Date | null;
+}
+
+export interface CreateInvoiceLinkResponse {
+  invoiceLink: string;
 }
 
 export * from './flags.js';

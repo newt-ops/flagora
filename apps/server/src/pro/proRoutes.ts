@@ -31,7 +31,8 @@ proRouter.post('/create-invoice-link', async (req: AuthenticatedSessionRequest, 
 
     res.json({ invoiceLink });
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    const message = error instanceof Error ? error.message : 'Failed to create invoice link';
+    res.status(500).json({ error: 'Internal server error', message });
   }
 });
 
@@ -49,6 +50,7 @@ proRouter.get('/status', async (req: AuthenticatedSessionRequest, res: Response)
       currentPeriodEnd: sub?.currentPeriodEnd || null
     });
   } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    const message = error instanceof Error ? error.message : 'Failed to get subscription status';
+    res.status(500).json({ error: 'Internal server error', message });
   }
 });

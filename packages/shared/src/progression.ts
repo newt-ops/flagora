@@ -30,3 +30,29 @@ export function calculateLevel(totalXp: number): number {
   }
   return Math.floor(totalXp / PROGRESSION_CONFIG.xpPerLevel) + 1;
 }
+
+export interface DoubleXpConfig {
+  daysOfWeekUtc: number[];
+  multiplier: number;
+}
+
+export const DOUBLE_XP_CONFIG: DoubleXpConfig = {
+  daysOfWeekUtc: [0, 5, 6],
+  multiplier: 2,
+};
+
+export function isDoubleXpActive(date: Date = new Date()): boolean {
+  const day = date.getUTCDay();
+  return DOUBLE_XP_CONFIG.daysOfWeekUtc.includes(day);
+}
+
+export function calculateAwardedXp(baseXp: number, isPro: boolean, date: Date = new Date()): number {
+  if (isPro && isDoubleXpActive(date)) {
+    return baseXp * DOUBLE_XP_CONFIG.multiplier;
+  }
+  return baseXp;
+}
+
+export function hasEarlyAccess(player: { isPro?: boolean }): boolean {
+  return Boolean(player?.isPro);
+}

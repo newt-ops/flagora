@@ -23,6 +23,10 @@ export interface TelegramWebAppInstance {
   onEvent?: (eventType: string, callback: () => void) => void;
   offEvent?: (eventType: string, callback: () => void) => void;
   BackButton?: TelegramBackButton;
+  openInvoice?: (
+    url: string,
+    callback?: (status: 'paid' | 'cancelled' | 'failed' | 'pending' | string) => void,
+  ) => void;
 }
 
 export function getTelegramWebApp(): TelegramWebAppInstance | undefined {
@@ -103,5 +107,17 @@ export function syncTelegramBackButton(
   } else {
     backButton.hide();
     return undefined;
+  }
+}
+
+export function openTelegramInvoice(
+  invoiceLink: string,
+  callback?: (status: 'paid' | 'cancelled' | 'failed' | 'pending' | string) => void,
+): void {
+  const tg = getTelegramWebApp();
+  if (tg?.openInvoice) {
+    tg.openInvoice(invoiceLink, callback);
+  } else if (typeof window !== 'undefined') {
+    window.open(invoiceLink, '_blank');
   }
 }

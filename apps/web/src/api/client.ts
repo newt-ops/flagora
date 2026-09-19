@@ -26,6 +26,8 @@ import type {
   RankStatusResponse,
   RankedLeaderboardResponse,
   BadgesMeResponse,
+  ProStatusResponse,
+  CreateInvoiceLinkResponse,
 } from '@flagora/shared';
 
 const API_URL =
@@ -846,6 +848,58 @@ export async function getBadgesMe(
       const data = await response.json();
       if (data?.message) {
         message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function createProInvoiceLink(
+  sessionToken: string,
+): Promise<CreateInvoiceLinkResponse> {
+  const response = await fetch(`${API_URL}/api/pro/create-invoice-link`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to create invoice link: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message || data?.error) {
+        message = data.message || data.error;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function fetchProStatus(
+  sessionToken: string,
+): Promise<ProStatusResponse> {
+  const response = await fetch(`${API_URL}/api/pro/status`, {
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to fetch pro status: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message || data?.error) {
+        message = data.message || data.error;
       }
     } catch {
       void 0;

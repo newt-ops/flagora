@@ -82,4 +82,5 @@ export interface FinishRunResponse {
   longestStreak: number;
   streakChange: StreakChange;
   newBadges?: PlayerBadgeResponseItem[];
+  doubleXpApplied?: boolean;
 }
