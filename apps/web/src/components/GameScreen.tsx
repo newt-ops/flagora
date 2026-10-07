@@ -10,15 +10,17 @@ import { useGameRun } from '../hooks/useGameRun.js';
 import { triggerHaptic } from '../telegram/haptics.js';
 import { TimeExpiredApiError } from '../api/client.js';
 import { getFlagThemeClass } from './cosmeticHelpers.js';
+import { CosmeticProtectedImage } from './CosmeticProtectedImage.js';
 
 interface GameScreenProps {
   run: StartRunResponse;
   sessionToken: string;
   onFinish: (result: FinishRunResponse) => void;
   flagTheme?: string | null;
+  comboBadge?: string | null;
 }
 
-export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScreenProps) {
+export function GameScreen({ run, sessionToken, onFinish, flagTheme, comboBadge }: GameScreenProps) {
   const { answerRun, finishRun } = useGameRun();
 
   const [currentFlagIndex, setCurrentFlagIndex] = useState(0);
@@ -178,8 +180,17 @@ export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScree
 
           <div className="flex items-center gap-2">
             {comboCount > 0 && (
-              <div className="flex items-center gap-1 rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-bold text-tg-button">
-                <Zap className="h-3 w-3" />
+              <div className="flex items-center gap-1.5 rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-bold text-tg-button">
+                {comboBadge ? (
+                  <CosmeticProtectedImage
+                    category="comboBadge"
+                    assetIdOrPath={comboBadge}
+                    alt="Combo Badge"
+                    className="h-4 w-4"
+                  />
+                ) : (
+                  <Zap className="h-3 w-3" />
+                )}
                 <span>{comboMultiplier}x</span>
               </div>
             )}
@@ -197,7 +208,7 @@ export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScree
               <Timer className="h-3.5 w-3.5" />
               <span>Time Left</span>
             </span>
-            <span className={timerSeconds <= 10 ? 'font-bold text-rose-400' : 'text-tg-text'}>
+            <span className={timerSeconds <= 10 ? 'font-bold text-tg-destructive' : 'text-tg-text'}>
               {timerSeconds}s
             </span>
           </div>
@@ -211,7 +222,7 @@ export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScree
               rx="3"
               className={`transition-all duration-100 ease-linear ${
                 timerSeconds <= 10
-                  ? 'fill-rose-500'
+                  ? 'fill-tg-destructive'
                   : 'fill-tg-button'
               }`}
             />
@@ -220,7 +231,7 @@ export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScree
       </div>
 
       {timeExpired && (
-        <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-rose-500/20 p-3 text-sm font-semibold text-rose-400">
+        <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-tg-destructive/15 p-3 text-sm font-semibold text-tg-destructive">
           <AlertCircle className="h-4 w-4" />
           <span>Time Expired! Wrapping up run...</span>
         </div>
@@ -238,7 +249,7 @@ export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScree
             <div className="flex items-center gap-2 text-xs font-semibold">
               {feedback.correct ? (
                 <>
-                  <span className="flex items-center gap-1 text-emerald-500">
+                  <span className="flex items-center gap-1 text-tg-button">
                     <Check className="h-3.5 w-3.5" />
                     <span>+{feedback.pointsThisFlag} pts</span>
                   </span>
@@ -253,7 +264,7 @@ export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScree
                   )}
                 </>
               ) : (
-                <span className="flex items-center gap-1 text-rose-500">
+                <span className="flex items-center gap-1 text-tg-destructive">
                   <X className="h-3.5 w-3.5" />
                   <span>+0 pts</span>
                 </span>
@@ -269,8 +280,8 @@ export function GameScreen({ run, sessionToken, onFinish, flagTheme }: GameScree
               if (isSelected) {
                 if (feedback) {
                   buttonStyle = feedback.correct
-                    ? 'bg-emerald-600 text-white font-bold ring-2 ring-emerald-400'
-                    : 'bg-rose-600 text-white font-bold ring-2 ring-rose-400';
+                    ? 'bg-tg-button text-tg-button-text font-bold ring-2 ring-tg-button'
+                    : 'bg-tg-destructive text-tg-button-text font-bold ring-2 ring-tg-destructive/50';
                 } else {
                   buttonStyle = 'bg-tg-button text-tg-button-text font-bold';
                 }

@@ -6,7 +6,7 @@ interface ErrorStateProps {
 export function ErrorState({ message, onRetry }: ErrorStateProps) {
   return (
     <div className="w-full max-w-md mx-auto rounded-2xl bg-tg-section p-6 text-center text-tg-text shadow-sm">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-500/10 text-rose-500">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-tg-destructive/10 text-tg-destructive">
         <svg
           className="h-6 w-6"
           fill="none"

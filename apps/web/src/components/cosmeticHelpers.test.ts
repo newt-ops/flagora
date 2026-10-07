@@ -23,23 +23,23 @@ describe('cosmeticHelpers', () => {
     it('provides distinct, subtle border, glow, and badge for all 4 rarity tiers', () => {
       const common = getRarityStyle('common');
       assert.equal(common.label, 'Common');
-      assert.ok(common.borderClass.includes('border-zinc-'));
-      assert.ok(common.badgeClass.includes('text-zinc-'));
+      assert.ok(common.borderClass.includes('tg-separator'));
+      assert.ok(common.badgeClass.includes('tg-hint'));
 
       const rare = getRarityStyle('rare');
       assert.equal(rare.label, 'Rare');
-      assert.ok(rare.borderClass.includes('border-sky-'));
-      assert.ok(rare.badgeClass.includes('text-sky-'));
+      assert.ok(rare.borderClass.includes('tg-button'));
+      assert.ok(rare.badgeClass.includes('tg-button'));
 
       const epic = getRarityStyle('epic');
       assert.equal(epic.label, 'Epic');
-      assert.ok(epic.borderClass.includes('border-purple-'));
-      assert.ok(epic.badgeClass.includes('text-purple-'));
+      assert.ok(epic.borderClass.includes('tg-button'));
+      assert.ok(epic.badgeClass.includes('tg-button'));
 
       const legendary = getRarityStyle('legendary');
       assert.equal(legendary.label, 'Legendary');
-      assert.ok(legendary.borderClass.includes('border-amber-'));
-      assert.ok(legendary.badgeClass.includes('text-amber-'));
+      assert.ok(legendary.borderClass.includes('tg-button'));
+      assert.ok(legendary.badgeClass.includes('tg-button-text'));
     });
 
     it('defaults to common when rarity is unknown or omitted', () => {

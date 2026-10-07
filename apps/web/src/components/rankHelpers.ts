@@ -43,46 +43,46 @@ export function getTierBadgeColors(tier: RankedTier): TierStyleConfig {
   switch (tier) {
     case 'Legend':
       return {
-        text: 'text-purple-300',
-        bg: 'bg-purple-950/30',
-        border: 'border-purple-500/60',
-        badge: 'bg-purple-500/25 text-purple-300 border-purple-500/50 shadow-[0_0_8px_rgba(168,85,247,0.25)]',
+        text: 'text-tg-button-text',
+        bg: 'bg-tg-button',
+        border: 'border-tg-button',
+        badge: 'bg-tg-button text-tg-button-text border-tg-button font-bold',
       };
     case 'Diamond':
       return {
-        text: 'text-sky-300',
-        bg: 'bg-sky-950/25',
-        border: 'border-sky-400/50',
-        badge: 'bg-sky-500/20 text-sky-300 border-sky-400/40',
+        text: 'text-tg-button',
+        bg: 'bg-tg-button/20',
+        border: 'border-tg-button/40',
+        badge: 'bg-tg-button/20 text-tg-button border-tg-button/40 font-bold',
       };
     case 'Platinum':
       return {
-        text: 'text-teal-300',
-        bg: 'bg-teal-950/25',
-        border: 'border-teal-400/50',
-        badge: 'bg-teal-500/20 text-teal-300 border-teal-400/40',
+        text: 'text-tg-button',
+        bg: 'bg-tg-button/15',
+        border: 'border-tg-button/30',
+        badge: 'bg-tg-button/15 text-tg-button border-tg-button/30 font-semibold',
       };
     case 'Gold':
       return {
-        text: 'text-amber-400',
-        bg: 'bg-amber-900/25',
-        border: 'border-amber-400/50',
-        badge: 'bg-amber-400/20 text-amber-400 border-amber-400/40',
+        text: 'text-tg-button',
+        bg: 'bg-tg-button/10',
+        border: 'border-tg-button/20',
+        badge: 'bg-tg-button/10 text-tg-button border-tg-button/20 font-semibold',
       };
     case 'Silver':
       return {
-        text: 'text-slate-300',
-        bg: 'bg-slate-800/20',
-        border: 'border-slate-400/40',
-        badge: 'bg-slate-500/20 text-slate-300 border-slate-400/30',
+        text: 'text-tg-text',
+        bg: 'bg-tg-secondary-bg',
+        border: 'border-tg-separator/40',
+        badge: 'bg-tg-secondary-bg text-tg-text border-tg-separator/40 font-medium',
       };
     case 'Bronze':
     default:
       return {
-        text: 'text-amber-500',
-        bg: 'bg-amber-950/20',
-        border: 'border-amber-700/40',
-        badge: 'bg-amber-900/20 text-amber-500 border-amber-700/30',
+        text: 'text-tg-hint',
+        bg: 'bg-tg-secondary-bg',
+        border: 'border-tg-separator/30',
+        badge: 'bg-tg-secondary-bg text-tg-hint border-tg-separator/30 font-normal',
       };
   }
 }
@@ -125,7 +125,7 @@ export function getRatingDeltaDisplay(delta?: number | null): RatingDeltaDisplay
   if (delta > 0) {
     return {
       text: `+${delta}`,
-      colorClass: 'text-emerald-400',
+      colorClass: 'text-tg-button',
       isPositive: true,
       isNegative: false,
     };
@@ -134,7 +134,7 @@ export function getRatingDeltaDisplay(delta?: number | null): RatingDeltaDisplay
   if (delta < 0) {
     return {
       text: `${delta}`,
-      colorClass: 'text-rose-400',
+      colorClass: 'text-tg-destructive',
       isPositive: false,
       isNegative: true,
     };

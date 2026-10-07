@@ -14,6 +14,7 @@
     "load:gameplay": "k6 run load-tests/gameplay-loop.js",
     "load:leaderboards": "k6 run load-tests/leaderboards.js",
     "load:rewards": "k6 run load-tests/reward-flow.js",
+    "load:streak": "k6 run load-tests/reward-flow.js",
     "load:battles": "k6 run load-tests/battles.js",
     "test:load-smoke": "pnpm --filter @flagora/server exec tsx --test ../../load-tests/smoke.test.ts"
   },

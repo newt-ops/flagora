@@ -1,42 +1,4 @@
-export const BONUS_PINS_REWARD_AMOUNT = 50;
-export const BONUS_PINS_DAILY_CAP = 5;
-
-export interface BonusPinsIntentSuccessResponse {
-  ok: true;
-  token: string;
-  rewardType: 'bonus-pins';
-  dailyCap: number;
-  pins: number;
-}
-
-export interface BonusPinsIntentCapReachedResponse {
-  ok: false;
-  error: string;
-  message: string;
-  dailyCap: number;
-  usedCount: number;
-  resetAtUtc: string;
-}
-
-export type BonusPinsIntentResponse =
-  | BonusPinsIntentSuccessResponse
-  | BonusPinsIntentCapReachedResponse;
-
-export interface BonusPinsRedeemRequest {
-  token: string;
-}
-
-export interface BonusPinsRedeemSuccessResponse {
-  ok: true;
-  pinsEarned: number;
-  pins: number;
-  telegramUserId: number;
-}
-
-export interface BonusPinsRedeemErrorResponse {
-  error: string;
-  message: string;
-}
+export const STREAK_SAVE_PIN_COST = 50;
 
 export interface StreakStatusResponse {
   isAtRisk: boolean;
@@ -45,24 +7,18 @@ export interface StreakStatusResponse {
   lastPlayedDate: string | null;
 }
 
-export interface StreakSaveIntentSuccessResponse {
-  ok: true;
-  token: string;
-  rewardType: 'streak-save';
-  dailyCap: number;
-  currentStreak: number;
-  longestStreak: number;
-}
-
-export interface StreakSaveRedeemRequest {
-  token: string;
-}
-
-export interface StreakSaveRedeemSuccessResponse {
+export interface StreakSaveSuccessResponse {
   ok: true;
   saved: true;
-  lastPlayedDate: string;
+  pinsDeducted: number;
+  pins: number;
   currentStreak: number;
   longestStreak: number;
+  lastPlayedDate: string;
   telegramUserId: number;
+}
+
+export interface StreakSaveErrorResponse {
+  error: string;
+  message: string;
 }

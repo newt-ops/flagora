@@ -42,11 +42,17 @@ describe('Phase 9 Prompt 01: Database Indexing Audit', () => {
     const attemptsIndexes = await db.collection('daily_challenge_attempts').indexes();
     const flagsIndexes = await db.collection('flags').indexes();
 
+    const subsIndexes = await db.collection('subscriptions').indexes();
+    const seasonIndexes = await db.collection('season_results').indexes();
+    const paymentsIndexes = await db.collection('processed_payments').indexes();
+
     assert.ok(profilesIndexes.some((idx) => idx.key.telegramUserId === 1 && idx.unique === true));
     assert.ok(profilesIndexes.some((idx) => idx.key.bestScore === -1));
+    assert.ok(profilesIndexes.some((idx) => idx.key.currentSeason === 1 && idx.key.battleRating === -1));
 
     assert.ok(runsIndexes.some((idx) => idx.key.runId === 1 && idx.unique === true));
     assert.ok(runsIndexes.some((idx) => idx.key.telegramUserId === 1 && idx.key.createdAt === -1));
+    assert.ok(runsIndexes.some((idx) => idx.key.mode === 1 && idx.key.dailyDate === 1));
 
     assert.ok(challengesIndexes.some((idx) => idx.key.challengeId === 1 && idx.unique === true));
     assert.ok(challengesIndexes.some((idx) => idx.key.challengerUserId === 1));
@@ -63,6 +69,10 @@ describe('Phase 9 Prompt 01: Database Indexing Audit', () => {
 
     assert.ok(flagsIndexes.some((idx) => idx.key.isoCode === 1 && idx.unique === true));
     assert.ok(flagsIndexes.some((idx) => idx.key.tier === 1));
+
+    assert.ok(subsIndexes.some((idx) => idx.key.telegramUserId === 1 && idx.unique === true));
+    assert.ok(seasonIndexes.some((idx) => idx.key.telegramUserId === 1 && idx.key.season === 1 && idx.unique === true));
+    assert.ok(paymentsIndexes.some((idx) => idx.key.chargeId === 1 && idx.unique === true));
   });
 
   it('verifies PlayerProfile queries use index and avoid COLLSCAN', async () => {

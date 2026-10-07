@@ -16,7 +16,6 @@ export function createTelegramAuthMiddleware(botToken: string, maxAgeSeconds = 9
       const validated = validateInitData(rawHeader, botToken, maxAgeSeconds);
       req.telegramUser = validated.user;
       req.startParam = validated.startParam;
-      process.stdout.write(`[Auth] Validated Telegram user ID: ${validated.user.id}\n`);
       next();
     } catch (error) {
       const message = error instanceof InitDataError ? error.message : 'Invalid initData';

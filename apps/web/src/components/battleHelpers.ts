@@ -173,13 +173,13 @@ export function getBattlePerspectiveHeading(
       return {
         title: 'Victory!',
         subtitle: 'You won the live battle!',
-        badgeClass: 'bg-emerald-500/20 text-emerald-400 ring-emerald-500/30',
+        badgeClass: 'bg-tg-button/15 text-tg-button ring-tg-button/30',
       };
     case 'lost':
       return {
         title: 'Defeat!',
         subtitle: 'Better luck in the next battle!',
-        badgeClass: 'bg-rose-500/20 text-rose-400 ring-rose-500/30',
+        badgeClass: 'bg-tg-destructive/15 text-tg-destructive ring-tg-destructive/30',
       };
     case 'tie':
       return {

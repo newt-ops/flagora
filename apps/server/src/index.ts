@@ -1,11 +1,12 @@
 import http from 'node:http';
+import crypto from 'node:crypto';
 import dotenv from 'dotenv';
 import express from 'express';
 import { initSocketServer } from './multiplayer/socketServer.js';
 import { createTelegramAuthMiddleware } from './auth/middleware.js';
 import type { AuthenticatedRequest } from './auth/types.js';
-import { initDatabase } from './db/mongo.js';
-import { initRedis } from './db/redis.js';
+import { initDatabase, closeDatabase } from './db/mongo.js';
+import { initRedis, closeRedis } from './db/redis.js';
 import { initNotificationQueue, closeNotificationQueue } from './notifications/notificationQueue.js';
 import { findOrCreatePlayerProfile, getPlayerProfileByUserId, updatePinnedFlags } from './profile/profileService.js';
 import {
@@ -85,21 +86,11 @@ import {
   type InlineKeyboardButton,
 } from './telegram/telegramService.js';
 import {
-  requestBonusPinsIntent,
-  redeemBonusPins,
   getStreakStatus,
-  requestStreakSaveIntent,
-  redeemStreakSave,
-  getLatestPendingRewardToken,
-  verifyRewardToken,
+  saveStreak,
   StreakNotAtRiskError,
   RewardCapReachedError,
-  RewardTokenError,
-  UnauthorizedTokenRedemptionError,
-  ExpiredRewardTokenError,
-  RewardTokenAlreadyRedeemedError,
-  RewardTypeMismatchError,
-  InvalidRewardTokenError,
+  InsufficientPinsError as StreakInsufficientPinsError,
 } from './rewards/index.js';
 import { getDisplayName, type PlayerProfile } from '@flagora/shared';
 import { rateLimit } from './middleware/rateLimit.js';
@@ -130,10 +121,55 @@ const port = process.env.PORT || 3001;
 
 app.use(express.json());
 
+function timingSafeEqualStrings(a: string | undefined | null, b: string | undefined | null): boolean {
+  if (typeof a !== 'string' || typeof b !== 'string') {
+    return false;
+  }
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Telegram-Init-Data');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+
+  const origin = req.headers.origin;
+  const configuredClient = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://flagora-delta.vercel.app';
+  const allowedOrigins = new Set([
+    configuredClient,
+    'https://flagora-delta.vercel.app',
+    'https://web.telegram.org',
+    'https://webk.telegram.org',
+    'https://webz.telegram.org',
+  ]);
+
+  if (origin) {
+    const isLocalhost =
+      process.env.NODE_ENV !== 'production' &&
+      (/^https?:\/\/localhost(:\d+)?$/.test(origin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin));
+
+    if (allowedOrigins.has(origin) || isLocalhost) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Content-Type, Authorization, X-Telegram-Init-Data, X-Admin-Secret, X-Telegram-Bot-Api-Secret-Token',
+  );
+
   if (req.method === 'OPTIONS') {
     res.sendStatus(204);
     return;
@@ -144,8 +180,6 @@ app.use((req, res, next) => {
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
 });
-
-app.use('/api/pro', proRouter);
 
 async function bootstrap() {
   let db;
@@ -195,6 +229,8 @@ async function bootstrap() {
   const httpServer = http.createServer(app);
   const io = initSocketServer(httpServer, sessionSecret!, db, { redis });
 
+  app.use('/api/pro', sessionMiddleware, rateLimit({ endpoint: 'pro_routes', limit: 60, windowSeconds: 60 }), proRouter);
+
   app.post('/api/session', rateLimit({ endpoint: 'session', limit: 30, windowSeconds: 60 }), authMiddleware, async (req: AuthenticatedRequest, res) => {
     try {
       const user = req.telegramUser;
@@ -222,7 +258,7 @@ async function bootstrap() {
     }
   });
 
-  app.get('/api/profile/me', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.get('/api/profile/me', sessionMiddleware, rateLimit({ endpoint: 'profile_me', limit: 120, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -243,7 +279,7 @@ async function bootstrap() {
     }
   });
 
-  app.post('/api/profile/pinned-flags', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.post('/api/profile/pinned-flags', sessionMiddleware, rateLimit({ endpoint: 'profile_pinned_flags', limit: 30, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -252,8 +288,12 @@ async function bootstrap() {
       }
 
       const { pinnedIsoCodes } = req.body ?? {};
-      if (!Array.isArray(pinnedIsoCodes) || pinnedIsoCodes.some((code) => typeof code !== 'string')) {
-        res.status(400).json({ error: 'Bad request', message: 'pinnedIsoCodes must be an array of strings' });
+      if (
+        !Array.isArray(pinnedIsoCodes) ||
+        pinnedIsoCodes.length > 10 ||
+        pinnedIsoCodes.some((code) => typeof code !== 'string' || code.length !== 2)
+      ) {
+        res.status(400).json({ error: 'Bad request', message: 'pinnedIsoCodes must be an array of at most 10 2-letter country codes' });
         return;
       }
 
@@ -271,7 +311,7 @@ async function bootstrap() {
     }
   });
 
-  app.get('/api/runs/history', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.get('/api/runs/history', sessionMiddleware, rateLimit({ endpoint: 'runs_history', limit: 60, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -282,7 +322,7 @@ async function bootstrap() {
       const rawPage = Number(req.query.page);
       const rawLimit = Number(req.query.limit);
       const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
-      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 10;
+      const limit = Math.min(Number.isFinite(rawLimit) && rawLimit > 0 ? Math.floor(rawLimit) : 10, 50);
 
       const history = await getRunHistory(telegramUserId, db, { page, limit });
       res.status(200).json(history);
@@ -301,8 +341,12 @@ async function bootstrap() {
       }
 
       const { continent, flagCount, durationSeconds } = req.body ?? {};
-      const parsedFlagCount = typeof flagCount === 'number' && flagCount > 0 ? flagCount : undefined;
-      const parsedDuration = typeof durationSeconds === 'number' && durationSeconds > 0 ? durationSeconds : undefined;
+      const parsedFlagCount =
+        typeof flagCount === 'number' && flagCount > 0 ? Math.min(Math.floor(flagCount), 50) : undefined;
+      const parsedDuration =
+        typeof durationSeconds === 'number' && durationSeconds > 0
+          ? Math.min(Math.floor(durationSeconds), 300)
+          : undefined;
       const run = await createRun(telegramUserId, db, {
         continent,
         flagCount: parsedFlagCount,
@@ -325,12 +369,19 @@ async function bootstrap() {
       }
 
       const id = String(req.params.id);
-      const { flagIndex, selectedIsoCode } = req.body;
+      const { flagIndex, selectedIsoCode } = req.body ?? {};
 
-      if (typeof flagIndex !== 'number' || typeof selectedIsoCode !== 'string') {
+      if (
+        typeof flagIndex !== 'number' ||
+        !Number.isInteger(flagIndex) ||
+        flagIndex < 0 ||
+        flagIndex > 50 ||
+        typeof selectedIsoCode !== 'string' ||
+        selectedIsoCode.length !== 2
+      ) {
         res.status(400).json({
           error: 'Bad request',
-          message: 'flagIndex (number) and selectedIsoCode (string) are required',
+          message: 'flagIndex (integer 0-50) and selectedIsoCode (2-letter string) are required',
         });
         return;
       }
@@ -390,10 +441,10 @@ async function bootstrap() {
     }
   });
 
-  app.get('/api/leaderboard/top', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.get('/api/leaderboard/top', sessionMiddleware, rateLimit({ endpoint: 'leaderboard_top', limit: 60, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const rawLimit = Number(req.query.limit);
-      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 50;
+      const limit = Math.min(Number.isFinite(rawLimit) && rawLimit > 0 ? Math.floor(rawLimit) : 50, 100);
       const entries = await getTopLeaderboard(limit, db, redis);
       res.status(200).json(entries);
     } catch (error) {
@@ -402,7 +453,7 @@ async function bootstrap() {
     }
   });
 
-  app.get('/api/leaderboard/me', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.get('/api/leaderboard/me', sessionMiddleware, rateLimit({ endpoint: 'leaderboard_me', limit: 60, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -438,7 +489,7 @@ async function bootstrap() {
     }
   });
 
-  app.get('/api/daily/status', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.get('/api/daily/status', sessionMiddleware, rateLimit({ endpoint: 'daily_status', limit: 60, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -454,7 +505,7 @@ async function bootstrap() {
     }
   });
 
-  app.get('/api/daily/leaderboard', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.get('/api/daily/leaderboard', sessionMiddleware, rateLimit({ endpoint: 'daily_leaderboard', limit: 60, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -463,7 +514,7 @@ async function bootstrap() {
       }
 
       const rawLimit = Number(req.query.limit);
-      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 50;
+      const limit = Math.min(Number.isFinite(rawLimit) && rawLimit > 0 ? Math.floor(rawLimit) : 50, 100);
       const result = await getDailyLeaderboard(telegramUserId, db, redis, undefined, limit);
       res.status(200).json(result);
     } catch (error) {
@@ -488,7 +539,7 @@ async function bootstrap() {
     }
   });
 
-  app.get('/api/challenges/:id', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.get('/api/challenges/:id', sessionMiddleware, rateLimit({ endpoint: 'challenge_get', limit: 60, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -591,7 +642,7 @@ async function bootstrap() {
     }
   });
 
-  app.get('/api/battles/:id', sessionMiddleware, async (req: AuthenticatedSessionRequest, res) => {
+  app.get('/api/battles/:id', sessionMiddleware, rateLimit({ endpoint: 'battle_get', limit: 60, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
       const telegramUserId = req.sessionUser?.telegramUserId;
       if (!telegramUserId) {
@@ -645,92 +696,11 @@ async function bootstrap() {
     }
   });
 
-  app.post(
-    '/api/rewards/bonus-pins/intent',
-    sessionMiddleware,
-    rateLimit({ endpoint: 'reward_intent', limit: 20, windowSeconds: 60 }),
-    async (req: AuthenticatedSessionRequest, res) => {
-      try {
-        const telegramUserId = req.sessionUser?.telegramUserId;
-        if (!telegramUserId) {
-          res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
-          return;
-        }
-
-        const result = await requestBonusPinsIntent(telegramUserId, { redis });
-        res.status(200).json(result);
-      } catch (error) {
-        if (error instanceof RewardCapReachedError) {
-          res.status(429).json({
-            ok: false,
-            error: 'Daily cap reached',
-            message: error.message,
-            dailyCap: error.dailyCap,
-            usedCount: error.usedCount,
-            resetAtUtc: error.resetAtUtc,
-          });
-          return;
-        }
-        const message = error instanceof Error ? error.message : 'Failed to create reward intent';
-        res.status(500).json({ error: 'Internal server error', message });
-      }
-    },
-  );
-
-  app.post(
-    '/api/rewards/bonus-pins/redeem',
-    sessionMiddleware,
-    rateLimit({ endpoint: 'reward_redeem', limit: 20, windowSeconds: 60 }),
-    async (req: AuthenticatedSessionRequest, res) => {
-      try {
-        const telegramUserId = req.sessionUser?.telegramUserId;
-        if (!telegramUserId) {
-          res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
-          return;
-        }
-
-        const { token } = req.body || {};
-        if (!token || typeof token !== 'string' || token.trim() === '') {
-          res.status(400).json({ error: 'Missing token', message: 'Reward token is required' });
-          return;
-        }
-
-        const result = await redeemBonusPins(token, telegramUserId, db, { redis });
-        res.status(200).json(result);
-      } catch (error) {
-        if (error instanceof UnauthorizedTokenRedemptionError) {
-          res.status(403).json({ error: 'Forbidden', message: error.message });
-          return;
-        }
-        if (error instanceof ExpiredRewardTokenError) {
-          res.status(400).json({ error: 'Token expired', message: error.message });
-          return;
-        }
-        if (error instanceof RewardTokenAlreadyRedeemedError) {
-          res.status(400).json({ error: 'Token already redeemed', message: error.message });
-          return;
-        }
-        if (error instanceof RewardTypeMismatchError) {
-          res.status(400).json({ error: 'Type mismatch', message: error.message });
-          return;
-        }
-        if (error instanceof InvalidRewardTokenError) {
-          res.status(400).json({ error: 'Invalid token', message: error.message });
-          return;
-        }
-        if (error instanceof RewardTokenError) {
-          res.status(400).json({ error: 'Invalid reward token', message: error.message });
-          return;
-        }
-        const message = error instanceof Error ? error.message : 'Failed to redeem reward token';
-        res.status(500).json({ error: 'Internal server error', message });
-      }
-    },
-  );
 
   app.get(
     '/api/streak/status',
     sessionMiddleware,
+    rateLimit({ endpoint: 'streak_status', limit: 60, windowSeconds: 60 }),
     async (req: AuthenticatedSessionRequest, res) => {
       try {
         const telegramUserId = req.sessionUser?.telegramUserId;
@@ -749,9 +719,9 @@ async function bootstrap() {
   );
 
   app.post(
-    '/api/rewards/streak-save/intent',
+    '/api/streak/save',
     sessionMiddleware,
-    rateLimit({ endpoint: 'reward_intent', limit: 20, windowSeconds: 60 }),
+    rateLimit({ endpoint: 'streak_save', limit: 10, windowSeconds: 60 }),
     async (req: AuthenticatedSessionRequest, res) => {
       try {
         const telegramUserId = req.sessionUser?.telegramUserId;
@@ -760,11 +730,15 @@ async function bootstrap() {
           return;
         }
 
-        const result = await requestStreakSaveIntent(telegramUserId, db, { redis });
+        const result = await saveStreak(telegramUserId, db, { redis });
         res.status(200).json(result);
       } catch (error) {
         if (error instanceof StreakNotAtRiskError) {
           res.status(400).json({ error: 'Streak not at risk', message: error.message });
+          return;
+        }
+        if (error instanceof StreakInsufficientPinsError) {
+          res.status(400).json({ error: 'Insufficient pins', message: error.message });
           return;
         }
         if (error instanceof RewardCapReachedError) {
@@ -778,168 +752,18 @@ async function bootstrap() {
           });
           return;
         }
-        const message = error instanceof Error ? error.message : 'Failed to create streak save intent';
+        const message = error instanceof Error ? error.message : 'Failed to save streak';
         res.status(500).json({ error: 'Internal server error', message });
       }
     },
   );
 
-  app.post(
-    '/api/rewards/streak-save/redeem',
-    sessionMiddleware,
-    rateLimit({ endpoint: 'reward_redeem', limit: 20, windowSeconds: 60 }),
-    async (req: AuthenticatedSessionRequest, res) => {
-      try {
-        const telegramUserId = req.sessionUser?.telegramUserId;
-        if (!telegramUserId) {
-          res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
-          return;
-        }
 
-        const { token } = req.body || {};
-        if (!token || typeof token !== 'string' || token.trim() === '') {
-          res.status(400).json({ error: 'Missing token', message: 'Reward token is required' });
-          return;
-        }
-
-        const result = await redeemStreakSave(token, telegramUserId, db, { redis });
-        res.status(200).json(result);
-      } catch (error) {
-        if (error instanceof StreakNotAtRiskError) {
-          res.status(400).json({ error: 'Streak not at risk', message: error.message });
-          return;
-        }
-        if (error instanceof UnauthorizedTokenRedemptionError) {
-          res.status(403).json({ error: 'Forbidden', message: error.message });
-          return;
-        }
-        if (error instanceof ExpiredRewardTokenError) {
-          res.status(400).json({ error: 'Token expired', message: error.message });
-          return;
-        }
-        if (error instanceof RewardTokenAlreadyRedeemedError) {
-          res.status(400).json({ error: 'Token already redeemed', message: error.message });
-          return;
-        }
-        if (error instanceof RewardTypeMismatchError) {
-          res.status(400).json({ error: 'Type mismatch', message: error.message });
-          return;
-        }
-        if (error instanceof InvalidRewardTokenError) {
-          res.status(400).json({ error: 'Invalid token', message: error.message });
-          return;
-        }
-        if (error instanceof RewardTokenError) {
-          res.status(400).json({ error: 'Invalid reward token', message: error.message });
-          return;
-        }
-        const message = error instanceof Error ? error.message : 'Failed to redeem streak save';
-        res.status(500).json({ error: 'Internal server error', message });
-      }
-    },
-  );
-
-  app.get(
-    '/api/rewards/adsgram-postback',
-    rateLimit({ endpoint: 'adsgram_postback', limit: 60, windowSeconds: 60 }),
-    async (req, res) => {
-      try {
-        const rawUserId = req.query.userid ?? req.query.user_id;
-        if (!rawUserId) {
-          res.status(400).json({ ok: false, error: 'Missing userid parameter' });
-          return;
-        }
-
-        const telegramUserId = Number(rawUserId);
-        if (!Number.isFinite(telegramUserId) || telegramUserId <= 0) {
-          res.status(400).json({ ok: false, error: 'Invalid userid parameter' });
-          return;
-        }
-
-        const token = await getLatestPendingRewardToken(telegramUserId, { redis });
-        if (!token) {
-          res.status(200).json({
-            ok: true,
-            status: 'no_pending_token',
-            message: 'No pending reward token found for user',
-          });
-          return;
-        }
-
-        let payload;
-        try {
-          payload = verifyRewardToken(token);
-        } catch {
-          res.status(200).json({
-            ok: true,
-            status: 'invalid_or_expired_token',
-            message: 'Pending token is invalid or expired',
-          });
-          return;
-        }
-
-        try {
-          if (payload.rewardType === 'bonus-pins') {
-            const result = await redeemBonusPins(token, telegramUserId, db, { redis });
-            res.status(200).json({
-              ok: true,
-              status: 'redeemed',
-              rewardType: 'bonus-pins',
-              pinsEarned: result.pinsEarned,
-              pins: result.pins,
-            });
-            return;
-          }
-
-          if (payload.rewardType === 'streak-save') {
-            const result = await redeemStreakSave(token, telegramUserId, db, { redis });
-            res.status(200).json({
-              ok: true,
-              status: 'redeemed',
-              rewardType: 'streak-save',
-              saved: result.saved,
-              currentStreak: result.currentStreak,
-            });
-            return;
-          }
-
-          res.status(200).json({
-            ok: true,
-            status: 'unsupported_reward_type',
-          });
-        } catch (error) {
-          if (error instanceof RewardTokenAlreadyRedeemedError) {
-            res.status(200).json({
-              ok: true,
-              status: 'already_redeemed',
-              message: 'Reward token was already redeemed',
-            });
-            return;
-          }
-
-          if (error instanceof StreakNotAtRiskError) {
-            res.status(200).json({
-              ok: true,
-              status: 'streak_not_at_risk',
-              message: error.message,
-            });
-            return;
-          }
-
-          const message = error instanceof Error ? error.message : 'Redemption failed';
-          res.status(500).json({ ok: false, error: 'Internal server error', message });
-        }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Postback processing failed';
-        res.status(500).json({ ok: false, error: 'Internal server error', message });
-      }
-    },
-  );
-
-  app.post('/api/admin/flags/reload', async (req, res) => {
+  app.post('/api/admin/flags/reload', rateLimit({ endpoint: 'admin_flags_reload', limit: 10, windowSeconds: 60 }), async (req, res) => {
     try {
       const adminSecret = process.env.ADMIN_SECRET;
-      if (adminSecret && req.headers['x-admin-secret'] !== adminSecret) {
+      const providedSecret = req.headers['x-admin-secret'];
+      if (!adminSecret || typeof providedSecret !== 'string' || !timingSafeEqualStrings(providedSecret, adminSecret)) {
         res.status(403).json({ error: 'Forbidden', message: 'Invalid admin secret' });
         return;
       }
@@ -1069,7 +893,7 @@ async function bootstrap() {
       }
 
       const rawLimit = Number(req.query.limit);
-      const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 50;
+      const limit = Math.min(Number.isFinite(rawLimit) && rawLimit > 0 ? Math.floor(rawLimit) : 50, 100);
       const result = await getRankedLeaderboard(telegramUserId, db, redis, limit);
       res.status(200).json(result);
     } catch (error) {
@@ -1094,10 +918,11 @@ async function bootstrap() {
     }
   });
 
-  app.post('/api/admin/shop/reload', async (req, res) => {
+  app.post('/api/admin/shop/reload', rateLimit({ endpoint: 'admin_shop_reload', limit: 10, windowSeconds: 60 }), async (req, res) => {
     try {
       const adminSecret = process.env.ADMIN_SECRET;
-      if (adminSecret && req.headers['x-admin-secret'] !== adminSecret) {
+      const providedSecret = req.headers['x-admin-secret'];
+      if (!adminSecret || typeof providedSecret !== 'string' || !timingSafeEqualStrings(providedSecret, adminSecret)) {
         res.status(403).json({ error: 'Forbidden', message: 'Invalid admin secret' });
         return;
       }
@@ -1109,10 +934,27 @@ async function bootstrap() {
     }
   });
 
-  app.post('/api/telegram/webhook', async (req, res) => {
-    res.status(200).json({ ok: true });
-    try {
-      const update = req.body;
+  app.post(
+    '/api/telegram/webhook',
+    rateLimit({ endpoint: 'telegram_webhook', limit: 120, windowSeconds: 60 }),
+    async (req, res) => {
+      const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+      const providedToken = req.headers['x-telegram-bot-api-secret-token'];
+
+      if (!webhookSecret) {
+        if (process.env.NODE_ENV === 'production') {
+          res.status(401).json({ error: 'Unauthorized', message: 'Webhook secret not configured' });
+          return;
+        }
+      } else {
+        if (!providedToken || typeof providedToken !== 'string' || !timingSafeEqualStrings(providedToken, webhookSecret)) {
+          res.status(401).json({ error: 'Unauthorized', message: 'Invalid webhook secret token' });
+          return;
+        }
+      }
+
+      try {
+        const update = req.body;
       const rawUsername =
         process.env.TELEGRAM_BOT_USERNAME || process.env.BOT_USERNAME || 'flagora_bot';
       const cleanUsername = rawUsername.replace(/^@/, '');
@@ -1250,12 +1092,24 @@ async function bootstrap() {
             ],
           });
         }
+        if (!res.headersSent) {
+          res.status(200).json({ ok: true });
+        }
         return;
       }
 
       if (update?.pre_checkout_query) {
         const query = update.pre_checkout_query;
-        void answerPreCheckoutQuery(query.id, true);
+        const isStars = !query.currency || query.currency === 'XTR';
+        const isProPayload = !query.invoice_payload || (typeof query.invoice_payload === 'string' && query.invoice_payload.startsWith('pro_sub_'));
+        if (isStars && isProPayload) {
+          void answerPreCheckoutQuery(query.id, true);
+        } else {
+          void answerPreCheckoutQuery(query.id, false, 'Invalid currency or payment payload');
+        }
+        if (!res.headersSent) {
+          res.status(200).json({ ok: true });
+        }
         return;
       }
 
@@ -1265,18 +1119,47 @@ async function bootstrap() {
         const payment = message.successful_payment;
         const telegramUserId = Number(message.from?.id);
         const chargeId = payment.telegram_payment_charge_id;
-        if (telegramUserId && chargeId) {
+        const isStars = !payment.currency || payment.currency === 'XTR';
+        const isProPayload = !payment.invoice_payload || (typeof payment.invoice_payload === 'string' && payment.invoice_payload.startsWith('pro_sub_'));
+
+        if (telegramUserId && chargeId && isStars && isProPayload) {
           try {
-            await processSuccessfulPayment(telegramUserId, chargeId);
-            const profileCol = db.collection<PlayerProfile>('profiles');
-            await profileCol.updateOne(
-              { telegramUserId },
-              { $inc: { pins: 1000 } }
-            );
+            const processedCol = db.collection('processed_payments');
+            let alreadyProcessed = false;
+            try {
+              await processedCol.insertOne({
+                chargeId,
+                telegramUserId,
+                createdAt: new Date(),
+              });
+            } catch (dupErr: unknown) {
+              const mongoErr = dupErr as { code?: number };
+              if (mongoErr?.code === 11000) {
+                alreadyProcessed = true;
+              } else {
+                throw dupErr;
+              }
+            }
+
+            if (!alreadyProcessed) {
+              await processSuccessfulPayment(telegramUserId, chargeId, db);
+              const profileCol = db.collection<PlayerProfile>('profiles');
+              await profileCol.updateOne(
+                { telegramUserId },
+                { $inc: { pins: 1000 } }
+              );
+              void sendTelegramMessage({
+                chatId: telegramUserId,
+                text: '⭐ Welcome to Flagora Pro! Your perks and 1,000 Pins stipend are active.',
+              });
+            }
           } catch (e) {
             const errMessage = e instanceof Error ? e.message : String(e);
             process.stderr.write(`Warning: Failed to process successful payment: ${errMessage}\n`);
           }
+        }
+        if (!res.headersSent) {
+          res.status(200).json({ ok: true });
         }
         return;
       }
@@ -1323,9 +1206,34 @@ async function bootstrap() {
           });
         }
       }
+
+      if (!res.headersSent) {
+        res.status(200).json({ ok: true });
+      }
     } catch {
-      void 0;
+      if (!res.headersSent) {
+        res.status(200).json({ ok: true });
+      }
     }
+  });
+
+  app.use((err: unknown, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    void next;
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    const status = typeof (err as { status?: number }).status === 'number' ? (err as { status?: number }).status! : 500;
+    res.status(status).json({
+      error:
+        status === 400
+          ? 'Bad request'
+          : status === 401
+            ? 'Unauthorized'
+            : status === 403
+              ? 'Forbidden'
+              : status === 404
+                ? 'Not found'
+                : 'Internal server error',
+      message: status === 500 && process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : message,
+    });
   });
 
   httpServer.listen(port, () => {
@@ -1333,7 +1241,15 @@ async function bootstrap() {
   });
 
   const shutdown = async () => {
-    await closeNotificationQueue();
+    try {
+      await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+      io.close();
+      await closeNotificationQueue();
+      await closeRedis();
+      await closeDatabase();
+    } catch {
+      void 0;
+    }
     process.exit(0);
   };
   process.on('SIGINT', shutdown);

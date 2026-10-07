@@ -14,7 +14,6 @@ import {
   Share2,
   Copy,
   Check,
-  Loader2,
   Award,
   Crown,
 } from 'lucide-react';
@@ -30,12 +29,11 @@ import {
 import { getProfileStreakDisplay } from './streakDisplayHelpers.js';
 import { getDailyResultSummary } from './dailyChallengeHelpers.js';
 import { StreakSaveBanner } from './StreakSaveBanner.js';
-import { useBonusPinsAd } from '../hooks/useBonusPinsAd.js';
-import { getBonusAdsButtonText } from './rewardUiHelpers.js';
 import { getAvatarFrameClass, getProfileBannerClass } from './cosmeticHelpers.js';
 import { formatSeasonName, getTierIcon } from './rankHelpers.js';
 import { BadgeShowcase } from './BadgeShowcase.js';
 import { ProUpgradeModal } from './ProUpgradeModal.js';
+import { CosmeticProtectedImage } from './CosmeticProtectedImage.js';
 
 export { getDisplayName };
 
@@ -54,7 +52,6 @@ interface ProfileCardProps {
   onBattleFriend?: () => void;
   onViewLeaderboard?: () => void;
   onViewDailyLeaderboard?: () => void;
-  onNavigateToRewards?: () => void;
   onRefetchProfile?: () => void;
   onRefetchStreakStatus?: () => void;
   onRefetchProStatus?: () => void;
@@ -80,7 +77,6 @@ export function ProfileCard({
   onBattleFriend,
   onViewLeaderboard,
   onViewDailyLeaderboard,
-  onNavigateToRewards,
   onRefetchProfile,
   onRefetchStreakStatus,
   onRefetchProStatus,
@@ -104,17 +100,6 @@ export function ProfileCard({
   const currentRank = rankStatus?.rank ?? null;
   const seasonName = formatSeasonName(rankStatus?.season);
   const TierIcon = getTierIcon(currentTier);
-
-  const {
-    isWatchingAd,
-    feedback: bonusFeedback,
-    remainingAds,
-    isCapReached,
-    handleWatchAd,
-  } = useBonusPinsAd({
-    sessionToken,
-    onRewardSuccess: onRefetchProfile,
-  });
 
   const botUsername =
     (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BOT_USERNAME) || 'FlagoraBot';
@@ -176,25 +161,46 @@ export function ProfileCard({
           bannerClass ? 'pt-0' : 'p-4 sm:p-6'
         }`}
       >
-      {bannerClass && <div className={`h-20 w-full ${bannerClass} opacity-90`} />}
-      <div className={`flex flex-col items-center text-center ${bannerClass ? '-mt-10 px-4 sm:px-6 pb-6' : ''}`}>
-        {profile.photoUrl ? (
-          <img
-            src={profile.photoUrl}
-            alt={displayName}
-            className={`h-20 w-20 rounded-full object-cover bg-tg-section ${
-              frameClass ? frameClass : 'ring-2 ring-tg-button'
-            }`}
+      {profile.equipped?.profileEffect && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden opacity-75 z-0">
+          <CosmeticProtectedImage
+            category="profileEffect"
+            assetIdOrPath={profile.equipped.profileEffect}
+            alt="Profile Effect"
+            className="h-56 w-56"
+            animationClass="animate-profile-effect"
           />
-        ) : (
-          <div
-            className={`flex h-20 w-20 items-center justify-center rounded-full bg-tg-button text-3xl font-semibold text-tg-button-text ${
-              frameClass ? frameClass : ''
-            }`}
-          >
-            {initial}
-          </div>
-        )}
+        </div>
+      )}
+      {bannerClass && <div className={`h-20 w-full ${bannerClass} opacity-90`} />}
+      <div className={`relative z-10 flex flex-col items-center text-center ${bannerClass ? '-mt-10 px-4 sm:px-6 pb-6' : ''}`}>
+        <div className="relative flex h-20 w-20 items-center justify-center">
+          {profile.photoUrl ? (
+            <img
+              src={profile.photoUrl}
+              alt={displayName}
+              className={`h-16 w-16 rounded-full object-cover bg-tg-section ${
+                !profile.equipped?.avatarFrame ? (frameClass ? frameClass : 'ring-2 ring-tg-button') : ''
+              }`}
+            />
+          ) : (
+            <div
+              className={`flex h-16 w-16 items-center justify-center rounded-full bg-tg-button text-2xl font-semibold text-tg-button-text ${
+                !profile.equipped?.avatarFrame ? (frameClass ? frameClass : '') : ''
+              }`}
+            >
+              {initial}
+            </div>
+          )}
+          {profile.equipped?.avatarFrame && (
+            <CosmeticProtectedImage
+              category="avatarFrame"
+              assetIdOrPath={profile.equipped.avatarFrame}
+              alt="Avatar Frame"
+              className="absolute inset-0"
+            />
+          )}
+        </div>
 
         <h2 className="mt-4 text-xl font-bold text-tg-text">
           {profile.firstName || displayName}
@@ -206,7 +212,7 @@ export function ProfileCard({
         )}
         <p className="mt-1 text-xs font-semibold text-tg-hint">Level {profile.level} Player</p>
         {proStatus?.isActive ? (
-          <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-3 py-1 text-xs font-bold text-amber-400">
+          <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-tg-button/15 border border-tg-button/30 px-3 py-1 text-xs font-bold text-tg-button">
             <Crown className="h-3.5 w-3.5 fill-current" />
             <span>
               Pro until{' '}
@@ -219,7 +225,7 @@ export function ProfileCard({
           <button
             type="button"
             onClick={() => setIsUpgradeModalOpen(true)}
-            className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 border border-amber-500/25 px-3.5 py-1 text-xs font-bold text-amber-400 transition-transform active:scale-95 hover:bg-amber-500/15"
+            className="mt-2.5 inline-flex items-center gap-1.5 rounded-full bg-tg-button/10 border border-tg-button/25 px-3.5 py-1 text-xs font-bold text-tg-button transition-transform active:scale-95 hover:bg-tg-button/15"
           >
             <Crown className="h-3.5 w-3.5 fill-current" />
             <span>Upgrade to Flagora Pro</span>
@@ -249,11 +255,13 @@ export function ProfileCard({
           <StreakSaveBanner
             sessionToken={sessionToken}
             streakStatus={streakStatus}
+            userPins={profile.pins}
+            isPro={proStatus?.isActive ?? false}
             onSuccess={() => {
               onRefetchProfile?.();
               onRefetchStreakStatus?.();
             }}
-            onLearnMore={onNavigateToRewards}
+            onUpgradePro={() => setIsUpgradeModalOpen(true)}
           />
         </div>
       )}
@@ -384,54 +392,6 @@ export function ProfileCard({
             <span className="truncate">Share Link</span>
           </button>
         </div>
-      </div>
-
-      <div className="mt-4 flex w-full flex-col rounded-xl bg-tg-secondary-bg p-4 text-left">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-tg-button/10 text-tg-button">
-              <Pins className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-tg-text truncate">Bonus Pins</p>
-              <p className="text-[11px] text-tg-hint truncate">+50 pins per ad</p>
-            </div>
-          </div>
-          <span
-            data-testid="bonus-pins-remaining-badge"
-            className="rounded-full bg-tg-button/15 px-2.5 py-0.5 text-xs font-bold text-tg-button shrink-0"
-          >
-            {remainingAds > 0 ? `${remainingAds}/5 remaining today` : 'Daily cap reached (5/5)'}
-          </span>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleWatchAd}
-          disabled={isCapReached || isWatchingAd || !sessionToken}
-          data-testid="watch-bonus-ad-button"
-          className="mt-3.5 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-tg-button px-3 text-xs font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
-        >
-          {isWatchingAd ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Pins className="h-3.5 w-3.5" />
-          )}
-          <span>{getBonusAdsButtonText(remainingAds, isWatchingAd)}</span>
-        </button>
-
-        {bonusFeedback && (
-          <div
-            data-testid="bonus-pins-feedback"
-            className={`mt-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium ${
-              bonusFeedback.isSuccess
-                ? 'bg-tg-button/10 text-tg-button'
-                : 'bg-tg-section text-tg-hint'
-            }`}
-          >
-            {bonusFeedback.text}
-          </div>
-        )}
       </div>
 
       {showGameActions && (

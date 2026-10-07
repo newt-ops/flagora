@@ -120,14 +120,14 @@ describe('challenge view helpers', () => {
       const heading = getPerspectiveHeading('won');
       assert.equal(heading.title, 'Victory!');
       assert.equal(heading.subtitle, 'You won the challenge!');
-      assert.ok(heading.badgeClass.includes('emerald'));
+      assert.ok(heading.badgeClass.includes('tg-button'));
     });
 
     it('returns appropriate heading for lost', () => {
       const heading = getPerspectiveHeading('lost');
       assert.equal(heading.title, 'Defeat!');
       assert.equal(heading.subtitle, 'Better luck next time!');
-      assert.ok(heading.badgeClass.includes('rose'));
+      assert.ok(heading.badgeClass.includes('tg-destructive'));
     });
 
     it('returns appropriate heading for tie', () => {

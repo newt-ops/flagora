@@ -235,13 +235,13 @@ describe('battleHelpers', () => {
     it('returns correct heading for victory', () => {
       const heading = getBattlePerspectiveHeading('won');
       assert.equal(heading.title, 'Victory!');
-      assert.ok(heading.badgeClass.includes('emerald'));
+      assert.ok(heading.badgeClass.includes('tg-button'));
     });
 
     it('returns correct heading for defeat', () => {
       const heading = getBattlePerspectiveHeading('lost');
       assert.equal(heading.title, 'Defeat!');
-      assert.ok(heading.badgeClass.includes('rose'));
+      assert.ok(heading.badgeClass.includes('tg-destructive'));
     });
 
     it('returns correct heading for tie', () => {

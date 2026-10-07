@@ -87,25 +87,25 @@ export function getContinentStyle(
     if (!geoContinent) {
       return {
         fill: 'var(--tg-theme-secondary-bg-color, #232e3c)',
-        stroke: 'rgba(128, 128, 128, 0.25)',
+        stroke: 'var(--tg-theme-section-separator-color, rgba(128, 128, 128, 0.25))',
         strokeWidth: 0.5,
         className: 'outline-none cursor-default',
         isClickable: false,
       };
     }
     return {
-      fill: 'rgba(55, 138, 221, 0.25)',
-      stroke: '#378add',
+      fill: 'var(--tg-theme-button-color, #2481cc)',
+      stroke: 'var(--tg-theme-button-color, #2481cc)',
       strokeWidth: 0.8,
-      className: 'transition-colors duration-200 outline-none cursor-pointer hover:opacity-75',
+      className: 'transition-colors duration-200 outline-none cursor-pointer opacity-40 hover:opacity-75',
       isClickable: true,
     };
   }
 
   if (geoContinent && selectedContinent === geoContinent) {
     return {
-      fill: '#378add',
-      stroke: '#185fa5',
+      fill: 'var(--tg-theme-button-color, #2481cc)',
+      stroke: 'var(--tg-theme-button-color, #2481cc)',
       strokeWidth: 1.5,
       className: 'transition-colors duration-200 outline-none cursor-pointer hover:opacity-90',
       isClickable: true,
@@ -114,7 +114,7 @@ export function getContinentStyle(
 
   return {
     fill: 'var(--tg-theme-secondary-bg-color, #232e3c)',
-    stroke: 'rgba(128, 128, 128, 0.25)',
+    stroke: 'var(--tg-theme-section-separator-color, rgba(128, 128, 128, 0.25))',
     strokeWidth: 0.5,
     className: geoContinent
       ? 'transition-colors duration-200 outline-none cursor-pointer hover:opacity-70'

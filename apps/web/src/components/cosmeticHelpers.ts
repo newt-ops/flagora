@@ -9,27 +9,27 @@ export interface RarityStyle {
 
 export const RARITY_STYLES: Record<CosmeticRarity, RarityStyle> = {
   common: {
-    borderClass: 'border-zinc-700/60',
-    glowClass: 'shadow-[0_0_8px_rgba(161,161,170,0.12)]',
-    badgeClass: 'bg-zinc-500/15 text-zinc-400 border border-zinc-500/30',
+    borderClass: 'border-tg-separator/40',
+    glowClass: '',
+    badgeClass: 'bg-tg-secondary-bg text-tg-hint border border-tg-separator/30',
     label: 'Common',
   },
   rare: {
-    borderClass: 'border-sky-500/50',
-    glowClass: 'shadow-[0_0_12px_rgba(56,189,248,0.25)]',
-    badgeClass: 'bg-sky-500/15 text-sky-400 border border-sky-500/30',
+    borderClass: 'border-tg-button/30',
+    glowClass: '',
+    badgeClass: 'bg-tg-button/10 text-tg-button border border-tg-button/20',
     label: 'Rare',
   },
   epic: {
-    borderClass: 'border-purple-500/50',
-    glowClass: 'shadow-[0_0_12px_rgba(168,85,247,0.25)]',
-    badgeClass: 'bg-purple-500/15 text-purple-400 border border-purple-500/30',
+    borderClass: 'border-tg-button/50',
+    glowClass: '',
+    badgeClass: 'bg-tg-button/15 text-tg-button border border-tg-button/30',
     label: 'Epic',
   },
   legendary: {
-    borderClass: 'border-amber-500/60',
-    glowClass: 'shadow-[0_0_16px_rgba(245,158,11,0.35)]',
-    badgeClass: 'bg-amber-500/15 text-amber-400 border border-amber-500/30',
+    borderClass: 'border-tg-button',
+    glowClass: 'shadow-sm',
+    badgeClass: 'bg-tg-button text-tg-button-text border border-tg-button',
     label: 'Legendary',
   },
 };
@@ -248,3 +248,62 @@ export function groupCatalogByCategory(
 
   return grouped;
 }
+
+const cosmeticAssetModules: Record<string, string> =
+  typeof import.meta !== 'undefined' &&
+  typeof (import.meta as unknown as { glob?: (...args: unknown[]) => unknown }).glob === 'function'
+    ? (
+        import.meta as unknown as {
+          glob: (
+            pattern: string,
+            options: { eager: boolean; import: string },
+          ) => Record<string, string>;
+        }
+      ).glob('../assets/cosmetics/**/*.png', {
+        eager: true,
+        import: 'default',
+      })
+    : {};
+
+export function getCategoryFolderName(category: CosmeticCategory): string | null {
+  switch (category) {
+    case 'avatarFrame':
+      return 'avatarFrames';
+    case 'comboBadge':
+      return 'comboBadges';
+    case 'profileEffect':
+      return 'profileEffects';
+    case 'battleEntrance':
+      return 'battleEntrances';
+    default:
+      return null;
+  }
+}
+
+export function getCosmeticAssetUrl(
+  category: CosmeticCategory,
+  assetIdOrPath: string | null | undefined,
+): string | null {
+  if (!assetIdOrPath) return null;
+
+  const folder = getCategoryFolderName(category);
+  if (!folder) return null;
+
+  const cleanName = assetIdOrPath
+    .replace(/^.*\//, '')
+    .replace(/\.png$/, '');
+
+  const standardKey = `../assets/cosmetics/${folder}/${cleanName}.png`;
+  if (cosmeticAssetModules[standardKey]) {
+    return cosmeticAssetModules[standardKey];
+  }
+
+  for (const [key, url] of Object.entries(cosmeticAssetModules)) {
+    if (key.endsWith(`/${cleanName}.png`)) {
+      return url;
+    }
+  }
+
+  return `/assets/cosmetics/${folder}/${cleanName}.png`;
+}
+

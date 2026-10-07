@@ -98,8 +98,8 @@ export function ChallengeLandingScreen({
         )}
 
         {isExpired && (
-          <div className="mt-5 w-full rounded-xl bg-rose-500/10 p-4 text-left">
-            <div className="flex items-center gap-2 text-rose-400">
+          <div className="mt-5 w-full rounded-xl bg-tg-destructive/10 p-4 text-left">
+            <div className="flex items-center gap-2 text-tg-destructive">
               <AlertCircle className="h-4 w-4" />
               <p className="text-xs font-bold uppercase tracking-wider">Challenge Expired</p>
             </div>

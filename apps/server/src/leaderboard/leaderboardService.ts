@@ -6,6 +6,7 @@ import {
   type LeaderboardMeResponse,
   type PlayerProfile,
 } from '@flagora/shared';
+import type { GameRun } from '../game/runTypes.js';
 
 const LEADERBOARD_KEY = 'leaderboard:global';
 
@@ -70,9 +71,13 @@ export async function getTopLeaderboard(
     if (key.startsWith('leaderboard:daily:')) {
       const targetDate = key.replace('leaderboard:daily:', '');
       const runs = await db
-        .collection<{ telegramUserId: number; totalScore: number }>('daily_runs')
-        .find({ date: targetDate, finishedAt: { $ne: null } })
-        .sort({ totalScore: -1 })
+        .collection<GameRun>('runs')
+        .find({
+          mode: 'daily',
+          dailyDate: targetDate,
+          'finalScore.totalScore': { $gt: 0 },
+        })
+        .sort({ 'finalScore.totalScore': -1 })
         .limit(clampedLimit)
         .toArray();
 
@@ -80,21 +85,35 @@ export async function getTopLeaderboard(
         const userIds = runs.map((r) => r.telegramUserId);
         const profiles = await db
           .collection<PlayerProfile>('profiles')
-          .find({ telegramUserId: { $in: userIds } })
+          .find(
+            { telegramUserId: { $in: userIds } },
+            {
+              projection: {
+                telegramUserId: 1,
+                displayName: 1,
+                username: 1,
+                firstName: 1,
+                lastName: 1,
+                photoUrl: 1,
+              },
+            },
+          )
           .toArray();
         const profileMap = new Map(profiles.map((p) => [p.telegramUserId, p]));
 
         return runs.map((run, index) => {
           const profile = profileMap.get(run.telegramUserId);
+          const score = run.finalScore?.totalScore ?? run.runningTotal ?? 0;
           return {
             rank: index + 1,
             telegramUserId: run.telegramUserId,
             displayName: profile ? getDisplayName(profile) : `Player ${run.telegramUserId}`,
             photoUrl: profile?.photoUrl ?? null,
-            bestScore: run.totalScore,
+            bestScore: score,
           };
         });
       }
+      return [];
     }
 
     if (key.startsWith('leaderboard:ranked:')) {
@@ -123,7 +142,19 @@ export async function getTopLeaderboard(
   const userIds = parsed.map((item) => item.telegramUserId);
   const profiles = await db
     .collection<PlayerProfile>('profiles')
-    .find({ telegramUserId: { $in: userIds } })
+    .find(
+      { telegramUserId: { $in: userIds } },
+      {
+        projection: {
+          telegramUserId: 1,
+          displayName: 1,
+          username: 1,
+          firstName: 1,
+          lastName: 1,
+          photoUrl: 1,
+        },
+      },
+    )
     .toArray();
 
   const profileMap = new Map<number, PlayerProfile>(
@@ -198,26 +229,28 @@ export async function getPlayerLeaderboardRank(
   if (db && redisFailed && key.startsWith('leaderboard:daily:')) {
     const targetDate = key.replace('leaderboard:daily:', '');
     const userRun = await db
-      .collection<{ totalScore: number }>('daily_runs')
+      .collection<GameRun>('runs')
       .findOne({
         telegramUserId,
-        date: targetDate,
-        finishedAt: { $ne: null },
+        mode: 'daily',
+        dailyDate: targetDate,
+        'finalScore.totalScore': { $exists: true },
       });
 
-    if (userRun) {
+    if (userRun?.finalScore) {
+      const userScore = userRun.finalScore.totalScore;
       const higherCount = await db
-        .collection('daily_runs')
+        .collection<GameRun>('runs')
         .countDocuments({
-          date: targetDate,
-          finishedAt: { $ne: null },
-          totalScore: { $gt: userRun.totalScore },
+          mode: 'daily',
+          dailyDate: targetDate,
+          'finalScore.totalScore': { $gt: userScore },
         });
 
       return {
         ranked: true,
         rank: higherCount + 1,
-        bestScore: userRun.totalScore,
+        bestScore: userScore,
       };
     }
   }
@@ -257,20 +290,38 @@ export async function reconcileLeaderboard(
 ): Promise<{ count: number }> {
   await redis.del(LEADERBOARD_KEY);
 
-  const profiles = await db
+  const cursor = db
     .collection<PlayerProfile>('profiles')
-    .find({ bestScore: { $gt: 0 } })
-    .toArray();
+    .find(
+      { bestScore: { $gt: 0 } },
+      { projection: { telegramUserId: 1, bestScore: 1 } },
+    );
 
-  if (profiles.length === 0) {
-    return { count: 0 };
+  const BATCH_SIZE = 500;
+  let batch: { telegramUserId: number; bestScore: number }[] = [];
+  let totalCount = 0;
+
+  for await (const doc of cursor) {
+    batch.push({ telegramUserId: doc.telegramUserId, bestScore: doc.bestScore });
+    if (batch.length >= BATCH_SIZE) {
+      const pipeline = redis.pipeline();
+      for (const item of batch) {
+        pipeline.zadd(LEADERBOARD_KEY, item.bestScore, String(item.telegramUserId));
+      }
+      await pipeline.exec();
+      totalCount += batch.length;
+      batch = [];
+    }
   }
 
-  const pipeline = redis.pipeline();
-  for (const profile of profiles) {
-    pipeline.zadd(LEADERBOARD_KEY, profile.bestScore, String(profile.telegramUserId));
+  if (batch.length > 0) {
+    const pipeline = redis.pipeline();
+    for (const item of batch) {
+      pipeline.zadd(LEADERBOARD_KEY, item.bestScore, String(item.telegramUserId));
+    }
+    await pipeline.exec();
+    totalCount += batch.length;
   }
-  await pipeline.exec();
 
-  return { count: profiles.length };
+  return { count: totalCount };
 }

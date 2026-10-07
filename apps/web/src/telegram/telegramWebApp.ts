@@ -47,17 +47,54 @@ export function updateSafeAreaInsets(tg?: TelegramWebAppInstance): void {
   const app = tg ?? getTelegramWebApp();
   if (typeof document === 'undefined') return;
 
-  const contentTop = app?.contentSafeAreaInset?.top;
-  const safeTop = app?.safeAreaInset?.top;
+  const safeInset = app?.safeAreaInset;
+  const contentInset = app?.contentSafeAreaInset;
   const isFullscreen = Boolean(app?.isFullscreen);
 
-  const topInset = Math.max(
-    typeof contentTop === 'number' ? contentTop : 0,
-    typeof safeTop === 'number' ? safeTop : 0,
-    isFullscreen ? 44 : 0,
-  );
+  const safeTop = typeof safeInset?.top === 'number' ? safeInset.top : undefined;
+  const safeBottom = typeof safeInset?.bottom === 'number' ? safeInset.bottom : undefined;
+  const safeLeft = typeof safeInset?.left === 'number' ? safeInset.left : undefined;
+  const safeRight = typeof safeInset?.right === 'number' ? safeInset.right : undefined;
 
-  document.documentElement.style.setProperty('--tg-safe-top', `${topInset}px`);
+  const contentTop = typeof contentInset?.top === 'number' ? contentInset.top : undefined;
+  const contentBottom = typeof contentInset?.bottom === 'number' ? contentInset.bottom : undefined;
+  const contentLeft = typeof contentInset?.left === 'number' ? contentInset.left : undefined;
+  const contentRight = typeof contentInset?.right === 'number' ? contentInset.right : undefined;
+
+  const resolvedSafeTop = safeTop ?? 0;
+  const resolvedSafeBottom = safeBottom ?? 0;
+  const resolvedSafeLeft = safeLeft ?? 0;
+  const resolvedSafeRight = safeRight ?? 0;
+
+  const resolvedContentTop = contentTop ?? 0;
+  const resolvedContentBottom = contentBottom ?? 0;
+  const resolvedContentLeft = contentLeft ?? 0;
+  const resolvedContentRight = contentRight ?? 0;
+
+  const hasReportedTop = typeof safeTop === 'number' || typeof contentTop === 'number';
+  const fallbackTop = isFullscreen && !hasReportedTop ? 44 : 0;
+
+  const topInset = Math.max(resolvedContentTop, resolvedSafeTop, fallbackTop);
+  const bottomInset = Math.max(resolvedContentBottom, resolvedSafeBottom);
+  const leftInset = Math.max(resolvedContentLeft, resolvedSafeLeft);
+  const rightInset = Math.max(resolvedContentRight, resolvedSafeRight);
+
+  const style = document.documentElement.style;
+  style.setProperty('--tg-safe-area-inset-top', `${resolvedSafeTop}px`);
+  style.setProperty('--tg-safe-area-inset-bottom', `${resolvedSafeBottom}px`);
+  style.setProperty('--tg-safe-area-inset-left', `${resolvedSafeLeft}px`);
+  style.setProperty('--tg-safe-area-inset-right', `${resolvedSafeRight}px`);
+
+  style.setProperty('--tg-content-safe-area-inset-top', `${resolvedContentTop}px`);
+  style.setProperty('--tg-content-safe-area-inset-bottom', `${resolvedContentBottom}px`);
+  style.setProperty('--tg-content-safe-area-inset-left', `${resolvedContentLeft}px`);
+  style.setProperty('--tg-content-safe-area-inset-right', `${resolvedContentRight}px`);
+
+  style.setProperty('--tg-safe-top', `${topInset}px`);
+  style.setProperty('--tg-safe-bottom', `${bottomInset}px`);
+  style.setProperty('--tg-safe-left', `${leftInset}px`);
+  style.setProperty('--tg-safe-right', `${rightInset}px`);
+
   if (isFullscreen) {
     document.documentElement.classList.add('tg-fullscreen');
   } else {
@@ -82,6 +119,7 @@ export function initTelegramWebApp(): void {
       tg.onEvent?.('safeAreaChanged', () => updateSafeAreaInsets(tg));
       tg.onEvent?.('contentSafeAreaChanged', () => updateSafeAreaInsets(tg));
       tg.onEvent?.('fullscreenChanged', () => updateSafeAreaInsets(tg));
+      tg.onEvent?.('fullscreenFailed', () => updateSafeAreaInsets(tg));
     } catch {
       void 0;
     }

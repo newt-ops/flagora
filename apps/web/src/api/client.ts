@@ -16,10 +16,7 @@ import type {
   BattleInfoResponse,
   JoinBattleResponse,
   StreakStatusResponse,
-  BonusPinsIntentSuccessResponse,
-  BonusPinsRedeemSuccessResponse,
-  StreakSaveIntentSuccessResponse,
-  StreakSaveRedeemSuccessResponse,
+  StreakSaveSuccessResponse,
   ShopCatalogResponse,
   PurchaseResponse,
   EquipResponse,
@@ -566,85 +563,20 @@ export async function getStreakStatus(
   return response.json();
 }
 
-export async function requestBonusPinsIntent(
+export async function saveStreak(
   sessionToken: string,
-): Promise<BonusPinsIntentSuccessResponse> {
-  const response = await fetch(`${API_URL}/api/rewards/bonus-pins/intent`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${sessionToken}`,
-    },
-  });
-
-  if (!response.ok) {
-    let message = `Failed to request bonus pins intent: status ${response.status}`;
-    let body: RewardErrorPayload | null = null;
-    try {
-      body = await response.json();
-      if (body?.message) {
-        message = body.message;
-      }
-    } catch {
-      void 0;
-    }
-
-    if (response.status === 429) {
-      throw new RewardCapReachedApiError(
-        message,
-        body?.dailyCap ?? 5,
-        body?.usedCount ?? 5,
-        body?.resetAtUtc,
-      );
-    }
-
-    throw new Error(message);
-  }
-
-  return response.json();
-}
-
-export async function redeemBonusPins(
-  sessionToken: string,
-  token: string,
-): Promise<BonusPinsRedeemSuccessResponse> {
-  const response = await fetch(`${API_URL}/api/rewards/bonus-pins/redeem`, {
+): Promise<StreakSaveSuccessResponse> {
+  const response = await fetch(`${API_URL}/api/streak/save`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${sessionToken}`,
     },
-    body: JSON.stringify({ token }),
   });
 
   if (!response.ok) {
-    let message = `Failed to redeem bonus pins: status ${response.status}`;
-    try {
-      const data: RewardErrorPayload = await response.json();
-      if (data?.message) {
-        message = data.message;
-      }
-    } catch {
-      void 0;
-    }
-    throw new Error(message);
-  }
-
-  return response.json();
-}
-
-export async function requestStreakSaveIntent(
-  sessionToken: string,
-): Promise<StreakSaveIntentSuccessResponse> {
-  const response = await fetch(`${API_URL}/api/rewards/streak-save/intent`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${sessionToken}`,
-    },
-  });
-
-  if (!response.ok) {
-    let message = `Failed to request streak save intent: status ${response.status}`;
-    let body: RewardErrorPayload | null = null;
+    let message = `Failed to save streak: status ${response.status}`;
+    let body: { error?: string; message?: string; dailyCap?: number; usedCount?: number; resetAtUtc?: string } | null = null;
     try {
       body = await response.json();
       if (body?.message) {
@@ -667,35 +599,6 @@ export async function requestStreakSaveIntent(
       throw new StreakNotAtRiskApiError(message);
     }
 
-    throw new Error(message);
-  }
-
-  return response.json();
-}
-
-export async function redeemStreakSave(
-  sessionToken: string,
-  token: string,
-): Promise<StreakSaveRedeemSuccessResponse> {
-  const response = await fetch(`${API_URL}/api/rewards/streak-save/redeem`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${sessionToken}`,
-    },
-    body: JSON.stringify({ token }),
-  });
-
-  if (!response.ok) {
-    let message = `Failed to redeem streak save: status ${response.status}`;
-    try {
-      const data: RewardErrorPayload = await response.json();
-      if (data?.message) {
-        message = data.message;
-      }
-    } catch {
-      void 0;
-    }
     throw new Error(message);
   }
 

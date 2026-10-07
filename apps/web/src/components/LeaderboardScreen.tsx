@@ -11,6 +11,7 @@ import {
   getLeaderboardSubtitle,
 } from './dailyChallengeHelpers.js';
 import { getAvatarFrameClass } from './cosmeticHelpers.js';
+import { CosmeticProtectedImage } from './CosmeticProtectedImage.js';
 import { getRankedTier, type LeaderboardEntry } from '@flagora/shared';
 import { TierBadge } from './TierBadge.js';
 
@@ -134,7 +135,7 @@ export function LeaderboardScreen({
 
       {!isLoading && error && (
         <div className="flex flex-col items-center gap-3 rounded-2xl bg-tg-section p-6 text-center shadow-sm">
-          <p className="text-sm font-semibold text-rose-400">{error}</p>
+          <p className="text-sm font-semibold text-tg-destructive">{error}</p>
           <button
             type="button"
             onClick={refetch}
@@ -185,23 +186,33 @@ export function LeaderboardScreen({
                         #{entry.rank}
                       </div>
 
-                      {entry.photoUrl ? (
-                        <img
-                          src={entry.photoUrl}
-                          alt={entry.displayName}
-                          className={`h-8 w-8 shrink-0 rounded-full object-cover bg-tg-section ${
-                            frameClass ? frameClass : ''
-                          }`}
-                        />
-                      ) : (
-                        <div
-                          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-tg-button text-xs font-bold text-tg-button-text ${
-                            frameClass ? frameClass : ''
-                          }`}
-                        >
-                          {initial}
-                        </div>
-                      )}
+                      <div className="relative flex h-8 w-8 shrink-0 items-center justify-center">
+                        {entry.photoUrl ? (
+                          <img
+                            src={entry.photoUrl}
+                            alt={entry.displayName}
+                            className={`h-7 w-7 rounded-full object-cover bg-tg-section ${
+                              !isMe || !userAvatarFrame ? (frameClass ? frameClass : '') : ''
+                            }`}
+                          />
+                        ) : (
+                          <div
+                            className={`flex h-7 w-7 items-center justify-center rounded-full bg-tg-button text-xs font-bold text-tg-button-text ${
+                              !isMe || !userAvatarFrame ? (frameClass ? frameClass : '') : ''
+                            }`}
+                          >
+                            {initial}
+                          </div>
+                        )}
+                        {isMe && userAvatarFrame && (
+                          <CosmeticProtectedImage
+                            category="avatarFrame"
+                            assetIdOrPath={userAvatarFrame}
+                            alt="Avatar Frame"
+                            className="absolute inset-0"
+                          />
+                        )}
+                      </div>
 
                       <div className="flex flex-col overflow-hidden text-left">
                         <div className="flex items-center gap-1.5 overflow-hidden">

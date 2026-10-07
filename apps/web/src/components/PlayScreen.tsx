@@ -22,6 +22,7 @@ import { getDailyResultSummary } from './dailyChallengeHelpers.js';
 import { CustomGameModal, type CustomGameConfig } from './CustomGameModal.js';
 import { StreakSaveBanner } from './StreakSaveBanner.js';
 import { getAvatarFrameClass } from './cosmeticHelpers.js';
+import { CosmeticProtectedImage } from './CosmeticProtectedImage.js';
 import { formatSeasonName, getTierIcon } from './rankHelpers.js';
 import { TierBadge } from './TierBadge.js';
 
@@ -38,7 +39,7 @@ interface PlayScreenProps {
   onStartCustomGame?: (config: CustomGameConfig) => void;
   onViewDailyLeaderboard: () => void;
   onNavigateToProfile: () => void;
-  onNavigateToRewards?: () => void;
+  isPro?: boolean;
   onRefetchProfile?: () => void;
   onRefetchStreakStatus?: () => void;
   isStarting?: boolean;
@@ -60,7 +61,7 @@ export function PlayScreen({
   onStartCustomGame,
   onViewDailyLeaderboard,
   onNavigateToProfile,
-  onNavigateToRewards,
+  isPro = false,
   onRefetchProfile,
   onRefetchStreakStatus,
   isStarting = false,
@@ -94,23 +95,33 @@ export function PlayScreen({
         className="flex cursor-pointer items-center justify-between flex-wrap gap-2.5 rounded-2xl bg-tg-section p-4 shadow-sm transition-opacity hover:opacity-95 active:scale-[0.99]"
       >
         <div className="flex items-center gap-3 min-w-0">
-          {profile.photoUrl ? (
-            <img
-              src={profile.photoUrl}
-              alt={firstName}
-              className={`h-12 w-12 rounded-full object-cover bg-tg-section ${
-                frameClass ? frameClass : 'ring-2 ring-tg-button'
-              }`}
-            />
-          ) : (
-            <div
-              className={`flex h-12 w-12 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${
-                frameClass ? frameClass : ''
-              }`}
-            >
-              {initial}
-            </div>
-          )}
+          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center">
+            {profile.photoUrl ? (
+              <img
+                src={profile.photoUrl}
+                alt={firstName}
+                className={`h-10 w-10 rounded-full object-cover bg-tg-section ${
+                  !profile.equipped?.avatarFrame ? (frameClass ? frameClass : 'ring-2 ring-tg-button') : ''
+                }`}
+              />
+            ) : (
+              <div
+                className={`flex h-10 w-10 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${
+                  !profile.equipped?.avatarFrame ? (frameClass ? frameClass : '') : ''
+                }`}
+              >
+                {initial}
+              </div>
+            )}
+            {profile.equipped?.avatarFrame && (
+              <CosmeticProtectedImage
+                category="avatarFrame"
+                assetIdOrPath={profile.equipped.avatarFrame}
+                alt="Avatar Frame"
+                className="absolute inset-0"
+              />
+            )}
+          </div>
           <div className="flex flex-col text-left min-w-0">
             <h1 className="text-base font-bold text-tg-text truncate">{firstName}</h1>
             <div className="flex items-center gap-2 text-xs text-tg-hint flex-wrap">
@@ -179,11 +190,12 @@ export function PlayScreen({
         <StreakSaveBanner
           sessionToken={sessionToken}
           streakStatus={streakStatus}
+          userPins={profile.pins}
+          isPro={isPro}
           onSuccess={() => {
             onRefetchProfile?.();
             onRefetchStreakStatus?.();
           }}
-          onLearnMore={onNavigateToRewards}
         />
       )}
 

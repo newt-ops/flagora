@@ -33,40 +33,40 @@ describe('rankHelpers', () => {
   describe('getTierBadgeColors', () => {
     it('returns distinctive styles for Bronze', () => {
       const colors = getTierBadgeColors('Bronze');
-      assert.ok(colors.text.includes('amber-500'));
-      assert.ok(colors.border.includes('amber-700'));
-      assert.ok(colors.badge.includes('amber-500'));
+      assert.ok(colors.text.includes('tg-hint'));
+      assert.ok(colors.border.includes('tg-separator'));
+      assert.ok(colors.badge.includes('tg-hint'));
     });
 
     it('returns distinctive styles for Silver', () => {
       const colors = getTierBadgeColors('Silver');
-      assert.ok(colors.text.includes('slate-300'));
-      assert.ok(colors.border.includes('slate-400'));
+      assert.ok(colors.text.includes('tg-text'));
+      assert.ok(colors.border.includes('tg-separator'));
     });
 
     it('returns distinctive styles for Gold', () => {
       const colors = getTierBadgeColors('Gold');
-      assert.ok(colors.text.includes('amber-400'));
-      assert.ok(colors.border.includes('amber-400'));
+      assert.ok(colors.text.includes('tg-button'));
+      assert.ok(colors.border.includes('tg-button'));
     });
 
     it('returns distinctive styles for Platinum', () => {
       const colors = getTierBadgeColors('Platinum');
-      assert.ok(colors.text.includes('teal-300'));
-      assert.ok(colors.border.includes('teal-400'));
+      assert.ok(colors.text.includes('tg-button'));
+      assert.ok(colors.border.includes('tg-button'));
     });
 
     it('returns distinctive styles for Diamond', () => {
       const colors = getTierBadgeColors('Diamond');
-      assert.ok(colors.text.includes('sky-300'));
-      assert.ok(colors.border.includes('sky-400'));
+      assert.ok(colors.text.includes('tg-button'));
+      assert.ok(colors.border.includes('tg-button'));
     });
 
     it('returns distinctive styles for Legend', () => {
       const colors = getTierBadgeColors('Legend');
-      assert.ok(colors.text.includes('purple-300'));
-      assert.ok(colors.border.includes('purple-500'));
-      assert.ok(colors.badge.includes('shadow-'));
+      assert.ok(colors.text.includes('tg-button-text'));
+      assert.ok(colors.border.includes('tg-button'));
+      assert.ok(colors.badge.includes('tg-button'));
     });
   });
 
@@ -82,10 +82,10 @@ describe('rankHelpers', () => {
   });
 
   describe('getRatingDeltaDisplay', () => {
-    it('formats positive deltas with leading plus sign and green color', () => {
+    it('formats positive deltas with leading plus sign and tg-button color', () => {
       const res = getRatingDeltaDisplay(20);
       assert.equal(res.text, '+20');
-      assert.equal(res.colorClass, 'text-emerald-400');
+      assert.equal(res.colorClass, 'text-tg-button');
       assert.equal(res.isPositive, true);
       assert.equal(res.isNegative, false);
 
@@ -97,7 +97,7 @@ describe('rankHelpers', () => {
     it('formats negative deltas with red color', () => {
       const res = getRatingDeltaDisplay(-15);
       assert.equal(res.text, '-15');
-      assert.equal(res.colorClass, 'text-rose-400');
+      assert.equal(res.colorClass, 'text-tg-destructive');
       assert.equal(res.isPositive, false);
       assert.equal(res.isNegative, true);
     });

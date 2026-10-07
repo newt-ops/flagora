@@ -56,6 +56,7 @@ export interface ProfileResponse {
 export interface ProStatusResponse {
   isActive: boolean;
   currentPeriodEnd: string | Date | null;
+  perks?: string[];
 }
 
 export interface CreateInvoiceLinkResponse {

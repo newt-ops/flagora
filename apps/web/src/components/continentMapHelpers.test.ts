@@ -78,19 +78,19 @@ describe('continentMapHelpers', () => {
       assert.ok(style.className.includes('cursor-default'));
     });
 
-    it('returns active blue styling when selected continent matches', () => {
+    it('returns active theme styling when selected continent matches', () => {
       const style = getContinentStyle('africa', false, 'africa');
-      assert.equal(style.fill, '#378add');
-      assert.equal(style.stroke, '#185fa5');
+      assert.equal(style.fill, 'var(--tg-theme-button-color, #2481cc)');
+      assert.equal(style.stroke, 'var(--tg-theme-button-color, #2481cc)');
       assert.equal(style.strokeWidth, 1.5);
       assert.equal(style.isClickable, true);
       assert.ok(style.className.includes('cursor-pointer'));
     });
 
-    it('returns translucent blue styling for mapped countries in world mode', () => {
+    it('returns translucent theme styling for mapped countries in world mode', () => {
       const style = getContinentStyle('europe', false, 'world');
-      assert.equal(style.fill, 'rgba(55, 138, 221, 0.25)');
-      assert.equal(style.stroke, '#378add');
+      assert.equal(style.fill, 'var(--tg-theme-button-color, #2481cc)');
+      assert.equal(style.stroke, 'var(--tg-theme-button-color, #2481cc)');
       assert.equal(style.strokeWidth, 0.8);
       assert.equal(style.isClickable, true);
       assert.ok(style.className.includes('cursor-pointer'));
@@ -99,7 +99,7 @@ describe('continentMapHelpers', () => {
     it('returns unselected styling when another continent is selected', () => {
       const style = getContinentStyle('asia', false, 'europe');
       assert.equal(style.fill, 'var(--tg-theme-secondary-bg-color, #232e3c)');
-      assert.equal(style.stroke, 'rgba(128, 128, 128, 0.25)');
+      assert.equal(style.stroke, 'var(--tg-theme-section-separator-color, rgba(128, 128, 128, 0.25))');
       assert.equal(style.strokeWidth, 0.5);
       assert.equal(style.isClickable, true);
       assert.ok(style.className.includes('cursor-pointer'));

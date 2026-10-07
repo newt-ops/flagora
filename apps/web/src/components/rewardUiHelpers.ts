@@ -1,113 +1,15 @@
-import { getUtcDateString } from '@flagora/shared';
-import type { AdOutcome } from '../ads/adsgramTypes.js';
+import { STREAK_SAVE_PIN_COST } from '@flagora/shared';
 
-export const BONUS_PINS_DEFAULT_CAP = 5;
-
-export function getTodayUtcDateString(now?: Date): string {
-  return getUtcDateString(now);
-}
-
-export function getDailyPinsStorageKey(dateStr?: string): string {
-  const d = dateStr || getTodayUtcDateString();
-  return `flagora_pins_ads_${d}`;
-}
-
-export function getStoredDailyBonusPinsCount(dateStr?: string): number {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return 0;
-  }
-  try {
-    const raw = window.localStorage.getItem(getDailyPinsStorageKey(dateStr));
-    if (!raw) return 0;
-    const parsed = parseInt(raw, 10);
-    return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
-  } catch {
-    return 0;
-  }
-}
-
-export function setStoredDailyBonusPinsCount(count: number, dateStr?: string): void {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return;
-  }
-  try {
-    window.localStorage.setItem(
-      getDailyPinsStorageKey(dateStr),
-      String(Math.max(0, count)),
-    );
-  } catch {
-    void 0;
-  }
-}
-
-export function getRemainingBonusAds(
-  usedCount: number,
-  dailyCap = BONUS_PINS_DEFAULT_CAP,
-): number {
-  return Math.max(0, dailyCap - Math.max(0, usedCount));
-}
-
-export function getBonusAdsButtonText(
-  remaining: number,
-  isWatching: boolean,
-): string {
-  if (isWatching) {
-    return 'Loading ad...';
-  }
-  if (remaining <= 0) {
-    return 'Daily cap reached (5/5) • Come back tomorrow';
-  }
-  return '+50 Pins • Watch Ad';
-}
-
-export function getStreakSaveBannerCopy(streak: number): {
+export function getStreakSaveBannerCopy(streak: number, isPro: boolean): {
   title: string;
   subtitle: string;
+  buttonText: string;
 } {
   return {
     title: 'Keep your streak alive!',
-    subtitle: `Watch a quick ad to save your ${streak}-day streak`,
+    subtitle: isPro
+      ? `Save your ${streak}-day streak for free with Pro`
+      : `Save your ${streak}-day streak for ${STREAK_SAVE_PIN_COST} Pins`,
+    buttonText: isPro ? 'Save Streak • Free' : `Save Streak • ${STREAK_SAVE_PIN_COST} Pins`,
   };
-}
-
-export function formatAdOutcomeFeedback(
-  outcome: AdOutcome,
-): { text: string; isSuccess: boolean } | null {
-  switch (outcome.status) {
-    case 'rewarded':
-      if (outcome.rewardType === 'bonus-pins') {
-        return { text: '+50 Pins earned! 🎉', isSuccess: true };
-      }
-      return {
-        text: 'Streak saved! Play a game today to extend it 🚩',
-        isSuccess: true,
-      };
-    case 'cap_reached':
-      return {
-        text: outcome.message || 'Daily limit reached. Come back tomorrow!',
-        isSuccess: false,
-      };
-    case 'not_at_risk':
-      return {
-        text: 'Streak is not currently at risk',
-        isSuccess: false,
-      };
-    case 'unavailable':
-      return {
-        text: outcome.message || 'No ad available right now, try again later 🙏',
-        isSuccess: false,
-      };
-    case 'skipped':
-      return {
-        text: 'Ad was skipped — no reward earned',
-        isSuccess: false,
-      };
-    case 'error':
-      return {
-        text: outcome.message || 'Failed to display ad',
-        isSuccess: false,
-      };
-    default:
-      return null;
-  }
 }

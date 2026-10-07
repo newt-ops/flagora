@@ -224,4 +224,69 @@ describe('telegramWebApp', () => {
       delete (globalThis as unknown as { document?: unknown }).document;
     }
   });
+
+  it('sets all four safe area and content safe area insets properly', () => {
+    const mockStyles: Record<string, string> = {};
+
+    (globalThis as unknown as { document?: unknown }).document = {
+      documentElement: {
+        style: {
+          setProperty: (key: string, value: string) => {
+            mockStyles[key] = value;
+          },
+        },
+        classList: {
+          add: () => void 0,
+          remove: () => void 0,
+        },
+      },
+    };
+
+    try {
+      updateSafeAreaInsets({
+        isFullscreen: true,
+        safeAreaInset: { top: 20, bottom: 34, left: 12, right: 16 },
+        contentSafeAreaInset: { top: 56, bottom: 0, left: 0, right: 0 },
+      });
+
+      assert.equal(mockStyles['--tg-safe-area-inset-top'], '20px');
+      assert.equal(mockStyles['--tg-safe-area-inset-bottom'], '34px');
+      assert.equal(mockStyles['--tg-safe-area-inset-left'], '12px');
+      assert.equal(mockStyles['--tg-safe-area-inset-right'], '16px');
+
+      assert.equal(mockStyles['--tg-content-safe-area-inset-top'], '56px');
+      assert.equal(mockStyles['--tg-content-safe-area-inset-bottom'], '0px');
+      assert.equal(mockStyles['--tg-content-safe-area-inset-left'], '0px');
+      assert.equal(mockStyles['--tg-content-safe-area-inset-right'], '0px');
+
+      assert.equal(mockStyles['--tg-safe-top'], '56px');
+      assert.equal(mockStyles['--tg-safe-bottom'], '34px');
+      assert.equal(mockStyles['--tg-safe-left'], '12px');
+      assert.equal(mockStyles['--tg-safe-right'], '16px');
+    } finally {
+      delete (globalThis as unknown as { document?: unknown }).document;
+    }
+  });
+
+  it('subscribes to all safe area and fullscreen events', () => {
+    const registeredEvents: string[] = [];
+
+    (globalThis as unknown as { Telegram?: unknown }).Telegram = {
+      WebApp: {
+        onEvent: (event: string) => {
+          registeredEvents.push(event);
+        },
+      },
+    };
+
+    try {
+      initTelegramWebApp();
+      assert.equal(registeredEvents.includes('safeAreaChanged'), true);
+      assert.equal(registeredEvents.includes('contentSafeAreaChanged'), true);
+      assert.equal(registeredEvents.includes('fullscreenChanged'), true);
+      assert.equal(registeredEvents.includes('fullscreenFailed'), true);
+    } finally {
+      delete (globalThis as unknown as { Telegram?: unknown }).Telegram;
+    }
+  });
 });

@@ -34,6 +34,7 @@ export interface CosmeticItem {
   description?: string;
   rarity: CosmeticRarity;
   proOnly?: boolean;
+  imageAsset?: string;
 }
 
 export interface EquippedCosmetics {
@@ -91,19 +92,21 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     },
     price: 150,
     description: 'Electric cyan border with a subtle neon glow',
-    rarity: 'common'
+    rarity: 'common',
+    imageAsset: 'avatarFrames/frame-neon-cyan.png',
   },
   {
     id: 'frame-amber-gold',
     category: 'avatarFrame',
-    name: 'Golden Ring',
+    name: 'Native Accent Ring',
     cssVars: {
-      '--avatar-frame-border': '2px solid #f59e0b',
-      '--avatar-frame-shadow': '0 0 12px rgba(245, 158, 11, 0.6)',
+      '--avatar-frame-border': '2px solid var(--button-color)',
+      '--avatar-frame-shadow': '0 0 12px var(--button-color)',
     },
     price: 150,
-    description: 'Polished amber gold ring',
-    rarity: 'common'
+    description: 'Polished native accent ring',
+    rarity: 'common',
+    imageAsset: 'avatarFrames/frame-amber-gold.png',
   },
   {
     id: 'frame-emerald-pulse',
@@ -115,7 +118,8 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     },
     price: 600,
     description: 'Vibrant emerald border with an active pulse',
-    rarity: 'rare'
+    rarity: 'rare',
+    imageAsset: 'avatarFrames/frame-emerald-pulse.png',
   },
   {
     id: 'frame-violet-royal',
@@ -127,7 +131,8 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     },
     price: 600,
     description: 'Deep royal purple with radiant halo',
-    rarity: 'rare'
+    rarity: 'rare',
+    imageAsset: 'avatarFrames/frame-violet-royal.png',
   },
   {
     id: 'frame-crimson-blaze',
@@ -139,7 +144,8 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     },
     price: 2000,
     description: 'Fierce crimson fiery ring',
-    rarity: 'epic'
+    rarity: 'epic',
+    imageAsset: 'avatarFrames/frame-crimson-blaze.png',
   },
   {
     id: 'frame-pro-animated-diamond',
@@ -152,7 +158,8 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     price: 5000,
     description: 'A dazzling animated diamond frame.',
     rarity: 'legendary',
-    proOnly: true
+    proOnly: true,
+    imageAsset: 'avatarFrames/frame-pro-animated-diamond.png',
   },
 
 
@@ -211,14 +218,14 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
   {
     id: 'theme-golden-nebula',
     category: 'flagTheme',
-    name: 'Golden Nebula',
+    name: 'Stellar Nebula',
     cssVars: {
-      '--theme-bg-gradient': 'linear-gradient(135deg, #422006 0%, #78350f 100%)',
-      '--theme-accent-color': '#fde047',
-      '--theme-surface-color': 'rgba(66, 32, 6, 0.85)',
+      '--theme-bg-gradient': 'linear-gradient(135deg, var(--section-bg-color) 0%, var(--secondary-bg-color) 100%)',
+      '--theme-accent-color': 'var(--button-color)',
+      '--theme-surface-color': 'var(--section-bg-color)',
     },
     price: 2000,
-    description: 'Prestige stellar gold aesthetic',
+    description: 'Prestige stellar Telegram aesthetic',
     rarity: 'epic'
   },
 
@@ -307,14 +314,14 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
   {
     id: 'nameplate-pro-gold',
     category: 'nameplate',
-    name: 'Pro Gold Plate',
+    name: 'Pro Native Plate',
     cssVars: {
-      '--nameplate-color': '#b45309',
-      '--nameplate-text': '#fffbeb',
-      '--nameplate-shadow': '0 0 10px #f59e0b',
+      '--nameplate-color': 'var(--button-color)',
+      '--nameplate-text': 'var(--button-text-color)',
+      '--nameplate-shadow': '0 0 10px var(--button-color)',
     },
     price: 5000,
-    description: 'Exclusive golden nameplate for Pros',
+    description: 'Exclusive nameplate for Pros',
     rarity: 'legendary',
     proOnly: true
   },
@@ -374,14 +381,14 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
   {
     id: 'result-theme-victory-gold',
     category: 'resultScreenTheme',
-    name: 'Victory Gold',
+    name: 'Victory Accent',
     cssVars: {
-      '--result-bg': '#422006',
-      '--result-text': '#fef3c7',
-      '--result-accent': '#f59e0b',
+      '--result-bg': 'var(--section-bg-color)',
+      '--result-text': 'var(--text-color)',
+      '--result-accent': 'var(--button-color)',
     },
     price: 2000,
-    description: 'A victorious golden hue for your results',
+    description: 'A victorious Telegram theme for your results',
     rarity: 'epic'
   },
   {
@@ -409,7 +416,8 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     },
     price: 250,
     description: 'A fiery combo indicator',
-    rarity: 'common'
+    rarity: 'common',
+    imageAsset: 'comboBadges/combo-badge-fire.png',
   },
   {
     id: 'combo-badge-ice',
@@ -420,7 +428,8 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     },
     price: 850,
     description: 'A freezing combo indicator',
-    rarity: 'rare'
+    rarity: 'rare',
+    imageAsset: 'comboBadges/combo-badge-ice.png',
   },
   {
     id: 'combo-badge-void',
@@ -431,7 +440,8 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     },
     price: 1800,
     description: 'A dark void combo indicator',
-    rarity: 'epic'
+    rarity: 'epic',
+    imageAsset: 'comboBadges/combo-badge-void.png',
   },
 
 
@@ -445,7 +455,8 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     price: 5000,
     description: 'Sparkling effects around your profile',
     rarity: 'legendary',
-    proOnly: true
+    proOnly: true,
+    imageAsset: 'profileEffects/effect-pro-sparkles.png',
   },
   {
     id: 'effect-pro-flames',
@@ -457,7 +468,8 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     price: 5000,
     description: 'Fiery effects around your profile',
     rarity: 'legendary',
-    proOnly: true
+    proOnly: true,
+    imageAsset: 'profileEffects/effect-pro-flames.png',
   },
 
 
@@ -471,7 +483,8 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     price: 5000,
     description: 'Enter battles with a lightning strike',
     rarity: 'legendary',
-    proOnly: true
+    proOnly: true,
+    imageAsset: 'battleEntrances/entrance-pro-lightning.png',
   },
   {
     id: 'entrance-pro-portal',
@@ -483,6 +496,7 @@ export const DEFAULT_COSMETIC_CATALOG: CosmeticItem[] = [
     price: 5000,
     description: 'Enter battles through a dark portal',
     rarity: 'legendary',
-    proOnly: true
+    proOnly: true,
+    imageAsset: 'battleEntrances/entrance-pro-portal.png',
   },
 ];

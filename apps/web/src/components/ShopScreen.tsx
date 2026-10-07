@@ -16,7 +16,6 @@ import {
   MousePointerClick,
   Trophy,
   Flame,
-  Zap,
 } from 'lucide-react';
 import type {
   CosmeticCategory,
@@ -26,7 +25,6 @@ import type {
 } from '@flagora/shared';
 import { useShop } from '../hooks/useShop.js';
 import {
-  getAvatarFrameClass,
   getFlagThemeClass,
   getProfileBannerClass,
   getNameplateClass,
@@ -41,6 +39,7 @@ import {
   getRarityStyle,
 } from './cosmeticHelpers.js';
 import { ProUpgradeModal } from './ProUpgradeModal.js';
+import { CosmeticProtectedImage } from './CosmeticProtectedImage.js';
 
 interface ShopScreenProps {
   profile: PlayerProfile;
@@ -140,7 +139,7 @@ export function ShopScreen({
       </div>
 
       {error && (
-        <div className="flex items-center justify-between rounded-xl bg-rose-500/20 p-3 text-xs text-rose-400">
+        <div className="flex items-center justify-between rounded-xl bg-tg-destructive/15 p-3 text-xs text-tg-destructive">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
@@ -148,7 +147,7 @@ export function ShopScreen({
           <button
             type="button"
             onClick={clearError}
-            className="rounded p-1 text-rose-400 hover:text-rose-300 active:opacity-75"
+            className="rounded p-1 text-tg-destructive hover:opacity-80 active:opacity-60"
             aria-label="Dismiss error"
           >
             <X className="h-3.5 w-3.5" />
@@ -160,7 +159,6 @@ export function ShopScreen({
         {categories.map((cat) => {
           const Icon = cat.icon;
           const isActive = selectedCategory === cat.id;
-          const isProTab = cat.id === 'pro';
 
           return (
             <button
@@ -169,11 +167,7 @@ export function ShopScreen({
               onClick={() => setSelectedCategory(cat.id)}
               className={`flex shrink-0 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-all duration-200 active:scale-95 ${
                 isActive
-                  ? isProTab
-                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-sm font-bold'
-                    : 'bg-tg-button text-tg-button-text shadow-sm'
-                  : isProTab
-                  ? 'text-amber-400 hover:text-amber-300'
+                  ? 'bg-tg-button text-tg-button-text shadow-sm'
                   : 'text-tg-hint hover:text-tg-text'
               }`}
             >
@@ -185,10 +179,10 @@ export function ShopScreen({
       </div>
 
       {selectedCategory === 'pro' && !isPro && (
-        <div className="flex flex-col rounded-2xl bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent border border-amber-500/30 p-4 shadow-sm">
+        <div className="flex flex-col rounded-2xl bg-tg-section border border-tg-separator/40 p-4 shadow-sm">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-tg-button/15 text-tg-button">
                 <Crown className="h-5 w-5 fill-current" />
               </div>
               <div className="flex flex-col text-left">
@@ -199,7 +193,7 @@ export function ShopScreen({
             <button
               type="button"
               onClick={() => setIsUpgradeModalOpen(true)}
-              className="flex shrink-0 items-center gap-1 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-1.5 text-xs font-bold text-slate-950 shadow-sm hover:brightness-105 active:scale-95"
+              className="flex shrink-0 items-center gap-1 rounded-xl bg-tg-button px-3 py-1.5 text-xs font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75"
             >
               <Crown className="h-3.5 w-3.5 fill-current" />
               <span>Join Pro</span>
@@ -209,8 +203,8 @@ export function ShopScreen({
       )}
 
       {selectedCategory === 'pro' && isPro && (
-        <div className="flex items-center justify-between rounded-2xl bg-amber-500/10 border border-amber-500/25 p-3.5 shadow-sm text-xs">
-          <div className="flex items-center gap-2 text-amber-400 font-bold">
+        <div className="flex items-center justify-between rounded-2xl bg-tg-section border border-tg-separator/40 p-3.5 shadow-sm text-xs">
+          <div className="flex items-center gap-2 text-tg-button font-bold">
             <Crown className="h-4 w-4 fill-current" />
             <span>Flagora Pro Active — Exclusive Items Unlocked</span>
           </div>
@@ -252,8 +246,6 @@ export function ShopScreen({
             const rarityStyle = getRarityStyle(item.rarity);
             const requiresPro = Boolean(item.proOnly && !isPro);
 
-            const frameClass =
-              item.category === 'avatarFrame' ? getAvatarFrameClass(item.id) : '';
             const themeClass =
               item.category === 'flagTheme' ? getFlagThemeClass(item.id) : '';
             const bannerClass =
@@ -276,15 +268,21 @@ export function ShopScreen({
                           <img
                             src={profile.photoUrl}
                             alt={item.name}
-                            className={`h-12 w-12 rounded-full object-cover ${frameClass}`}
+                            className="h-10 w-10 rounded-full object-cover"
                           />
                         ) : (
                           <div
-                            className={`flex h-12 w-12 items-center justify-center rounded-full bg-tg-button text-base font-bold text-tg-button-text ${frameClass}`}
+                            className="flex h-10 w-10 items-center justify-center rounded-full bg-tg-button text-sm font-bold text-tg-button-text"
                           >
                             {initial}
                           </div>
                         )}
+                        <CosmeticProtectedImage
+                          category="avatarFrame"
+                          assetIdOrPath={item.imageAsset || item.id}
+                          alt={item.name}
+                          className="absolute inset-0"
+                        />
                       </div>
                     )}
 
@@ -300,7 +298,7 @@ export function ShopScreen({
                       <div
                         className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-xl shadow-inner ${bannerClass}`}
                       >
-                        <Sparkles className="h-5 w-5 text-white/90 drop-shadow" />
+                        <Sparkles className="h-5 w-5 text-tg-button-text/90 drop-shadow" />
                       </div>
                     )}
 
@@ -342,11 +340,16 @@ export function ShopScreen({
                     {item.category === 'comboBadge' && (
                       <div className="flex h-14 w-28 shrink-0 items-center justify-center">
                         <div
-                          className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-extrabold border ${getComboBadgeClass(
+                          className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-extrabold border ${getComboBadgeClass(
                             item.id,
                           )}`}
                         >
-                          <Flame className="h-3.5 w-3.5 fill-current" />
+                          <CosmeticProtectedImage
+                            category="comboBadge"
+                            assetIdOrPath={item.imageAsset || item.id}
+                            alt={item.name}
+                            className="h-5 w-5"
+                          />
                           <span>5×</span>
                         </div>
                       </div>
@@ -354,21 +357,33 @@ export function ShopScreen({
 
                     {item.category === 'profileEffect' && (
                       <div
-                        className={`flex h-14 w-28 shrink-0 items-center justify-center rounded-xl ${getProfileEffectClass(
+                        className={`relative flex h-14 w-28 shrink-0 items-center justify-center rounded-xl overflow-hidden ${getProfileEffectClass(
                           item.id,
                         )}`}
                       >
-                        <Sparkles className="h-5 w-5" />
+                        <CosmeticProtectedImage
+                          category="profileEffect"
+                          assetIdOrPath={item.imageAsset || item.id}
+                          alt={item.name}
+                          className="h-12 w-12"
+                          animationClass="animate-profile-effect"
+                        />
                       </div>
                     )}
 
                     {item.category === 'battleEntrance' && (
                       <div
-                        className={`flex h-14 w-28 shrink-0 items-center justify-center rounded-xl ${getBattleEntranceClass(
+                        className={`relative flex h-14 w-28 shrink-0 items-center justify-center rounded-xl overflow-hidden ${getBattleEntranceClass(
                           item.id,
                         )}`}
                       >
-                        <Zap className="h-5 w-5" />
+                        <CosmeticProtectedImage
+                          category="battleEntrance"
+                          assetIdOrPath={item.imageAsset || item.id}
+                          alt={item.name}
+                          className="h-12 w-12"
+                          animationClass="animate-battle-entrance"
+                        />
                       </div>
                     )}
 
@@ -381,7 +396,7 @@ export function ShopScreen({
                           {rarityStyle.label}
                         </span>
                         {item.proOnly && (
-                          <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold text-amber-400 flex items-center gap-0.5">
+                          <span className="rounded-full bg-tg-button/15 border border-tg-button/30 px-2 py-0.5 text-[10px] font-bold text-tg-button flex items-center gap-0.5">
                             <Crown className="h-2.5 w-2.5 fill-current" />
                             <span>Pro</span>
                           </span>
@@ -414,14 +429,14 @@ export function ShopScreen({
                 <div className="mt-3.5 flex items-center justify-end border-t border-tg-separator/30 pt-3">
                   {requiresPro ? (
                     <div className="flex w-full items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-amber-400">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-tg-hint">
                         <Lock className="h-3.5 w-3.5" />
                         <span>Requires Flagora Pro</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => setIsUpgradeModalOpen(true)}
-                        className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-3.5 py-1.5 text-xs font-bold text-slate-950 shadow-sm transition-transform active:scale-95 hover:brightness-105"
+                        className="flex items-center gap-1.5 rounded-xl bg-tg-button px-3.5 py-1.5 text-xs font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75"
                       >
                         <Crown className="h-3.5 w-3.5 fill-current" />
                         <span>Upgrade</span>

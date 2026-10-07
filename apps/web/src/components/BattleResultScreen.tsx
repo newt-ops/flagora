@@ -6,6 +6,7 @@ import {
   getInitials,
 } from './battleHelpers.js';
 import { getAvatarFrameClass } from './cosmeticHelpers.js';
+import { CosmeticProtectedImage } from './CosmeticProtectedImage.js';
 import { getRatingDeltaDisplay, checkTierPromotion } from './rankHelpers.js';
 import { TierBadge } from './TierBadge.js';
 
@@ -188,26 +189,34 @@ export function BattleResultScreen({
                 : ''
             }`}
           >
-            <div className="relative">
+            <div className="relative flex h-16 w-16 items-center justify-center">
               {challengerPhoto ? (
                 <img
                   src={challengerPhoto}
                   alt={challengerName}
                   className={`h-14 w-14 rounded-full object-cover bg-tg-section ${
-                    challengerFrame ? challengerFrame : 'ring-2 ring-tg-button'
+                    !isChallengerViewer || !userAvatarFrame ? (challengerFrame ? challengerFrame : 'ring-2 ring-tg-button') : ''
                   }`}
                 />
               ) : (
                 <div
                   className={`flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${
-                    challengerFrame ? challengerFrame : ''
+                    !isChallengerViewer || !userAvatarFrame ? (challengerFrame ? challengerFrame : '') : ''
                   }`}
                 >
                   {challengerInitial}
                 </div>
               )}
+              {isChallengerViewer && userAvatarFrame && (
+                <CosmeticProtectedImage
+                  category="avatarFrame"
+                  assetIdOrPath={userAvatarFrame}
+                  alt="Avatar Frame"
+                  className="absolute inset-0"
+                />
+              )}
               {challengerWon && (
-                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-tg-button text-tg-button-text ring-2 ring-tg-section">
+                <span className="absolute -bottom-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-tg-button text-tg-button-text ring-2 ring-tg-section">
                   <Trophy className="h-3 w-3" />
                 </span>
               )}
@@ -257,26 +266,34 @@ export function BattleResultScreen({
                 : ''
             }`}
           >
-            <div className="relative">
+            <div className="relative flex h-16 w-16 items-center justify-center">
               {opponentPhoto ? (
                 <img
                   src={opponentPhoto}
                   alt={opponentName}
                   className={`h-14 w-14 rounded-full object-cover bg-tg-section ${
-                    opponentFrame ? opponentFrame : 'ring-2 ring-tg-button'
+                    !isOpponentViewer || !userAvatarFrame ? (opponentFrame ? opponentFrame : 'ring-2 ring-tg-button') : ''
                   }`}
                 />
               ) : (
                 <div
                   className={`flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${
-                    opponentFrame ? opponentFrame : ''
+                    !isOpponentViewer || !userAvatarFrame ? (opponentFrame ? opponentFrame : '') : ''
                   }`}
                 >
                   {opponentInitial}
                 </div>
               )}
+              {isOpponentViewer && userAvatarFrame && (
+                <CosmeticProtectedImage
+                  category="avatarFrame"
+                  assetIdOrPath={userAvatarFrame}
+                  alt="Avatar Frame"
+                  className="absolute inset-0"
+                />
+              )}
               {opponentWon && (
-                <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-tg-button text-tg-button-text ring-2 ring-tg-section">
+                <span className="absolute -bottom-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-tg-button text-tg-button-text ring-2 ring-tg-section">
                   <Trophy className="h-3 w-3" />
                 </span>
               )}

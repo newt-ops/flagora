@@ -57,22 +57,22 @@ describe('badgeHelpers', () => {
 
     it('returns distinctive styles for each badge when earned', () => {
       const flawless = getBadgeAccentColors('flawless_run', true);
-      assert.ok(flawless.iconContainer.includes('emerald'));
+      assert.ok(flawless.iconContainer.includes('tg-button'));
 
       const speed = getBadgeAccentColors('speed_demon', true);
-      assert.ok(speed.iconContainer.includes('amber'));
+      assert.ok(speed.iconContainer.includes('tg-button'));
 
       const specialist = getBadgeAccentColors('tier_4_specialist', true);
-      assert.ok(specialist.iconContainer.includes('purple'));
+      assert.ok(specialist.iconContainer.includes('tg-button'));
 
       const week = getBadgeAccentColors('week_warrior', true);
-      assert.ok(week.iconContainer.includes('rose'));
+      assert.ok(week.iconContainer.includes('tg-button'));
 
       const month = getBadgeAccentColors('month_warrior', true);
-      assert.ok(month.iconContainer.includes('cyan'));
+      assert.ok(month.iconContainer.includes('tg-button'));
 
       const season = getBadgeAccentColors('season_top_100', true);
-      assert.ok(season.iconContainer.includes('yellow'));
+      assert.ok(season.iconContainer.includes('tg-button'));
     });
   });
 

@@ -117,7 +117,7 @@ export function ResultsScreen({
             {result.doubleXpApplied && (
               <span
                 data-testid="double-xp-indicator"
-                className="mt-0.5 text-[10px] font-bold text-amber-400"
+                className="mt-0.5 text-[10px] font-bold text-tg-button"
               >
                 2× XP this weekend
               </span>

@@ -9,6 +9,7 @@ import {
 } from '@flagora/shared';
 import { triggerHaptic } from '../telegram/haptics.js';
 import { getFlagThemeClass } from './cosmeticHelpers.js';
+import { CosmeticProtectedImage } from './CosmeticProtectedImage.js';
 
 interface LiveBattleScreenProps {
   battleStart: BattleStartPayload;
@@ -18,6 +19,8 @@ interface LiveBattleScreenProps {
   onSubmitAnswer: (flagIndex: number, selectedIsoCode: string) => Promise<SubmitAnswerResponse>;
   onCheckFinished?: () => void;
   flagTheme?: string | null;
+  comboBadge?: string | null;
+  userBattleEntrance?: string | null;
 }
 
 export function LiveBattleScreen({
@@ -28,6 +31,7 @@ export function LiveBattleScreen({
   onSubmitAnswer,
   onCheckFinished,
   flagTheme,
+  comboBadge,
 }: LiveBattleScreenProps) {
   const [currentFlagIndex, setCurrentFlagIndex] = useState(0);
   const [runningScore, setRunningScore] = useState(0);
@@ -151,8 +155,17 @@ export function LiveBattleScreen({
             <div className="mt-1 flex items-center gap-1.5">
               <span className="text-lg font-black text-tg-text">{runningScore}</span>
               {comboCount > 0 && (
-                <span className="flex items-center gap-0.5 rounded bg-tg-button/20 px-1.5 py-0.5 text-[10px] font-extrabold text-tg-button">
-                  <Zap className="h-2.5 w-2.5" />
+                <span className="flex items-center gap-1 rounded bg-tg-button/20 px-1.5 py-0.5 text-[10px] font-extrabold text-tg-button">
+                  {comboBadge ? (
+                    <CosmeticProtectedImage
+                      category="comboBadge"
+                      assetIdOrPath={comboBadge}
+                      alt="Combo badge"
+                      className="h-3.5 w-3.5"
+                    />
+                  ) : (
+                    <Zap className="h-2.5 w-2.5" />
+                  )}
                   {comboMultiplier}x
                 </span>
               )}
@@ -171,8 +184,8 @@ export function LiveBattleScreen({
                 <span
                   className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-black ${
                     opponentProgress.correct
-                      ? 'bg-emerald-500/20 text-emerald-400'
-                      : 'bg-rose-500/20 text-rose-400'
+                      ? 'bg-tg-button/20 text-tg-button'
+                      : 'bg-tg-destructive/15 text-tg-destructive'
                   }`}
                 >
                   {opponentProgress.correct ? '+' : 'x'}
@@ -191,7 +204,7 @@ export function LiveBattleScreen({
               <Timer className="h-3 w-3" />
               <span>Battle Timer</span>
             </span>
-            <span className={timerSeconds <= 10 ? 'font-bold text-rose-400' : 'text-tg-text'}>
+            <span className={timerSeconds <= 10 ? 'font-bold text-tg-destructive' : 'text-tg-text'}>
               {timerSeconds}s
             </span>
           </div>
@@ -205,7 +218,7 @@ export function LiveBattleScreen({
               rx="3"
               className={`transition-all duration-100 ease-linear ${
                 timerSeconds <= 10
-                  ? 'fill-rose-500'
+                  ? 'fill-tg-destructive'
                   : 'fill-tg-button'
               }`}
             />
@@ -256,7 +269,7 @@ export function LiveBattleScreen({
               <div className="flex items-center gap-2 text-xs font-semibold">
                 {feedback.correct ? (
                   <>
-                    <span className="flex items-center gap-1 text-emerald-500">
+                    <span className="flex items-center gap-1 text-tg-button">
                       <Check className="h-3.5 w-3.5" />
                       <span>+{feedback.pointsThisFlag} pts</span>
                     </span>
@@ -271,7 +284,7 @@ export function LiveBattleScreen({
                     )}
                   </>
                 ) : (
-                  <span className="flex items-center gap-1 text-rose-500">
+                  <span className="flex items-center gap-1 text-tg-destructive">
                     <X className="h-3.5 w-3.5" />
                     <span>+0 pts</span>
                   </span>
@@ -287,8 +300,8 @@ export function LiveBattleScreen({
                 if (isSelected) {
                   if (feedback) {
                     buttonStyle = feedback.correct
-                      ? 'bg-emerald-600 text-white font-bold ring-2 ring-emerald-400'
-                      : 'bg-rose-600 text-white font-bold ring-2 ring-rose-400';
+                      ? 'bg-tg-button text-tg-button-text font-bold ring-2 ring-tg-button'
+                      : 'bg-tg-destructive text-tg-button-text font-bold ring-2 ring-tg-destructive/50';
                   } else {
                     buttonStyle = 'bg-tg-button text-tg-button-text font-bold';
                   }

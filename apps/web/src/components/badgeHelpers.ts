@@ -55,7 +55,7 @@ export function formatBadgeEarnedDate(earnedAt: Date | string): string {
   }
 }
 
-export function getBadgeAccentColors(badgeId: BadgeId, isEarned: boolean) {
+export function getBadgeAccentColors(_badgeId: BadgeId, isEarned: boolean) {
   if (!isEarned) {
     return {
       card: 'bg-tg-secondary-bg/40 border-tg-separator/40 opacity-70',
@@ -66,64 +66,13 @@ export function getBadgeAccentColors(badgeId: BadgeId, isEarned: boolean) {
     };
   }
 
-  switch (badgeId) {
-    case 'flawless_run':
-      return {
-        card: 'bg-emerald-500/5 border-emerald-500/25 ring-1 ring-emerald-500/15',
-        iconContainer: 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30',
-        title: 'text-tg-text',
-        description: 'text-tg-hint',
-        badgeTag: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-      };
-    case 'speed_demon':
-      return {
-        card: 'bg-amber-500/5 border-amber-500/25 ring-1 ring-amber-500/15',
-        iconContainer: 'bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/30',
-        title: 'text-tg-text',
-        description: 'text-tg-hint',
-        badgeTag: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-      };
-    case 'tier_4_specialist':
-      return {
-        card: 'bg-purple-500/5 border-purple-500/25 ring-1 ring-purple-500/15',
-        iconContainer: 'bg-purple-500/15 text-purple-400 ring-1 ring-purple-500/30',
-        title: 'text-tg-text',
-        description: 'text-tg-hint',
-        badgeTag: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
-      };
-    case 'week_warrior':
-      return {
-        card: 'bg-rose-500/5 border-rose-500/25 ring-1 ring-rose-500/15',
-        iconContainer: 'bg-rose-500/15 text-rose-400 ring-1 ring-rose-500/30',
-        title: 'text-tg-text',
-        description: 'text-tg-hint',
-        badgeTag: 'bg-rose-500/15 text-rose-400 border-rose-500/30',
-      };
-    case 'month_warrior':
-      return {
-        card: 'bg-cyan-500/5 border-cyan-500/25 ring-1 ring-cyan-500/15',
-        iconContainer: 'bg-cyan-500/15 text-cyan-400 ring-1 ring-cyan-500/30',
-        title: 'text-tg-text',
-        description: 'text-tg-hint',
-        badgeTag: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
-      };
-    case 'season_top_100':
-      return {
-        card: 'bg-yellow-500/5 border-yellow-500/25 ring-1 ring-yellow-500/20',
-        iconContainer: 'bg-yellow-500/15 text-yellow-400 ring-1 ring-yellow-500/30',
-        title: 'text-tg-text',
-        description: 'text-tg-hint',
-        badgeTag: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
-      };
-    default:
-      return {
-        card: 'bg-tg-button/5 border-tg-button/25 ring-1 ring-tg-button/15',
-        iconContainer: 'bg-tg-button/15 text-tg-button ring-1 ring-tg-button/30',
-        title: 'text-tg-text',
-        description: 'text-tg-hint',
-        badgeTag: 'bg-tg-button/15 text-tg-button border-tg-button/30',
-      };
-  }
+  return {
+    card: 'bg-tg-button/5 border-tg-button/25 ring-1 ring-tg-button/15',
+    iconContainer: 'bg-tg-button/15 text-tg-button ring-1 ring-tg-button/30',
+    title: 'text-tg-text',
+    description: 'text-tg-hint',
+    badgeTag: 'bg-tg-button/15 text-tg-button border-tg-button/30',
+  };
 }
 
 export function getMergedBadgeItems(

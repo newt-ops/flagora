@@ -5,13 +5,7 @@ import react from '@vitejs/plugin-react';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export default defineConfig(({ mode }) => {
-  const isProd = mode === 'production' || process.env.NODE_ENV === 'production';
-  const debugEnv = process.env.VITE_ADSGRAM_DEBUG;
-  if (isProd && (debugEnv === 'true' || debugEnv === '1')) {
-    throw new Error('Build error: VITE_ADSGRAM_DEBUG cannot be true in production build');
-  }
-
+export default defineConfig(() => {
   return {
     plugins: [react()],
     resolve: {

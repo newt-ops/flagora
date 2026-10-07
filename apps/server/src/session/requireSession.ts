@@ -29,7 +29,6 @@ export function createRequireSessionMiddleware(sessionSecret: string) {
     try {
       const payload = verifySessionToken(token, sessionSecret);
       req.sessionUser = payload;
-      process.stdout.write(`[Session] Authenticated user ID: ${payload.telegramUserId}\n`);
       next();
     } catch (error) {
       const message = error instanceof SessionError ? error.message : 'Invalid session token';

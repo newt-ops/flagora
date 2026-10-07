@@ -47,7 +47,16 @@ proRouter.get('/status', async (req: AuthenticatedSessionRequest, res: Response)
     
     res.json({
       isActive,
-      currentPeriodEnd: sub?.currentPeriodEnd || null
+      currentPeriodEnd: sub?.currentPeriodEnd || null,
+      perks: [
+        'stipend_1000_pins',
+        'free_streak_save',
+        'double_xp_weekends',
+        'pinned_flags',
+        'extended_history',
+        'pro_cosmetics',
+        'early_access',
+      ],
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to get subscription status';

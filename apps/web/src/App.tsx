@@ -42,7 +42,6 @@ import { ErrorState } from './components/ErrorState.js';
 import { NonTelegramFallback } from './components/NonTelegramFallback.js';
 import { PlayScreen } from './components/PlayScreen.js';
 import { ShopScreen } from './components/ShopScreen.js';
-import { RewardsHubScreen } from './components/RewardsHubScreen.js';
 import { BottomNav, type NavTab } from './components/BottomNav.js';
 import { PlaySkeleton, CardSkeleton } from './components/Skeletons.js';
 import {
@@ -463,7 +462,7 @@ export function App() {
 
   return (
     <main
-      className="flex min-h-screen flex-col items-center justify-start bg-tg-secondary-bg text-tg-text px-3.5 sm:px-4 pt-[calc(var(--app-safe-top,0px)+1.25rem)] pb-[calc(var(--tg-safe-area-inset-bottom,env(safe-area-inset-bottom,0px))+5.5rem)]"
+      className="flex min-h-screen flex-col items-center justify-start bg-tg-secondary-bg text-tg-text pl-[max(0.875rem,calc(var(--app-safe-left,0px)+0.875rem))] pr-[max(0.875rem,calc(var(--app-safe-right,0px)+0.875rem))] sm:px-4 pt-[calc(var(--app-safe-top,0px)+1.25rem)] pb-[calc(var(--app-safe-bottom,0px)+5.5rem)]"
     >
       {isLoading && <PlaySkeleton />}
 
@@ -506,7 +505,7 @@ export function App() {
               onBattleFriend={handleStartBattle}
               onViewDailyLeaderboard={handleOpenDailyLeaderboard}
               onNavigateToProfile={() => setActiveTab('profile')}
-              onNavigateToRewards={() => setActiveTab('rewards')}
+              isPro={isPro}
               onRefetchProfile={() => {
                 refetch();
                 refetchRank();
@@ -550,22 +549,6 @@ export function App() {
             </div>
           )}
 
-          {activeTab === 'rewards' && (
-            <div className="w-full max-w-md mx-auto pb-20">
-              <RewardsHubScreen
-                profile={profile}
-                streakStatus={streakStatus}
-                sessionToken={sessionToken}
-                onRefetchProfile={() => {
-                  refetch();
-                  refetchRank();
-                }}
-                onRefetchStreakStatus={refetchStreakStatus}
-                onNavigateToShop={() => setActiveTab('shop')}
-              />
-            </div>
-          )}
-
           {activeTab === 'profile' && (
             <div className="w-full max-w-md mx-auto pb-20">
               <ProfileCard
@@ -577,7 +560,6 @@ export function App() {
                 badges={badges}
                 isLoadingBadges={isLoadingBadges}
                 sessionToken={sessionToken}
-                onNavigateToRewards={() => setActiveTab('rewards')}
                 onRefetchProfile={() => {
                   refetch();
                   refetchRank();
@@ -640,6 +622,7 @@ export function App() {
           isConnecting={isBattleSocketConnecting}
           error={battleSocketError}
           userAvatarFrame={profile.equipped?.avatarFrame}
+          userBattleEntrance={profile.equipped?.battleEntrance}
         />
       )}
 
@@ -656,6 +639,8 @@ export function App() {
           onSubmitAnswer={submitBattleAnswer}
           onCheckFinished={checkBattleFinishedFallback}
           flagTheme={profile.equipped?.flagTheme}
+          comboBadge={profile.equipped?.comboBadge}
+          userBattleEntrance={profile.equipped?.battleEntrance}
         />
       )}
 
@@ -678,6 +663,7 @@ export function App() {
           sessionToken={sessionToken}
           onFinish={handleFinishGame}
           flagTheme={profile?.equipped?.flagTheme}
+          comboBadge={profile?.equipped?.comboBadge}
         />
       )}
 

@@ -1,30 +1,33 @@
 import { useState, useCallback } from 'react';
 import { Flame, ShieldCheck, Loader2 } from 'lucide-react';
-import type { StreakStatusResponse } from '@flagora/shared';
-import { showRewardedAd } from '../ads/adsgram.js';
-import {
-  getStreakSaveBannerCopy,
-  formatAdOutcomeFeedback,
-} from './rewardUiHelpers.js';
+import { type StreakStatusResponse, STREAK_SAVE_PIN_COST } from '@flagora/shared';
+import { saveStreak } from '../api/client.js';
+import { getStreakSaveBannerCopy } from './rewardUiHelpers.js';
 
 export interface StreakSaveBannerProps {
   sessionToken?: string | null;
   streakStatus?: StreakStatusResponse | null;
+  userPins?: number;
+  isPro?: boolean;
   onSuccess?: () => void;
-  onLearnMore?: () => void;
+  onUpgradePro?: () => void;
 }
 
 export function StreakSaveBanner({
   sessionToken,
   streakStatus,
+  userPins = 0,
+  isPro = false,
   onSuccess,
-  onLearnMore,
+  onUpgradePro,
 }: StreakSaveBannerProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ text: string; isSuccess: boolean } | null>(null);
 
+  const canAfford = isPro || userPins >= STREAK_SAVE_PIN_COST;
+
   const handleSaveStreak = useCallback(async () => {
-    if (!sessionToken || isSaving) {
+    if (!sessionToken || isSaving || !canAfford) {
       return;
     }
 
@@ -32,23 +35,24 @@ export function StreakSaveBanner({
     setFeedback(null);
 
     try {
-      const outcome = await showRewardedAd('streak-save', sessionToken);
-      const formattedFeedback = formatAdOutcomeFeedback(outcome);
-      setFeedback(formattedFeedback);
-
-      if (outcome.status === 'rewarded') {
+      const res = await saveStreak(sessionToken);
+      if (res.saved) {
+        setFeedback({ text: 'Streak saved! Play a game today to extend it 🚩', isSuccess: true });
         onSuccess?.();
       }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to save streak';
+      setFeedback({ text: message, isSuccess: false });
     } finally {
       setIsSaving(false);
     }
-  }, [sessionToken, isSaving, onSuccess]);
+  }, [sessionToken, isSaving, canAfford, onSuccess]);
 
   if (!streakStatus?.isAtRisk) {
     return null;
   }
 
-  const { title, subtitle } = getStreakSaveBannerCopy(streakStatus.currentStreak);
+  const { title, subtitle, buttonText } = getStreakSaveBannerCopy(streakStatus.currentStreak, isPro);
 
   return (
     <div
@@ -66,15 +70,21 @@ export function StreakSaveBanner({
               <ShieldCheck className="h-4 w-4 text-tg-button shrink-0" />
             </div>
             <p className="mt-0.5 text-xs text-tg-hint">{subtitle}</p>
-            {onLearnMore && (
-              <button
-                type="button"
-                onClick={onLearnMore}
-                data-testid="streak-save-learn-more"
-                className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-tg-link hover:opacity-80 underline underline-offset-2"
-              >
-                Learn more & view earn options
-              </button>
+            {!isPro && !canAfford && (
+              <div className="mt-1 flex flex-col gap-1">
+                <p className="text-[11px] font-semibold text-tg-destructive">
+                  You need {STREAK_SAVE_PIN_COST} pins (current: {userPins})
+                </p>
+                {onUpgradePro && (
+                  <button
+                    type="button"
+                    onClick={onUpgradePro}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-tg-button hover:underline"
+                  >
+                    <span>Upgrade to Pro with Stars for free saves</span>
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -82,7 +92,7 @@ export function StreakSaveBanner({
         <button
           type="button"
           onClick={handleSaveStreak}
-          disabled={isSaving || !sessionToken}
+          disabled={isSaving || !sessionToken || !canAfford}
           className="flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-tg-button px-3.5 text-xs font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
         >
           {isSaving ? (
@@ -91,7 +101,7 @@ export function StreakSaveBanner({
               <span>Saving...</span>
             </>
           ) : (
-            <span>Save Streak</span>
+            <span>{buttonText}</span>
           )}
         </button>
       </div>
@@ -102,7 +112,7 @@ export function StreakSaveBanner({
           className={`mt-2.5 rounded-xl px-2.5 py-1.5 text-xs font-medium ${
             feedback.isSuccess
               ? 'bg-tg-button/10 text-tg-button'
-              : 'bg-tg-secondary-bg text-tg-hint'
+              : 'bg-tg-destructive/10 text-tg-destructive'
           }`}
         >
           {feedback.text}

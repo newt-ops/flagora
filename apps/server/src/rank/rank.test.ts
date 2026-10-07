@@ -284,8 +284,9 @@ describe('Ranked Tiers and Battle Rating Backend', () => {
 
   describe('Live Battle Finalization Integration', () => {
     it('applies win and loss deltas to challenger and opponent upon battle completion', async () => {
-      const challenger = makeProfile(301, { battleRating: 100, currentSeason: '2026-09' });
-      const opponent = makeProfile(302, { battleRating: 50, currentSeason: '2026-09' });
+      const currentSeason = getUtcSeasonString();
+      const challenger = makeProfile(301, { battleRating: 100, currentSeason });
+      const opponent = makeProfile(302, { battleRating: 50, currentSeason });
       await db.collection('profiles').insertMany([challenger, opponent]);
 
       const battleId = 'test-battle-uuid-1';
@@ -346,7 +347,6 @@ describe('Ranked Tiers and Battle Rating Backend', () => {
       assert.equal(updatedChallenger?.battleRating, 120);
       assert.equal(updatedOpponent?.battleRating, 35);
 
-      const currentSeason = getUtcSeasonString();
       const cScore = await redis.zscore(getRankedLeaderboardKey(currentSeason), '301');
       const oScore = await redis.zscore(getRankedLeaderboardKey(currentSeason), '302');
       assert.equal(Number(cScore), 120);
@@ -354,8 +354,9 @@ describe('Ranked Tiers and Battle Rating Backend', () => {
     });
 
     it('applies tie (+2) to both participants when scores are identical', async () => {
-      const challenger = makeProfile(303, { battleRating: 200, currentSeason: '2026-09' });
-      const opponent = makeProfile(304, { battleRating: 200, currentSeason: '2026-09' });
+      const currentSeason = getUtcSeasonString();
+      const challenger = makeProfile(303, { battleRating: 200, currentSeason });
+      const opponent = makeProfile(304, { battleRating: 200, currentSeason });
       await db.collection('profiles').insertMany([challenger, opponent]);
 
       const battleId = 'test-battle-uuid-tie';

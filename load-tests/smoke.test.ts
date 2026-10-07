@@ -11,7 +11,6 @@ import RedisMock from 'ioredis-mock';
 import type { Redis as RedisClient } from 'ioredis';
 import { initSocketServer } from '../apps/server/src/multiplayer/socketServer.js';
 import { createRequireSessionMiddleware } from '../apps/server/src/session/requireSession.js';
-import { createSessionToken } from '../apps/server/src/session/tokens.js';
 import { createRun, submitAnswer, finishRun } from '../apps/server/src/game/runService.js';
 import { seedFlags } from '../apps/server/src/game/seedFlags.js';
 import { initFlagCache } from '../apps/server/src/game/flagCache.js';
@@ -131,22 +130,13 @@ describe('k6 Load Testing Scripts Smoke Test', () => {
       res.status(200).json({ attempted: false });
     });
 
-    app.post('/api/rewards/bonus-coins/intent', sessionMiddleware, rateLimit({ endpoint: 'reward_intent', limit: 10, windowSeconds: 60 }), async (req, res) => {
-      const userId = (req as unknown as { sessionUser?: { telegramUserId: number } }).sessionUser?.telegramUserId || 100001;
-      res.status(200).json({ ok: true, token: createSessionToken(userId, TEST_SECRET), dailyCap: 5, usedCount: 1 });
-    });
-
-    app.post('/api/rewards/bonus-coins/redeem', sessionMiddleware, rateLimit({ endpoint: 'reward_redeem', limit: 10, windowSeconds: 60 }), async (_req, res) => {
-      res.status(200).json({ ok: true, coinsAwarded: 50 });
-    });
-
     app.get('/api/streak/status', sessionMiddleware, async (_req, res) => {
       res.status(200).json({ isAtRisk: false, currentStreak: 3 });
     });
 
-    app.post('/api/rewards/streak-save/intent', sessionMiddleware, rateLimit({ endpoint: 'reward_intent', limit: 10, windowSeconds: 60 }), async (req, res) => {
+    app.post('/api/streak/save', sessionMiddleware, rateLimit({ endpoint: 'streak_save', limit: 10, windowSeconds: 60 }), async (req, res) => {
       const userId = (req as unknown as { sessionUser?: { telegramUserId: number } }).sessionUser?.telegramUserId || 100001;
-      res.status(200).json({ ok: true, token: createSessionToken(userId, TEST_SECRET), dailyCap: 1, usedCount: 0 });
+      res.status(200).json({ ok: true, saved: true, currentStreak: 3, longestStreak: 5, telegramUserId: userId });
     });
 
     app.post('/api/battles', sessionMiddleware, rateLimit({ endpoint: 'battle_create', limit: 500, windowSeconds: 60 }), async (req: Request, res) => {
@@ -206,7 +196,7 @@ describe('k6 Load Testing Scripts Smoke Test', () => {
     const result = await runK6('load-tests/reward-flow.js', ['--vus', '2', '--duration', '2s']);
     assert.strictEqual(result.exitCode, 0, result.stderr);
     assert.ok(result.stdout.includes('http_req_duration'));
-    assert.ok(result.stdout.includes('reward_intent') || result.stdout.includes('http_reqs'));
+    assert.ok(result.stdout.includes('streak_save') || result.stdout.includes('http_reqs'));
   });
 
   it('executes gameplay loop load test script successfully with k6', async () => {

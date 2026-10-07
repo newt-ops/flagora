@@ -7,6 +7,7 @@ import {
   Pin,
   Rocket,
   Coins as Pins,
+  ShieldCheck,
   X,
   Loader2,
   CheckCircle2,
@@ -88,7 +89,12 @@ export function ProUpgradeModal({
     {
       icon: Pins,
       title: '1,000 Monthly Pins Stipend',
-      desc: 'Instant balance bonus every month',
+      desc: 'Instant balance bonus with every renewal',
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Free Streak-Saves',
+      desc: 'Protect broken daily streaks for 0 Pins (normally 50)',
     },
     {
       icon: Sparkles,
@@ -124,7 +130,7 @@ export function ProUpgradeModal({
     >
       <div
         data-testid="pro-upgrade-modal"
-        className="relative flex w-full max-w-sm flex-col rounded-3xl bg-tg-section p-6 shadow-2xl border border-amber-500/30 text-tg-text"
+        className="relative flex w-full max-w-sm flex-col rounded-3xl bg-tg-section p-6 shadow-2xl border border-tg-separator/40 text-tg-text"
       >
         <button
           type="button"
@@ -136,16 +142,16 @@ export function ProUpgradeModal({
         </button>
 
         <div className="flex flex-col items-center text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.25)]">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-tg-button/15 text-tg-button">
             <Crown className="h-7 w-7 fill-current" />
           </div>
 
           <h2 className="mt-3 text-lg font-extrabold text-tg-text">Flagora Pro</h2>
           <p className="mt-0.5 text-xs text-tg-hint">Premium Perks & Exclusive Catalog</p>
 
-          <div className="mt-3 flex items-baseline gap-1 rounded-2xl bg-amber-500/10 px-4 py-2 border border-amber-500/20">
-            <span className="text-2xl font-black text-amber-400">100</span>
-            <span className="text-xs font-bold text-amber-400">Stars / month</span>
+          <div className="mt-3 flex items-baseline gap-1 rounded-2xl bg-tg-secondary-bg px-4 py-2 border border-tg-separator/40">
+            <span className="text-2xl font-black text-tg-text">100</span>
+            <span className="text-xs font-bold text-tg-hint">Stars / month</span>
           </div>
         </div>
 
@@ -157,7 +163,7 @@ export function ProUpgradeModal({
                 key={idx}
                 className="flex items-start gap-3 rounded-2xl bg-tg-secondary-bg/80 p-2.5 text-left"
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-400 mt-0.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-tg-button/15 text-tg-button mt-0.5">
                   <Icon className="h-4 w-4" />
                 </div>
                 <div className="flex flex-col min-w-0">
@@ -173,16 +179,16 @@ export function ProUpgradeModal({
           <div
             className={`mt-4 flex items-center gap-2 rounded-2xl p-3 text-xs ${
               statusMessage.type === 'success'
-                ? 'bg-emerald-500/20 text-emerald-400'
+                ? 'bg-tg-button/15 text-tg-button'
                 : statusMessage.type === 'error'
-                ? 'bg-rose-500/20 text-rose-400'
+                ? 'bg-tg-destructive/15 text-tg-destructive'
                 : 'bg-tg-secondary-bg text-tg-hint'
             }`}
           >
             {statusMessage.type === 'success' ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-tg-button" />
             ) : statusMessage.type === 'error' ? (
-              <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+              <AlertCircle className="h-4 w-4 shrink-0 text-tg-destructive" />
             ) : (
               <AlertCircle className="h-4 w-4 shrink-0 text-tg-hint" />
             )}
@@ -195,7 +201,7 @@ export function ProUpgradeModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex w-full items-center justify-center rounded-2xl bg-emerald-500 py-3 text-sm font-bold text-white shadow-lg transition-opacity hover:opacity-95 active:opacity-85"
+              className="flex w-full items-center justify-center rounded-2xl bg-tg-button py-3 text-sm font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75"
             >
               Done
             </button>
@@ -204,12 +210,12 @@ export function ProUpgradeModal({
               type="button"
               disabled={isLoading}
               onClick={() => void handleSubscribe()}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 py-3 text-sm font-bold text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all hover:brightness-105 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-tg-button py-3 text-sm font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
             >
               {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-slate-950" />
+                <Loader2 className="h-4 w-4 animate-spin text-tg-button-text" />
               ) : (
-                <Crown className="h-4 w-4 fill-current text-slate-950" />
+                <Crown className="h-4 w-4 fill-current text-tg-button-text" />
               )}
               <span>Subscribe with Telegram Stars</span>
             </button>

@@ -16,6 +16,8 @@ const config: Config = {
         'tg-accent': 'var(--accent-text-color, var(--tg-theme-accent-text-color, #2481cc))',
         'tg-section': 'var(--section-bg-color, var(--tg-theme-section-bg-color, #ffffff))',
         'tg-separator': 'var(--section-separator-color, var(--tg-theme-section-separator-color, rgba(128, 128, 128, 0.16)))',
+        'tg-destructive': 'var(--destructive-text-color, var(--tg-theme-destructive-text-color, #ef4444))',
+        'tg-subtitle': 'var(--subtitle-text-color, var(--tg-theme-subtitle-text-color, #707579))',
       },
     },
   },

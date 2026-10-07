@@ -167,8 +167,8 @@ To encourage high daily retention, Flagora implements an automated UTC calendar-
    - If their last played date was already $D$, their streak remains unchanged.
 2. **Streak at Risk:**
    - If more than 24–48 hours pass without completing a game (difference $> 1\text{ day}$), the streak is classified as **At Risk**.
-3. **Streak-Freeze Save (Ad Reward):**
-   - When a streak is at risk of resetting, the player can watch a short sponsored video (via AdsGram) or redeem a streak-save pass.
+3. **Streak Save (Pins / Flagora Pro):**
+   - When a streak is at risk of resetting, the player can spend 50 Pins (or 0 Pins for Flagora Pro subscribers) once per UTC day via `POST /api/streak/save`.
    - This sets their `lastPlayedDate` to yesterday, rescuing the streak from dropping back to 1.
 
 ---
@@ -275,32 +275,24 @@ Cosmetic items do not use heavy image assets. Instead, each item defines a dicti
 
 ---
 
-## 12. Ad-Reward Infrastructure & Anti-Cheat Token Flow
+## 12. Streak-Save Infrastructure (100% Ad-Free)
 
-For sponsored rewards (e.g., daily bonus coins and streak saves) powered by **AdsGram**, Flagora employs a **pre-flight single-use reward token flow**:
+Flagora is 100% ad-free. Streak saves are powered entirely by the in-game economy Pins (50 Pins) or complimentary for Flagora Pro subscribers:
 
 ```
-Client (Mini App)                   Server (Express)                 Redis
+Client (Mini App)                   Server (Express)                 Redis / MongoDB
       │                                    │                           │
-      ├──── POST /rewards/intent ─────────►│                           │
-      │                                    ├─ Check daily cap (≤ 5) ───┤
-      │                                    ├─ Generate UUID token ─────┤
-      │                                    ├─ Store token (TTL: 5m) ──►│
-      │◄─── { token, rewardType } ─────────┤                           │
-      │                                    │                           │
-  [Shows AdsGram Ad]                       │                           │
-  [Ad finishes / onReward]                 │                           │
-      │                                    │                           │
-      ├──── POST /rewards/redeem {token} ─►│                           │
-      │                                    ├─ Atomic GETDEL token ────►│
-      │                                    │  (Valid & unredeemed?)    │
-      │                                    ├─ Credit Coins / Streak ───┤
-      │◄─── { ok: true, newCoins } ────────┤                           │
+      ├──── POST /api/streak/save ────────►│                           │
+      │                                    ├─ Check daily cap (1/day) ─┤
+      │                                    ├─ Check Pro or ≥ 50 Pins ──┤
+      │                                    ├─ Atomic deduct 50 Pins ──►│
+      │                                    ├─ Set lastPlayedDate=yday ─┤
+      │◄─── { ok: true, saved: true } ─────┤                           │
 ```
 
-1. **Daily Caps:** Users are capped at 5 bonus coin ad views per UTC day.
-2. **No Client Trust:** The client cannot simply notify the server "I watched an ad, give me 50 coins." It must present a valid, unexpired, server-issued intent token.
-3. **Atomic Consumption:** Tokens are stored in Redis and consumed using atomic read-and-delete operations (`GETDEL`), completely eliminating double-redemption replay attacks.
+1. **Daily Cap:** Users can save at most 1 streak per UTC day.
+2. **Flagora Pro Benefit:** Pro subscribers save streaks without spending any Pins.
+3. **Atomic Pin Transaction:** Non-Pro users spend 50 Pins atomically with balance checks.
 
 ---
 

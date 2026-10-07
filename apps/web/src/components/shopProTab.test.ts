@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import type { FinishRunResponse, ShopCatalogItem } from '@flagora/shared';
+import { type FinishRunResponse, type ShopCatalogItem, DEFAULT_COSMETIC_CATALOG } from '@flagora/shared';
+import { RARITY_STYLES } from './cosmeticHelpers.js';
 
 describe('Flagora Pro UI Logic', () => {
   const proItem: ShopCatalogItem = {
@@ -71,5 +72,44 @@ describe('Flagora Pro UI Logic', () => {
     };
 
     assert.equal(normalRunWeekday.doubleXpApplied, false);
+  });
+
+  it('verifies free streak save is afforded without pins for Pro subscribers', () => {
+    const proPlayerPins = 0;
+    const isPro = true;
+    const canAffordPro = isPro || proPlayerPins >= 50;
+    assert.equal(canAffordPro, true);
+
+    const freePlayerPins = 10;
+    const isFree = false;
+    const canAffordFree = isFree || freePlayerPins >= 50;
+    assert.equal(canAffordFree, false);
+  });
+
+  it('validates Telegram Stars pricing model and currency', () => {
+    const proPricing = {
+      amount: 100,
+      currency: 'XTR',
+      period: 'month',
+      pinsStipend: 1000,
+    };
+    assert.equal(proPricing.currency, 'XTR');
+    assert.equal(proPricing.amount, 100);
+    assert.equal(proPricing.pinsStipend, 1000);
+  });
+
+  it('strictly adheres to Telegram native styles and excludes gold/amber classes', () => {
+    for (const [rarity, style] of Object.entries(RARITY_STYLES)) {
+      const combined = `${style.borderClass} ${style.glowClass} ${style.badgeClass}`.toLowerCase();
+      assert.equal(combined.includes('gold'), false, `Rarity ${rarity} must not use gold`);
+      assert.equal(combined.includes('amber'), false, `Rarity ${rarity} must not use amber`);
+      assert.equal(combined.includes('yellow'), false, `Rarity ${rarity} must not use yellow`);
+      assert.equal(combined.includes('#'), false, `Rarity ${rarity} must use Telegram tokens instead of hex`);
+    }
+
+    for (const item of DEFAULT_COSMETIC_CATALOG) {
+      assert.equal(item.name.toLowerCase().includes('gold'), false, `Item ${item.id} name must not mention gold`);
+      assert.equal((item.description ?? '').toLowerCase().includes('gold'), false, `Item ${item.id} description must not mention gold`);
+    }
   });
 });

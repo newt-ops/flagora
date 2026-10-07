@@ -189,7 +189,7 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
     app.post('/api/admin/shop/reload', async (req, res) => {
       try {
         const secret = process.env.ADMIN_SECRET;
-        if (secret && req.headers['x-admin-secret'] !== secret) {
+        if (!secret || req.headers['x-admin-secret'] !== secret) {
           res.status(403).json({ error: 'Forbidden', message: 'Invalid admin secret' });
           return;
         }
@@ -288,6 +288,11 @@ describe('Phase 10 Prompt 01: Cosmetic Shop Backend', () => {
       headers: { 'x-admin-secret': 'wrong-secret' },
     });
     assert.equal(unauthRes.status, 403);
+
+    const missingSecretRes = await fetch(`${baseUrl}/api/admin/shop/reload`, {
+      method: 'POST',
+    });
+    assert.equal(missingSecretRes.status, 403);
 
     await db.collection<CosmeticItem>('cosmetics').insertOne({
       id: 'frame-custom-admin-test',

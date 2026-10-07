@@ -66,6 +66,12 @@ export default tseslint.config(
     },
   },
   {
+    files: ['apps/web/src/components/CosmeticProtectedImage.tsx'],
+    rules: {
+      'no-restricted-syntax': 'off',
+    },
+  },
+  {
     files: ['apps/server/src/**/*.{ts,tsx}'],
     languageOptions: {
       globals: {

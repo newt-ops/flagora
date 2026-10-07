@@ -9,33 +9,25 @@ import {
   getYesterdayUtcDateString,
   type PlayerProfile,
   type CountryFlag,
+  STREAK_SAVE_PIN_COST,
 } from '@flagora/shared';
 import { initRedis, closeRedis } from '../db/redis.js';
 import { createRequireSessionMiddleware, type AuthenticatedSessionRequest } from '../session/requireSession.js';
 import { createSessionToken } from '../session/tokens.js';
 import {
   getStreakStatus,
-  requestStreakSaveIntent,
-  redeemStreakSave,
+  saveStreak,
 } from './streakSaveService.js';
-import {
-  issueRewardToken,
-} from './rewardTokenService.js';
 import {
   StreakNotAtRiskError,
   RewardCapReachedError,
-  RewardTokenError,
-  UnauthorizedTokenRedemptionError,
-  ExpiredRewardTokenError,
-  RewardTokenAlreadyRedeemedError,
-  RewardTypeMismatchError,
-  InvalidRewardTokenError,
+  InsufficientPinsError,
 } from './rewardErrors.js';
-import { finishRun, createRun } from '../game/runService.js';
+import { finishRun, createRun, submitAnswer } from '../game/runService.js';
 import type { GameRun } from '../game/runTypes.js';
 import { seedFlags } from '../game/seedFlags.js';
 
-describe('Phase 8 Prompt 03: Streak-Save Reward Backend', () => {
+describe('Ad-Free Streak-Save Backend', () => {
   let db: Db;
   let redis: RedisClient;
   let server: http.Server;
@@ -43,8 +35,8 @@ describe('Phase 8 Prompt 03: Streak-Save Reward Backend', () => {
   const profilesMap = new Map<number, PlayerProfile>();
   const runsMap = new Map<string, GameRun>();
   const flagsMap = new Map<string, CountryFlag>();
+  const subscriptionsMap = new Map<number, { active: boolean }>();
   const sessionSecret = 'test-secret-streak-save-session-key';
-  const rewardSecret = 'test-secret-streak-save-reward-key';
 
   function createMockDb(): Db {
     const mockProfiles = {
@@ -61,80 +53,49 @@ describe('Phase 8 Prompt 03: Streak-Save Reward Backend', () => {
         const found = profilesMap.get(query.telegramUserId);
         return found ? { ...found } : null;
       },
-      updateOne: async (
-        filter: { telegramUserId: number },
-        update: {
-          $set?: Record<string, unknown>;
-          $inc?: Record<string, number>;
-          $max?: Record<string, unknown>;
-        },
-      ) => {
-        const existing = profilesMap.get(filter.telegramUserId);
-        if (!existing) {
-          return { matchedCount: 0, modifiedCount: 0 };
-        }
-        const updated = { ...existing };
-        const updatedRecord = updated as unknown as Record<string, unknown>;
-        if (update.$inc) {
-          for (const [k, v] of Object.entries(update.$inc)) {
-            const current = typeof updatedRecord[k] === 'number' ? (updatedRecord[k] as number) : 0;
-            updatedRecord[k] = current + v;
-          }
-        }
-        if (update.$set) {
-          Object.assign(updated, update.$set);
-        }
-        if (update.$max) {
-          for (const [k, v] of Object.entries(update.$max)) {
-            const current = typeof updatedRecord[k] === 'number' ? (updatedRecord[k] as number) : 0;
-            const maxVal = typeof v === 'number' ? v : 0;
-            if (current < maxVal) {
-              updatedRecord[k] = maxVal;
-            }
-          }
-        }
-        profilesMap.set(filter.telegramUserId, updated);
-        return { matchedCount: 1, modifiedCount: 1 };
-      },
       findOneAndUpdate: async (
-        filter: { telegramUserId: number },
-        update: {
-          $set?: Record<string, unknown>;
-          $inc?: Record<string, number>;
-          $max?: Record<string, unknown>;
-        },
+        filter: { telegramUserId: number; pins?: { $gte: number } },
+        update: { $inc?: { pins?: number }; $set?: Partial<PlayerProfile> },
       ) => {
         const existing = profilesMap.get(filter.telegramUserId);
-        if (!existing) {
+        if (!existing) return null;
+        if (filter.pins?.$gte !== undefined && (existing.pins ?? 0) < filter.pins.$gte) {
           return null;
         }
         const updated = { ...existing };
-        const updatedRecord = updated as unknown as Record<string, unknown>;
-        if (update.$inc) {
-          for (const [k, v] of Object.entries(update.$inc)) {
-            const current = typeof updatedRecord[k] === 'number' ? (updatedRecord[k] as number) : 0;
-            updatedRecord[k] = current + v;
-          }
+        if (update.$inc?.pins !== undefined) {
+          updated.pins = (updated.pins ?? 0) + update.$inc.pins;
         }
         if (update.$set) {
           Object.assign(updated, update.$set);
-        }
-        if (update.$max) {
-          for (const [k, v] of Object.entries(update.$max)) {
-            const current = typeof updatedRecord[k] === 'number' ? (updatedRecord[k] as number) : 0;
-            const maxVal = typeof v === 'number' ? v : 0;
-            if (current < maxVal) {
-              updatedRecord[k] = maxVal;
-            }
-          }
         }
         profilesMap.set(filter.telegramUserId, updated);
         return updated;
       },
+      updateOne: async (
+        query: { telegramUserId: number },
+        update: { $inc?: { pins?: number }; $set?: Partial<PlayerProfile> },
+      ) => {
+        const existing = profilesMap.get(query.telegramUserId);
+        if (!existing) return { matchedCount: 0, modifiedCount: 0 };
+        const updated = { ...existing };
+        if (update.$inc?.pins !== undefined) {
+          updated.pins = (updated.pins ?? 0) + update.$inc.pins;
+        }
+        if (update.$set) {
+          Object.assign(updated, update.$set);
+        }
+        profilesMap.set(query.telegramUserId, updated);
+        return { matchedCount: 1, modifiedCount: 1 };
+      },
     };
 
     const mockRuns = {
-      createIndex: async () => 'run_index',
+      createIndex: async () => 'runId_1',
+      deleteMany: async () => {
+        runsMap.clear();
+        return { deletedCount: 0 };
+      },
       insertOne: async (doc: GameRun) => {
         runsMap.set(doc.runId, { ...doc });
         return { insertedId: doc.runId };
@@ -143,67 +104,64 @@ describe('Phase 8 Prompt 03: Streak-Save Reward Backend', () => {
         const found = runsMap.get(query.runId);
         return found ? { ...found } : null;
       },
-      updateOne: async (
-        filter: { runId: string },
-        update: { $set?: Partial<GameRun> },
-      ) => {
-        const existing = runsMap.get(filter.runId);
+      updateOne: async (query: { runId: string }, update: { $set?: Partial<GameRun> }) => {
+        const existing = runsMap.get(query.runId);
         if (!existing) return { matchedCount: 0, modifiedCount: 0 };
-        const updated = { ...existing };
-        if (update.$set) Object.assign(updated, update.$set);
-        runsMap.set(filter.runId, updated);
+        const updated = { ...existing, ...update.$set };
+        runsMap.set(query.runId, updated);
         return { matchedCount: 1, modifiedCount: 1 };
       },
-      findOneAndUpdate: async (
-        filter: { runId: string },
-        update: { $set?: Partial<GameRun> },
-      ) => {
-        const existing = runsMap.get(filter.runId);
+      findOneAndUpdate: async (query: { runId: string }, update: { $set?: Partial<GameRun> }) => {
+        const existing = runsMap.get(query.runId);
         if (!existing) return null;
-        const updated = { ...existing };
-        if (update.$set) Object.assign(updated, update.$set);
-        runsMap.set(filter.runId, updated);
+        const updated = { ...existing, ...update.$set };
+        runsMap.set(query.runId, updated);
         return updated;
       },
+      countDocuments: async () => runsMap.size,
+      find: () => ({
+        sort: () => ({
+          skip: () => ({
+            limit: () => ({
+              toArray: async () => Array.from(runsMap.values()),
+            }),
+          }),
+        }),
+      }),
     };
 
     const mockFlags = {
-      createIndex: async () => 'flags_index',
-      countDocuments: async () => flagsMap.size,
+      createIndex: async () => 'isoCode_1',
+      deleteMany: async () => {
+        flagsMap.clear();
+        return { deletedCount: 0 };
+      },
       insertMany: async (docs: CountryFlag[]) => {
-        for (const d of docs) {
-          flagsMap.set(d.isoCode, d);
-        }
+        for (const doc of docs) flagsMap.set(doc.isoCode, { ...doc });
         return { insertedCount: docs.length };
       },
-      bulkWrite: async (
-        ops: Array<{
-          updateOne?: {
-            filter: { isoCode: string };
-            update: { $set: CountryFlag };
-            upsert?: boolean;
-          };
-        }>,
-      ) => {
-        let upserted = 0;
-        let matched = 0;
+      bulkWrite: async (ops: Array<{ updateOne: { filter: { isoCode: string }; update: { $set: CountryFlag } } }>) => {
         for (const op of ops) {
-          if (op.updateOne) {
-            const isoCode = op.updateOne.filter.isoCode;
-            const flag = op.updateOne.update.$set;
-            if (flagsMap.has(isoCode)) {
-              matched++;
-            } else {
-              upserted++;
-            }
-            flagsMap.set(isoCode, flag);
-          }
+          flagsMap.set(op.updateOne.filter.isoCode, op.updateOne.update.$set);
         }
-        return { upsertedCount: upserted, matchedCount: matched };
+        return { upsertedCount: ops.length };
       },
+      countDocuments: async () => flagsMap.size,
       find: () => ({
         toArray: async () => Array.from(flagsMap.values()),
       }),
+    };
+
+    const mockSubscriptions = {
+      findOne: async (query: { telegramUserId: number }) => {
+        const found = subscriptionsMap.get(query.telegramUserId);
+        if (!found || !found.active) return null;
+        return {
+          telegramUserId: query.telegramUserId,
+          status: 'active',
+          currentPeriodEnd: new Date(Date.now() + 86400000 * 30),
+        };
+      },
     };
 
     return {
@@ -211,14 +169,14 @@ describe('Phase 8 Prompt 03: Streak-Save Reward Backend', () => {
         if (name === 'profiles') return mockProfiles as unknown;
         if (name === 'runs') return mockRuns as unknown;
         if (name === 'flags') return mockFlags as unknown;
-        if (name === 'referrals') {
-          return {
-            findOne: async () => null,
-            findOneAndUpdate: async () => null,
-            updateOne: async () => ({ matchedCount: 0, modifiedCount: 0 }),
-          } as unknown;
-        }
-        throw new Error(`Unexpected collection: ${name}`);
+        if (name === 'subscriptions') return mockSubscriptions as unknown;
+        return {
+          createIndex: async () => '',
+          deleteMany: async () => ({ deletedCount: 0 }),
+          insertOne: async () => ({ insertedId: '' }),
+          findOne: async () => null,
+          updateOne: async () => ({ matchedCount: 0, modifiedCount: 0 }),
+        } as unknown;
       },
     } as unknown as Db;
   }
@@ -226,7 +184,6 @@ describe('Phase 8 Prompt 03: Streak-Save Reward Backend', () => {
   before(async () => {
     db = createMockDb();
     redis = await initRedis('memory');
-
     await seedFlags(db);
 
     const app = express();
@@ -254,7 +211,7 @@ describe('Phase 8 Prompt 03: Streak-Save Reward Backend', () => {
     );
 
     app.post(
-      '/api/rewards/streak-save/intent',
+      '/api/streak/save',
       sessionMiddleware,
       async (req: AuthenticatedSessionRequest, res) => {
         try {
@@ -264,11 +221,15 @@ describe('Phase 8 Prompt 03: Streak-Save Reward Backend', () => {
             return;
           }
 
-          const result = await requestStreakSaveIntent(telegramUserId, db, { redis, secret: rewardSecret });
+          const result = await saveStreak(telegramUserId, db, { redis });
           res.status(200).json(result);
         } catch (error) {
           if (error instanceof StreakNotAtRiskError) {
             res.status(400).json({ error: 'Streak not at risk', message: error.message });
+            return;
+          }
+          if (error instanceof InsufficientPinsError) {
+            res.status(400).json({ error: 'Insufficient pins', message: error.message });
             return;
           }
           if (error instanceof RewardCapReachedError) {
@@ -282,70 +243,17 @@ describe('Phase 8 Prompt 03: Streak-Save Reward Backend', () => {
             });
             return;
           }
-          const message = error instanceof Error ? error.message : 'Failed to create streak save intent';
+          const message = error instanceof Error ? error.message : 'Failed to save streak';
           res.status(500).json({ error: 'Internal server error', message });
         }
       },
     );
 
-    app.post(
-      '/api/rewards/streak-save/redeem',
-      sessionMiddleware,
-      async (req: AuthenticatedSessionRequest, res) => {
-        try {
-          const telegramUserId = req.sessionUser?.telegramUserId;
-          if (!telegramUserId) {
-            res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
-            return;
-          }
-
-          const { token } = req.body || {};
-          if (!token || typeof token !== 'string' || token.trim() === '') {
-            res.status(400).json({ error: 'Missing token', message: 'Reward token is required' });
-            return;
-          }
-
-          const result = await redeemStreakSave(token, telegramUserId, db, { redis, secret: rewardSecret });
-          res.status(200).json(result);
-        } catch (error) {
-          if (error instanceof StreakNotAtRiskError) {
-            res.status(400).json({ error: 'Streak not at risk', message: error.message });
-            return;
-          }
-          if (error instanceof UnauthorizedTokenRedemptionError) {
-            res.status(403).json({ error: 'Forbidden', message: error.message });
-            return;
-          }
-          if (error instanceof ExpiredRewardTokenError) {
-            res.status(400).json({ error: 'Token expired', message: error.message });
-            return;
-          }
-          if (error instanceof RewardTokenAlreadyRedeemedError) {
-            res.status(400).json({ error: 'Token already redeemed', message: error.message });
-            return;
-          }
-          if (error instanceof RewardTypeMismatchError) {
-            res.status(400).json({ error: 'Type mismatch', message: error.message });
-            return;
-          }
-          if (error instanceof InvalidRewardTokenError) {
-            res.status(400).json({ error: 'Invalid token', message: error.message });
-            return;
-          }
-          if (error instanceof RewardTokenError) {
-            res.status(400).json({ error: 'Invalid reward token', message: error.message });
-            return;
-          }
-          const message = error instanceof Error ? error.message : 'Failed to redeem streak save';
-          res.status(500).json({ error: 'Internal server error', message });
-        }
-      },
-    );
-
+    server = http.createServer(app);
     await new Promise<void>((resolve) => {
-      server = app.listen(0, () => {
+      server.listen(0, '127.0.0.1', () => {
         const addr = server.address();
-        if (addr && typeof addr === 'object') {
+        if (typeof addr === 'object' && addr !== null) {
           baseUrl = `http://127.0.0.1:${addr.port}`;
         }
         resolve();
@@ -355,7 +263,9 @@ describe('Phase 8 Prompt 03: Streak-Save Reward Backend', () => {
 
   after(async () => {
     if (server) {
-      await new Promise<void>((resolve) => server.close(() => resolve()));
+      await new Promise<void>((resolve, reject) => {
+        server.close((err) => (err ? reject(err) : resolve()));
+      });
     }
     await closeRedis();
   });
@@ -363,458 +273,273 @@ describe('Phase 8 Prompt 03: Streak-Save Reward Backend', () => {
   beforeEach(async () => {
     profilesMap.clear();
     runsMap.clear();
+    subscriptionsMap.clear();
     await redis.flushall();
   });
 
-  function makeAuthHeaders(telegramUserId: number): Record<string, string> {
-    const sessionToken = createSessionToken(
-      telegramUserId,
-      sessionSecret,
-      '1h',
-    );
-    return {
-      Authorization: `Bearer ${sessionToken}`,
-      'Content-Type': 'application/json',
-    };
-  }
-
-  function seedProfile(telegramUserId: number, overrides: Partial<PlayerProfile> = {}): PlayerProfile {
+  function createTestProfile(userId: number, overrides: Partial<PlayerProfile> = {}): PlayerProfile {
     const profile: PlayerProfile = {
-      telegramUserId,
-      username: `user_${telegramUserId}`,
-      firstName: `User ${telegramUserId}`,
+      telegramUserId: userId,
+      username: `user_${userId}`,
+      firstName: `User${userId}`,
       lastName: null,
       photoUrl: null,
       pins: 100,
-      xp: 50,
+      xp: 0,
       level: 1,
-      currentStreak: 0,
-      longestStreak: 0,
-      lastPlayedDate: null,
-      gamesPlayed: 0,
-      bestScore: 0,
+      currentStreak: 5,
+      longestStreak: 10,
+      gamesPlayed: 5,
+      bestScore: 100,
+      lastPlayedDate: '2026-09-06',
       createdAt: new Date(),
       updatedAt: new Date(),
       ...overrides,
     };
-    profilesMap.set(telegramUserId, profile);
+    profilesMap.set(userId, profile);
     return profile;
   }
 
-  describe('GET /api/streak/status', () => {
-    it('returns 401 when no session token is provided', async () => {
-      const res = await fetch(`${baseUrl}/api/streak/status`);
-      assert.equal(res.status, 401);
+  describe('getStreakStatus', () => {
+    it('returns isAtRisk true when lastPlayedDate was 2 days ago and streak > 0', async () => {
+      const fixedNow = new Date('2026-09-08T12:00:00Z');
+      createTestProfile(101, {
+        currentStreak: 5,
+        longestStreak: 10,
+        lastPlayedDate: '2026-09-06',
+      });
+
+      const status = await getStreakStatus(101, db, { now: fixedNow });
+      assert.equal(status.isAtRisk, true);
+      assert.equal(status.currentStreak, 5);
+      assert.equal(status.longestStreak, 10);
+      assert.equal(status.lastPlayedDate, '2026-09-06');
     });
 
-    it('returns isAtRisk: false for a new profile with currentStreak 0', async () => {
-      const userId = 7001;
-      seedProfile(userId, { currentStreak: 0, longestStreak: 0, lastPlayedDate: null });
-
-      const res = await fetch(`${baseUrl}/api/streak/status`, {
-        headers: makeAuthHeaders(userId),
+    it('returns isAtRisk false when played yesterday', async () => {
+      const fixedNow = new Date('2026-09-08T12:00:00Z');
+      createTestProfile(102, {
+        currentStreak: 3,
+        lastPlayedDate: '2026-09-07',
       });
-      assert.equal(res.status, 200);
-      const data = await res.json();
-      assert.equal(data.isAtRisk, false);
-      assert.equal(data.currentStreak, 0);
-      assert.equal(data.longestStreak, 0);
-      assert.equal(data.lastPlayedDate, null);
+
+      const status = await getStreakStatus(102, db, { now: fixedNow });
+      assert.equal(status.isAtRisk, false);
     });
 
-    it('returns isAtRisk: false when played today', async () => {
-      const userId = 7002;
-      const today = getUtcDateString();
-      seedProfile(userId, { currentStreak: 4, longestStreak: 4, lastPlayedDate: today });
-
-      const res = await fetch(`${baseUrl}/api/streak/status`, {
-        headers: makeAuthHeaders(userId),
+    it('returns isAtRisk false when streak is 0', async () => {
+      const fixedNow = new Date('2026-09-08T12:00:00Z');
+      createTestProfile(103, {
+        currentStreak: 0,
+        lastPlayedDate: '2026-09-01',
       });
-      assert.equal(res.status, 200);
-      const data = await res.json();
-      assert.equal(data.isAtRisk, false);
-      assert.equal(data.currentStreak, 4);
-      assert.equal(data.lastPlayedDate, today);
-    });
 
-    it('returns isAtRisk: false when played yesterday', async () => {
-      const userId = 7003;
-      const yesterday = getYesterdayUtcDateString();
-      seedProfile(userId, { currentStreak: 5, longestStreak: 10, lastPlayedDate: yesterday });
-
-      const res = await fetch(`${baseUrl}/api/streak/status`, {
-        headers: makeAuthHeaders(userId),
-      });
-      assert.equal(res.status, 200);
-      const data = await res.json();
-      assert.equal(data.isAtRisk, false);
-      assert.equal(data.currentStreak, 5);
-      assert.equal(data.longestStreak, 10);
-      assert.equal(data.lastPlayedDate, yesterday);
-    });
-
-    it('returns isAtRisk: true when played 2+ days ago with positive streak', async () => {
-      const userId = 7004;
-      seedProfile(userId, { currentStreak: 7, longestStreak: 7, lastPlayedDate: '2020-01-01' });
-
-      const res = await fetch(`${baseUrl}/api/streak/status`, {
-        headers: makeAuthHeaders(userId),
-      });
-      assert.equal(res.status, 200);
-      const data = await res.json();
-      assert.equal(data.isAtRisk, true);
-      assert.equal(data.currentStreak, 7);
-      assert.equal(data.lastPlayedDate, '2020-01-01');
-    });
-
-    it('returns isAtRisk: false when played 2+ days ago but streak is 0', async () => {
-      const userId = 7005;
-      seedProfile(userId, { currentStreak: 0, longestStreak: 12, lastPlayedDate: '2020-01-01' });
-
-      const res = await fetch(`${baseUrl}/api/streak/status`, {
-        headers: makeAuthHeaders(userId),
-      });
-      assert.equal(res.status, 200);
-      const data = await res.json();
-      assert.equal(data.isAtRisk, false);
-      assert.equal(data.currentStreak, 0);
-      assert.equal(data.longestStreak, 12);
+      const status = await getStreakStatus(103, db, { now: fixedNow });
+      assert.equal(status.isAtRisk, false);
     });
   });
 
-  describe('POST /api/rewards/streak-save/intent', () => {
-    it('returns 401 when no session token is provided', async () => {
-      const res = await fetch(`${baseUrl}/api/rewards/streak-save/intent`, {
-        method: 'POST',
+  describe('saveStreak service logic', () => {
+    it('successfully saves streak for non-Pro player and deducts 50 pins', async () => {
+      const fixedNow = new Date('2026-09-08T12:00:00Z');
+      createTestProfile(201, {
+        pins: 150,
+        currentStreak: 7,
+        lastPlayedDate: '2026-09-06',
       });
-      assert.equal(res.status, 401);
+
+      const result = await saveStreak(201, db, { now: fixedNow, redis });
+      assert.equal(result.ok, true);
+      assert.equal(result.saved, true);
+      assert.equal(result.pinsDeducted, STREAK_SAVE_PIN_COST);
+      assert.equal(result.pins, 100);
+      assert.equal(result.lastPlayedDate, '2026-09-07');
+      assert.equal(result.currentStreak, 7);
+
+      const profile = profilesMap.get(201);
+      assert.equal(profile?.pins, 100);
+      assert.equal(profile?.lastPlayedDate, '2026-09-07');
     });
 
-    it('returns 400 when streak is not at risk (played yesterday)', async () => {
-      const userId = 7101;
-      seedProfile(userId, {
-        currentStreak: 3,
-        longestStreak: 5,
-        lastPlayedDate: getYesterdayUtcDateString(),
+    it('saves streak for Pro player with 0 pins deducted', async () => {
+      const fixedNow = new Date('2026-09-08T12:00:00Z');
+      createTestProfile(202, {
+        pins: 20,
+        currentStreak: 12,
+        lastPlayedDate: '2026-09-06',
       });
+      subscriptionsMap.set(202, { active: true });
 
-      const res = await fetch(`${baseUrl}/api/rewards/streak-save/intent`, {
-        method: 'POST',
-        headers: makeAuthHeaders(userId),
-      });
-      assert.equal(res.status, 400);
-      const data = await res.json();
-      assert.equal(data.error, 'Streak not at risk');
+      const result = await saveStreak(202, db, { now: fixedNow, redis });
+      assert.equal(result.ok, true);
+      assert.equal(result.saved, true);
+      assert.equal(result.pinsDeducted, 0);
+      assert.equal(result.pins, 20);
+      assert.equal(result.lastPlayedDate, '2026-09-07');
+
+      const profile = profilesMap.get(202);
+      assert.equal(profile?.pins, 20);
     });
 
-    it('returns 400 when streak is 0', async () => {
-      const userId = 7102;
-      seedProfile(userId, {
-        currentStreak: 0,
-        longestStreak: 10,
-        lastPlayedDate: '2020-01-01',
-      });
-
-      const res = await fetch(`${baseUrl}/api/rewards/streak-save/intent`, {
-        method: 'POST',
-        headers: makeAuthHeaders(userId),
-      });
-      assert.equal(res.status, 400);
-      const data = await res.json();
-      assert.equal(data.error, 'Streak not at risk');
-    });
-
-    it('issues streak-save reward token when streak is at risk', async () => {
-      const userId = 7103;
-      seedProfile(userId, {
-        currentStreak: 6,
-        longestStreak: 6,
-        lastPlayedDate: '2020-01-01',
-      });
-
-      const res = await fetch(`${baseUrl}/api/rewards/streak-save/intent`, {
-        method: 'POST',
-        headers: makeAuthHeaders(userId),
-      });
-      assert.equal(res.status, 200);
-      const data = await res.json();
-      assert.equal(data.ok, true);
-      assert.ok(data.token);
-      assert.equal(data.rewardType, 'streak-save');
-      assert.equal(data.dailyCap, 1);
-      assert.equal(data.currentStreak, 6);
-      assert.equal(data.longestStreak, 6);
-    });
-
-    it('enforces daily cap of 1 and returns 429 on second attempt in same UTC day', async () => {
-      const userId = 7104;
-      seedProfile(userId, {
-        currentStreak: 8,
-        longestStreak: 8,
-        lastPlayedDate: '2020-01-01',
-      });
-
-      const res1 = await fetch(`${baseUrl}/api/rewards/streak-save/intent`, {
-        method: 'POST',
-        headers: makeAuthHeaders(userId),
-      });
-      assert.equal(res1.status, 200);
-      const data1 = await res1.json();
-
-      const redeem1 = await fetch(`${baseUrl}/api/rewards/streak-save/redeem`, {
-        method: 'POST',
-        headers: makeAuthHeaders(userId),
-        body: JSON.stringify({ token: data1.token }),
-      });
-      assert.equal(redeem1.status, 200);
-
-      const p1 = profilesMap.get(userId)!;
-      p1.lastPlayedDate = '2020-01-01';
-      profilesMap.set(userId, p1);
-
-      const res2 = await fetch(`${baseUrl}/api/rewards/streak-save/intent`, {
-        method: 'POST',
-        headers: makeAuthHeaders(userId),
-      });
-      assert.equal(res2.status, 429);
-      const data2 = await res2.json();
-      assert.equal(data2.ok, false);
-      assert.equal(data2.error, 'Daily cap reached');
-      assert.equal(data2.dailyCap, 1);
-      assert.equal(data2.usedCount, 1);
-    });
-
-    it('resets daily cap on next UTC day', async () => {
-      const userId = 7105;
-      seedProfile(userId, {
+    it('rejects when non-Pro player has fewer than 50 pins', async () => {
+      const fixedNow = new Date('2026-09-08T12:00:00Z');
+      createTestProfile(203, {
+        pins: 45,
         currentStreak: 5,
-        longestStreak: 5,
-        lastPlayedDate: '2020-01-01',
+        lastPlayedDate: '2026-09-06',
       });
-
-      const day1 = new Date('2026-09-08T10:00:00.000Z');
-      const day2 = new Date('2026-09-09T10:00:00.000Z');
-
-      const intent1 = await requestStreakSaveIntent(userId, db, {
-        redis,
-        secret: rewardSecret,
-        now: day1,
-      });
-      assert.equal(intent1.ok, true);
-      assert.ok(intent1.token);
-
-      await redeemStreakSave(intent1.token, userId, db, {
-        redis,
-        secret: rewardSecret,
-        now: day1,
-      });
-
-      const p2 = profilesMap.get(userId)!;
-      p2.lastPlayedDate = '2020-01-01';
-      profilesMap.set(userId, p2);
 
       await assert.rejects(
-        async () => {
-          await requestStreakSaveIntent(userId, db, {
-            redis,
-            secret: rewardSecret,
-            now: day1,
-          });
-        },
-        (err) => err instanceof RewardCapReachedError,
+        () => saveStreak(203, db, { now: fixedNow, redis }),
+        InsufficientPinsError,
       );
 
-      const intent2 = await requestStreakSaveIntent(userId, db, {
-        redis,
-        secret: rewardSecret,
-        now: day2,
+      const profile = profilesMap.get(203);
+      assert.equal(profile?.pins, 45);
+      assert.equal(profile?.lastPlayedDate, '2026-09-06');
+    });
+
+    it('rejects when streak is not at risk', async () => {
+      const fixedNow = new Date('2026-09-08T12:00:00Z');
+      createTestProfile(204, {
+        pins: 100,
+        currentStreak: 4,
+        lastPlayedDate: '2026-09-07',
       });
-      assert.equal(intent2.ok, true);
-      assert.ok(intent2.token);
+
+      await assert.rejects(
+        () => saveStreak(204, db, { now: fixedNow, redis }),
+        StreakNotAtRiskError,
+      );
+    });
+
+    it('enforces daily cap of 1 streak save per UTC day', async () => {
+      const fixedNow = new Date('2026-09-08T12:00:00Z');
+      createTestProfile(205, {
+        pins: 200,
+        currentStreak: 4,
+        lastPlayedDate: '2026-09-06',
+      });
+
+      const first = await saveStreak(205, db, { now: fixedNow, redis });
+      assert.equal(first.ok, true);
+
+      profilesMap.set(205, {
+        ...profilesMap.get(205)!,
+        lastPlayedDate: '2026-09-06',
+      });
+
+      await assert.rejects(
+        () => saveStreak(205, db, { now: fixedNow, redis }),
+        RewardCapReachedError,
+      );
     });
   });
 
-  describe('POST /api/rewards/streak-save/redeem', () => {
+  describe('POST /api/streak/save HTTP endpoint', () => {
     it('returns 401 when unauthenticated', async () => {
-      const res = await fetch(`${baseUrl}/api/rewards/streak-save/redeem`, {
+      const res = await fetch(`${baseUrl}/api/streak/save`, {
         method: 'POST',
-        body: JSON.stringify({ token: 'some-token' }),
         headers: { 'Content-Type': 'application/json' },
       });
       assert.equal(res.status, 401);
     });
 
-    it('returns 400 when token is missing', async () => {
-      const userId = 7201;
-      seedProfile(userId);
+    it('returns 400 when streak is not at risk', async () => {
+      createTestProfile(301, {
+        pins: 100,
+        currentStreak: 3,
+        lastPlayedDate: getYesterdayUtcDateString(),
+      });
+      const token = createSessionToken(301, sessionSecret);
 
-      const res = await fetch(`${baseUrl}/api/rewards/streak-save/redeem`, {
+      const res = await fetch(`${baseUrl}/api/streak/save`, {
         method: 'POST',
-        body: JSON.stringify({}),
-        headers: makeAuthHeaders(userId),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
       });
       assert.equal(res.status, 400);
-    });
-
-    it('returns 400 on invalid or malformed token', async () => {
-      const userId = 7202;
-      seedProfile(userId, { currentStreak: 4, lastPlayedDate: '2020-01-01' });
-
-      const res = await fetch(`${baseUrl}/api/rewards/streak-save/redeem`, {
-        method: 'POST',
-        body: JSON.stringify({ token: 'invalid.token.here' }),
-        headers: makeAuthHeaders(userId),
-      });
-      assert.equal(res.status, 400);
-    });
-
-    it('returns 403 when user B tries to redeem user A streak token', async () => {
-      const userA = 7203;
-      const userB = 7204;
-      seedProfile(userA, { currentStreak: 5, lastPlayedDate: '2020-01-01' });
-      seedProfile(userB, { currentStreak: 3, lastPlayedDate: '2020-01-01' });
-
-      const intent = await requestStreakSaveIntent(userA, db, { redis, secret: rewardSecret });
-
-      const res = await fetch(`${baseUrl}/api/rewards/streak-save/redeem`, {
-        method: 'POST',
-        body: JSON.stringify({ token: intent.token }),
-        headers: makeAuthHeaders(userB),
-      });
-      assert.equal(res.status, 403);
-      const data = await res.json();
-      assert.equal(data.error, 'Forbidden');
-    });
-
-    it('returns 400 when attempting to redeem bonus-pins token as streak-save', async () => {
-      const userId = 7205;
-      seedProfile(userId, { currentStreak: 5, lastPlayedDate: '2020-01-01' });
-
-      const bonusToken = await issueRewardToken(userId, 'bonus-pins', {
-        redis,
-        secret: rewardSecret,
-      });
-
-      const res = await fetch(`${baseUrl}/api/rewards/streak-save/redeem`, {
-        method: 'POST',
-        body: JSON.stringify({ token: bonusToken }),
-        headers: makeAuthHeaders(userId),
-      });
-      assert.equal(res.status, 400);
-      const data = await res.json();
-      assert.equal(data.error, 'Type mismatch');
-    });
-
-    it('returns 400 on double redemption of the same token', async () => {
-      const userId = 7206;
-      seedProfile(userId, { currentStreak: 5, lastPlayedDate: '2020-01-01' });
-
-      const intent = await requestStreakSaveIntent(userId, db, { redis, secret: rewardSecret });
-
-      const res1 = await fetch(`${baseUrl}/api/rewards/streak-save/redeem`, {
-        method: 'POST',
-        body: JSON.stringify({ token: intent.token }),
-        headers: makeAuthHeaders(userId),
-      });
-      assert.equal(res1.status, 200);
-
-      const res2 = await fetch(`${baseUrl}/api/rewards/streak-save/redeem`, {
-        method: 'POST',
-        body: JSON.stringify({ token: intent.token }),
-        headers: makeAuthHeaders(userId),
-      });
-      assert.equal(res2.status, 400);
-      const data2 = await res2.json();
-      assert.equal(data2.error, 'Streak not at risk');
-    });
-
-    it('returns 400 if user finished a run after issuing token before redemption', async () => {
-      const userId = 7207;
-      const today = getUtcDateString();
-      seedProfile(userId, { currentStreak: 4, lastPlayedDate: '2020-01-01' });
-
-      const intent = await requestStreakSaveIntent(userId, db, { redis, secret: rewardSecret });
-
-      const profile = profilesMap.get(userId)!;
-      profile.lastPlayedDate = today;
-      profilesMap.set(userId, profile);
-
-      const res = await fetch(`${baseUrl}/api/rewards/streak-save/redeem`, {
-        method: 'POST',
-        body: JSON.stringify({ token: intent.token }),
-        headers: makeAuthHeaders(userId),
-      });
-      assert.equal(res.status, 400);
-      const data = await res.json();
+      const data = await res.json() as { error: string };
       assert.equal(data.error, 'Streak not at risk');
     });
 
-    it('successfully redeems token, updates lastPlayedDate to yesterday, and preserves streak', async () => {
-      const userId = 7208;
-      const yesterdayStr = getYesterdayUtcDateString();
-      seedProfile(userId, {
-        currentStreak: 9,
-        longestStreak: 15,
-        lastPlayedDate: '2020-01-01',
+    it('returns 400 when insufficient pins', async () => {
+      const dayBeforeYesterday = getUtcDateString(new Date(Date.now() - 86400000 * 2));
+      createTestProfile(302, {
+        pins: 10,
+        currentStreak: 5,
+        lastPlayedDate: dayBeforeYesterday,
       });
+      const token = createSessionToken(302, sessionSecret);
 
-      const intentRes = await fetch(`${baseUrl}/api/rewards/streak-save/intent`, {
+      const res = await fetch(`${baseUrl}/api/streak/save`, {
         method: 'POST',
-        headers: makeAuthHeaders(userId),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
       });
-      assert.equal(intentRes.status, 200);
-      const intentData = await intentRes.json();
-
-      const redeemRes = await fetch(`${baseUrl}/api/rewards/streak-save/redeem`, {
-        method: 'POST',
-        body: JSON.stringify({ token: intentData.token }),
-        headers: makeAuthHeaders(userId),
-      });
-      assert.equal(redeemRes.status, 200);
-      const redeemData = await redeemRes.json();
-      assert.equal(redeemData.ok, true);
-      assert.equal(redeemData.saved, true);
-      assert.equal(redeemData.currentStreak, 9);
-      assert.equal(redeemData.lastPlayedDate, yesterdayStr);
-
-      const updatedProfile = profilesMap.get(userId)!;
-      assert.equal(updatedProfile.currentStreak, 9);
-      assert.equal(updatedProfile.lastPlayedDate, yesterdayStr);
-
-      const statusRes = await fetch(`${baseUrl}/api/streak/status`, {
-        headers: makeAuthHeaders(userId),
-      });
-      assert.equal(statusRes.status, 200);
-      const statusData = await statusRes.json();
-      assert.equal(statusData.isAtRisk, false);
-      assert.equal(statusData.currentStreak, 9);
-      assert.equal(statusData.lastPlayedDate, yesterdayStr);
+      assert.equal(res.status, 400);
+      const data = await res.json() as { error: string };
+      assert.equal(data.error, 'Insufficient pins');
     });
 
-    it('end-to-end: streak increments on next run completion after streak-save instead of resetting to 1', async () => {
-      const userId = 7209;
-      seedProfile(userId, {
-        currentStreak: 14,
-        longestStreak: 20,
-        lastPlayedDate: '2020-01-01',
+    it('returns 200 and preserves streak when saved', async () => {
+      const dayBeforeYesterday = getUtcDateString(new Date(Date.now() - 86400000 * 2));
+      createTestProfile(303, {
+        pins: 80,
+        currentStreak: 8,
+        lastPlayedDate: dayBeforeYesterday,
       });
+      const token = createSessionToken(303, sessionSecret);
 
-      const intent = await requestStreakSaveIntent(userId, db, { redis, secret: rewardSecret });
-      await redeemStreakSave(intent.token, userId, db, { redis, secret: rewardSecret });
+      const res = await fetch(`${baseUrl}/api/streak/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      assert.equal(res.status, 200);
+      const data = await res.json() as {
+        ok: boolean;
+        saved: boolean;
+        pinsDeducted: number;
+        pins: number;
+        currentStreak: number;
+      };
+      assert.equal(data.ok, true);
+      assert.equal(data.saved, true);
+      assert.equal(data.pinsDeducted, 50);
+      assert.equal(data.pins, 30);
+      assert.equal(data.currentStreak, 8);
+    });
 
-      const preRunProfile = profilesMap.get(userId)!;
-      assert.equal(preRunProfile.currentStreak, 14);
-      assert.equal(preRunProfile.lastPlayedDate, getYesterdayUtcDateString());
+    it('end-to-end: streak increments on next run after save instead of resetting to 1', async () => {
+      const dayBeforeYesterday = getUtcDateString(new Date(Date.now() - 86400000 * 2));
+      createTestProfile(304, {
+        pins: 100,
+        currentStreak: 6,
+        lastPlayedDate: dayBeforeYesterday,
+      });
+      const token = createSessionToken(304, sessionSecret);
 
-      const run = await createRun(userId, db, { mode: 'practice' });
-      const finishResult = await finishRun(run.runId, userId, db);
+      const saveRes = await fetch(`${baseUrl}/api/streak/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      assert.equal(saveRes.status, 200);
 
-      assert.equal(finishResult.currentStreak, 15);
-      assert.equal(finishResult.longestStreak, 20);
-
-      const postRunProfile = profilesMap.get(userId)!;
-      assert.equal(postRunProfile.currentStreak, 15);
-      assert.equal(postRunProfile.lastPlayedDate, getUtcDateString());
+      const run = await createRun(304, db, { mode: 'practice' });
+      await submitAnswer(run.runId, 304, 0, run.flags[0].isoCode, db);
+      const finishRes = await finishRun(run.runId, 304, db);
+      assert.equal(finishRes.currentStreak, 7);
+      assert.equal(finishRes.streakChange, 'incremented');
     });
   });
 });

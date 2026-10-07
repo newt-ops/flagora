@@ -1,6 +1,6 @@
-import { Gamepad2, Trophy, ShoppingBag, Coins as Pins, User } from 'lucide-react';
+import { Gamepad2, Trophy, ShoppingBag, User } from 'lucide-react';
 
-export type NavTab = 'play' | 'leaderboard' | 'shop' | 'rewards' | 'profile';
+export type NavTab = 'play' | 'leaderboard' | 'shop' | 'profile';
 
 interface BottomNavProps {
   activeTab: NavTab;
@@ -12,14 +12,13 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
     { id: 'play', label: 'Play', icon: Gamepad2 },
     { id: 'leaderboard', label: 'Ranks', icon: Trophy },
     { id: 'shop', label: 'Shop', icon: ShoppingBag },
-    { id: 'rewards', label: 'Earn', icon: Pins },
     { id: 'profile', label: 'Profile', icon: User },
   ];
 
   return (
     <nav
       aria-label="Bottom Navigation"
-      className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] inset-x-0 mx-auto z-40 flex w-fit max-w-[calc(100vw-1.5rem)] items-center gap-1.5 rounded-full bg-tg-section/90 p-1.5 shadow-lg shadow-black/15 backdrop-blur-xl transition-all duration-300"
+      className="fixed bottom-[max(1.25rem,calc(var(--app-safe-bottom,0px)+0.75rem))] inset-x-0 mx-auto z-40 flex w-fit max-w-[calc(100vw-1.5rem)] items-center gap-1.5 rounded-full bg-tg-section/90 p-1.5 shadow-lg shadow-black/15 backdrop-blur-xl transition-all duration-300"
     >
       {tabs.map((tab) => {
         const Icon = tab.icon;

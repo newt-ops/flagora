@@ -24,7 +24,6 @@ export function createSocketAuthMiddleware(sessionSecret: string) {
     try {
       const payload = verifySessionToken(token, sessionSecret);
       socket.data.telegramUserId = payload.telegramUserId;
-      process.stdout.write(`[Socket] Handshake authenticated user ID: ${payload.telegramUserId}\n`);
       next();
     } catch (error) {
       const message = error instanceof SessionError ? error.message : 'Invalid session token';

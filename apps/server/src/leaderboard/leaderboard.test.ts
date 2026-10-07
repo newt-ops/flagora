@@ -321,4 +321,85 @@ describe('leaderboard backend and Redis integration', () => {
     assert.ok(topNoRedis.length > 0);
     assert.equal(topNoRedis[0].rank, 1);
   });
+
+  it('falls back to MongoDB runs collection for daily leaderboard', async () => {
+    const targetDate = '2026-10-07';
+    await db.collection('runs').insertMany([
+      {
+        runId: 'daily-run-1',
+        telegramUserId: 7001,
+        mode: 'daily',
+        dailyDate: targetDate,
+        status: 'finished',
+        finalScore: { totalScore: 880 },
+        profileCredited: true,
+        createdAt: new Date(),
+      },
+      {
+        runId: 'daily-run-2',
+        telegramUserId: 7002,
+        mode: 'daily',
+        dailyDate: targetDate,
+        status: 'finished',
+        finalScore: { totalScore: 920 },
+        profileCredited: true,
+        createdAt: new Date(),
+      },
+    ] as unknown as GameRun[]);
+
+    await db.collection<PlayerProfile>('profiles').insertMany([
+      {
+        telegramUserId: 7001,
+        username: 'daily1',
+        firstName: 'Daily One',
+        level: 1,
+        xp: 100,
+        pins: 50,
+        currentStreak: 1,
+        longestStreak: 1,
+        bestScore: 880,
+        gamesPlayed: 1,
+        lastPlayedDate: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        telegramUserId: 7002,
+        username: 'daily2',
+        firstName: 'Daily Two',
+        level: 1,
+        xp: 100,
+        pins: 50,
+        currentStreak: 1,
+        longestStreak: 1,
+        bestScore: 920,
+        gamesPlayed: 1,
+        lastPlayedDate: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+
+    const dailyKey = `leaderboard:daily:${targetDate}`;
+    const dailyTop = await getTopLeaderboard(10, db, null, dailyKey);
+    assert.equal(dailyTop.length, 2);
+    assert.equal(dailyTop[0].telegramUserId, 7002);
+    assert.equal(dailyTop[0].bestScore, 920);
+    assert.equal(dailyTop[1].telegramUserId, 7001);
+    assert.equal(dailyTop[1].bestScore, 880);
+
+    const playerRank = await getPlayerLeaderboardRank(7001, null, dailyKey, db);
+    assert.equal(playerRank.ranked, true);
+    assert.equal(playerRank.rank, 2);
+    assert.equal(playerRank.bestScore, 880);
+  });
+
+  it('reconciles leaderboard into Redis using batch cursor iteration', async () => {
+    const result = await reconcileLeaderboard(db, redis);
+    assert.ok(result.count > 0);
+
+    const topEntries = await getTopLeaderboard(10, db, redis);
+    assert.ok(topEntries.length > 0);
+    assert.equal(topEntries[0].rank, 1);
+  });
 });

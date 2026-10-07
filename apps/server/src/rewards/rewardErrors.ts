@@ -81,3 +81,9 @@ export class StreakNotAtRiskError extends RewardTokenError {
     super(message);
   }
 }
+
+export class InsufficientPinsError extends RewardTokenError {
+  constructor(message = 'Insufficient pins to save streak') {
+    super(message);
+  }
+}
