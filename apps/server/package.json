@@ -8,7 +8,10 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "tsx --test src/**/*.test.ts",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "bot:status": "tsx src/scripts/botStatus.ts",
+    "bot:set-webhook": "tsx src/scripts/setWebhook.ts",
+    "bot:delete-webhook": "tsx src/scripts/deleteWebhook.ts"
   },
   "dependencies": {
     "@flagora/shared": "workspace:*",

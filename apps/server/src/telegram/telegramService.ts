@@ -538,3 +538,182 @@ export async function answerPreCheckoutQuery(
     return false;
   }
 }
+
+export interface TelegramWebhookInfo {
+  url: string;
+  has_custom_certificate: boolean;
+  pending_update_count: number;
+  ip_address?: string;
+  last_error_date?: number;
+  last_error_message?: string;
+  last_synchronization_error_date?: number;
+  max_connections?: number;
+  allowed_updates?: string[];
+}
+
+export interface TelegramBotUser {
+  id: number;
+  is_bot: boolean;
+  first_name: string;
+  username?: string;
+  can_join_groups?: boolean;
+  can_read_all_group_messages?: boolean;
+  supports_inline_queries?: boolean;
+}
+
+export async function getTelegramBotMe(
+  overrides?: TelegramServiceOverrides,
+): Promise<TelegramBotUser | null> {
+  const token = overrides?.botToken ?? process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return null;
+  const base = overrides?.apiBaseUrl ?? process.env.TELEGRAM_API_BASE_URL ?? 'https://api.telegram.org';
+
+  try {
+    const res = await fetch(`${base}/bot${token}/getMe`);
+    if (!res.ok) {
+      process.stderr.write(`Warning: getMe failed: ${res.status} ${await res.text()}\n`);
+      return null;
+    }
+    const data = (await res.json()) as { ok: boolean; result?: TelegramBotUser };
+    return data.ok && data.result ? data.result : null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`Warning: getMe network error: ${message}\n`);
+    return null;
+  }
+}
+
+export async function getTelegramWebhookInfo(
+  overrides?: TelegramServiceOverrides,
+): Promise<TelegramWebhookInfo | null> {
+  const token = overrides?.botToken ?? process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return null;
+  const base = overrides?.apiBaseUrl ?? process.env.TELEGRAM_API_BASE_URL ?? 'https://api.telegram.org';
+
+  try {
+    const res = await fetch(`${base}/bot${token}/getWebhookInfo`);
+    if (!res.ok) {
+      process.stderr.write(`Warning: getWebhookInfo failed: ${res.status} ${await res.text()}\n`);
+      return null;
+    }
+    const data = (await res.json()) as { ok: boolean; result?: TelegramWebhookInfo };
+    return data.ok && data.result ? data.result : null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`Warning: getWebhookInfo network error: ${message}\n`);
+    return null;
+  }
+}
+
+export async function setTelegramWebhook(options: {
+  url: string;
+  secretToken?: string;
+  dropPendingUpdates?: boolean;
+  maxConnections?: number;
+  allowedUpdates?: string[];
+  botToken?: string;
+  apiBaseUrl?: string;
+}): Promise<{ ok: boolean; description?: string }> {
+  const token = options.botToken ?? process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return { ok: false, description: 'Missing bot token' };
+  const base = options.apiBaseUrl ?? process.env.TELEGRAM_API_BASE_URL ?? 'https://api.telegram.org';
+
+  const payload: Record<string, unknown> = {
+    url: options.url,
+  };
+
+  if (options.secretToken) {
+    payload.secret_token = options.secretToken;
+  }
+  if (options.dropPendingUpdates !== undefined) {
+    payload.drop_pending_updates = options.dropPendingUpdates;
+  }
+  if (options.maxConnections !== undefined) {
+    payload.max_connections = options.maxConnections;
+  }
+  if (options.allowedUpdates) {
+    payload.allowed_updates = options.allowedUpdates;
+  }
+
+  try {
+    const res = await fetch(`${base}/bot${token}/setWebhook`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = (await res.json()) as { ok: boolean; description?: string };
+    return data;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, description: message };
+  }
+}
+
+export async function deleteTelegramWebhook(options?: {
+  dropPendingUpdates?: boolean;
+  botToken?: string;
+  apiBaseUrl?: string;
+}): Promise<{ ok: boolean; description?: string }> {
+  const token = options?.botToken ?? process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return { ok: false, description: 'Missing bot token' };
+  const base = options?.apiBaseUrl ?? process.env.TELEGRAM_API_BASE_URL ?? 'https://api.telegram.org';
+
+  const payload: Record<string, unknown> = {};
+  if (options?.dropPendingUpdates !== undefined) {
+    payload.drop_pending_updates = options.dropPendingUpdates;
+  }
+
+  try {
+    const res = await fetch(`${base}/bot${token}/deleteWebhook`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = (await res.json()) as { ok: boolean; description?: string };
+    return data;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, description: message };
+  }
+}
+
+export async function getTelegramUpdates(options?: {
+  offset?: number;
+  limit?: number;
+  timeout?: number;
+  allowedUpdates?: string[];
+  botToken?: string;
+  apiBaseUrl?: string;
+  signal?: AbortSignal;
+}): Promise<any[]> {
+  const token = options?.botToken ?? process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return [];
+  const base = options?.apiBaseUrl ?? process.env.TELEGRAM_API_BASE_URL ?? 'https://api.telegram.org';
+
+  const payload: Record<string, unknown> = {};
+  if (options?.offset !== undefined) payload.offset = options.offset;
+  if (options?.limit !== undefined) payload.limit = options.limit;
+  if (options?.timeout !== undefined) payload.timeout = options.timeout;
+  if (options?.allowedUpdates) payload.allowed_updates = options.allowedUpdates;
+
+  try {
+    const res = await fetch(`${base}/bot${token}/getUpdates`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: options?.signal,
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      process.stderr.write(`Warning: getUpdates failed (${res.status}): ${errText}\n`);
+      return [];
+    }
+    const data = (await res.json()) as { ok: boolean; result?: any[] };
+    return data.ok && Array.isArray(data.result) ? data.result : [];
+  } catch (error: any) {
+    if (error?.name === 'AbortError') return [];
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`Warning: getUpdates error: ${message}\n`);
+    return [];
+  }
+}

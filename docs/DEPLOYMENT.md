@@ -59,4 +59,36 @@ Verify that the following environment variables are configured in the **Environm
 
 Flagora is completely ad-free. No third-party ad networks (Adsgram, Google, etc.), client ad SDKs, or postback webhooks are configured or required. All player streak preservation and cosmetic progression are powered natively through in-game Pins and optional Flagora Pro subscriptions.
 
+---
+
+## Telegram Bot Configuration (Receiving `/start` and Commands)
+
+Outbound notifications (streak warnings, challenge results, payment receipts) send directly from the server to Telegram via `TELEGRAM_BOT_TOKEN`. 
+
+However, for the bot to receive **inbound updates** (such as `/start`, `/help`, `/play`, referral parameters, and interactive buttons), Telegram needs to know where to route updates:
+
+### Option A: Public Webhook (Production)
+1. Add the following environment variables to your deployment (e.g. Render / Railway):
+   - `TELEGRAM_WEBHOOK_URL=https://<YOUR_BACKEND_DOMAIN>/api/telegram/webhook`
+   - `TELEGRAM_WEBHOOK_SECRET=<RANDOM_32_CHAR_SECRET>`
+2. On startup, the server automatically registers the webhook and secret with Telegram.
+3. You can also manually register the webhook at any time by running:
+   ```bash
+   pnpm --filter @flagora/server run bot:set-webhook https://<YOUR_BACKEND_DOMAIN>/api/telegram/webhook
+   ```
+4. Verify the webhook health with:
+   ```bash
+   pnpm --filter @flagora/server run bot:status
+   ```
+   Or visit `https://<YOUR_BACKEND_DOMAIN>/api/telegram/status`.
+
+### Option B: Long-Polling (Local Development)
+When running the server locally on your machine without a public domain / tunnel:
+1. Add to `apps/server/.env`:
+   ```bash
+   TELEGRAM_USE_POLLING=true
+   ```
+2. Start the server (`pnpm dev`).
+3. The server will remove any existing webhook and start a background long-polling worker to receive `/start` and chat commands directly!
+
 
