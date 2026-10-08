@@ -7,7 +7,7 @@ export const proRouter: Router = Router();
 
 proRouter.post('/create-invoice-link', async (req: AuthenticatedSessionRequest, res: Response) => {
   try {
-    const priceAmount = 100;
+    const priceAmount = Number(process.env.PRO_SUBSCRIPTION_STARS || 1);
     
     if (!req.sessionUser) {
       res.status(401).json({ error: 'Unauthorized' });

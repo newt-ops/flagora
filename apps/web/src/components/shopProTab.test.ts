@@ -88,13 +88,13 @@ describe('Flagora Pro UI Logic', () => {
 
   it('validates Telegram Stars pricing model and currency', () => {
     const proPricing = {
-      amount: 100,
+      amount: 1,
       currency: 'XTR',
       period: 'month',
       pinsStipend: 1000,
     };
     assert.equal(proPricing.currency, 'XTR');
-    assert.equal(proPricing.amount, 100);
+    assert.equal(proPricing.amount, 1);
     assert.equal(proPricing.pinsStipend, 1000);
   });
 

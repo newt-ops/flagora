@@ -150,8 +150,8 @@ export function ProUpgradeModal({
           <p className="mt-0.5 text-xs text-tg-hint">Premium Perks & Exclusive Catalog</p>
 
           <div className="mt-3 flex items-baseline gap-1 rounded-2xl bg-tg-secondary-bg px-4 py-2 border border-tg-separator/40">
-            <span className="text-2xl font-black text-tg-text">100</span>
-            <span className="text-xs font-bold text-tg-hint">Stars / month</span>
+            <span className="text-2xl font-black text-tg-text">1</span>
+            <span className="text-xs font-bold text-tg-hint">Star / month</span>
           </div>
         </div>
 
