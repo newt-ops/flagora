@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trophy, ArrowLeft, Play, Sparkles, Zap } from 'lucide-react';
+import { Trophy, ArrowLeft, Play, Sparkles, Zap } from './icons.js';
 import { useLeaderboard } from '../hooks/useLeaderboard.js';
 import {
   shouldShowPinnedMyRank,

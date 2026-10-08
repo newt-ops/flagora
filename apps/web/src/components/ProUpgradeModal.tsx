@@ -12,7 +12,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-} from 'lucide-react';
+} from './icons.js';
 import { createProInvoiceLink } from '../api/client.js';
 import { openTelegramInvoice } from '../telegram/telegramWebApp.js';
 

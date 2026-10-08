@@ -1,4 +1,4 @@
-import { Lock, Award } from 'lucide-react';
+import { Lock, Award } from './icons.js';
 import { BADGE_CATALOG, type PlayerBadgeResponseItem } from '@flagora/shared';
 import {
   getMergedBadgeItems,

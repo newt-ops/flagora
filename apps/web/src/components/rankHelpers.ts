@@ -1,4 +1,4 @@
-import { Shield, Medal, Crown, Gem, Sparkles, Flame, type LucideIcon } from 'lucide-react';
+import { Shield, Medal, Crown, Gem, Sparkles, Flame, type HugeIcon } from './icons.js';
 import { type RankedTier, RANKED_TIERS, getRankedTier } from '@flagora/shared';
 
 const MONTH_NAMES = [
@@ -87,7 +87,7 @@ export function getTierBadgeColors(tier: RankedTier): TierStyleConfig {
   }
 }
 
-export function getTierIcon(tier: RankedTier): LucideIcon {
+export function getTierIcon(tier: RankedTier): HugeIcon {
   switch (tier) {
     case 'Legend':
       return Flame;

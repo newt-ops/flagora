@@ -1,4 +1,4 @@
-import { Gamepad2, Trophy, ShoppingBag, User } from 'lucide-react';
+import { Gamepad2, Trophy, ShoppingBag, User } from './icons.js';
 
 export type NavTab = 'play' | 'leaderboard' | 'shop' | 'profile';
 

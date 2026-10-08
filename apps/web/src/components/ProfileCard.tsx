@@ -16,7 +16,7 @@ import {
   Check,
   Award,
   Crown,
-} from 'lucide-react';
+} from './icons.js';
 import {
   type PlayerProfile,
   type DailyChallengeStatusResponse,

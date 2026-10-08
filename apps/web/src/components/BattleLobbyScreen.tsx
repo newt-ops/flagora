@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Swords, Share2, Copy, Check, ArrowLeft, Loader2, User, Zap } from 'lucide-react';
+import { Swords, Share2, Copy, Check, ArrowLeft, Loader2, User, Zap } from './icons.js';
 import type { BattleInfoResponse, OpponentJoinedPayload } from '@flagora/shared';
 import { shareBattle, copyBattleLink, getInitials } from './battleHelpers.js';
 import { getAvatarFrameClass } from './cosmeticHelpers.js';

@@ -1,4 +1,4 @@
-import { ExternalLink, Gamepad2 } from 'lucide-react';
+import { ExternalLink, Gamepad2 } from './icons.js';
 
 interface NonTelegramFallbackProps {
   botUsername?: string;

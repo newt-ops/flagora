@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Flame, ShieldCheck, Loader2 } from 'lucide-react';
+import { Flame, ShieldCheck, Loader2 } from './icons.js';
 import { type StreakStatusResponse, STREAK_SAVE_PIN_COST } from '@flagora/shared';
 import { saveStreak } from '../api/client.js';
 import { getStreakSaveBannerCopy } from './rewardUiHelpers.js';

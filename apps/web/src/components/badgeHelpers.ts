@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import { Award, Zap, Sparkles, Flame, Calendar, Trophy } from 'lucide-react';
+import { Award, Zap, Sparkles, Flame, Calendar, Trophy } from './icons.js';
 import {
   type BadgeId,
   type Badge,

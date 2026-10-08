@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Timer, Zap, Award, Check, X, AlertCircle, Sparkles } from 'lucide-react';
+import { Timer, Zap, Award, Check, X, AlertCircle, Sparkles } from './icons.js';
 import {
   calculateComboMultiplier,
   isTier4Flag,

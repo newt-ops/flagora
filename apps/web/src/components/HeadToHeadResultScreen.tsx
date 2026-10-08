@@ -1,4 +1,4 @@
-import { Trophy, Swords, User, RotateCcw } from 'lucide-react';
+import { Trophy, Swords, User, RotateCcw } from './icons.js';
 import type { ChallengeInfoResponse } from '@flagora/shared';
 import {
   getChallengeViewerPerspective,

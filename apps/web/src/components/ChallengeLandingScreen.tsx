@@ -1,4 +1,4 @@
-import { Swords, Play, Clock, Share2, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Swords, Play, Clock, Share2, ArrowLeft, AlertCircle } from './icons.js';
 import type { ChallengeInfoResponse } from '@flagora/shared';
 import { isChallengeAcceptable, getInitials } from './challengeViewHelpers.js';
 

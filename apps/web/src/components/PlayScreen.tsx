@@ -10,7 +10,7 @@ import {
   Coins as Pins,
   Globe,
   Sliders,
-} from 'lucide-react';
+} from './icons.js';
 import type {
   PlayerProfile,
   DailyChallengeStatusResponse,

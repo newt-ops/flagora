@@ -1,4 +1,4 @@
-import { Trophy, Swords, ArrowLeft, Sparkles, Award } from 'lucide-react';
+import { Trophy, Swords, ArrowLeft, Sparkles, Award } from './icons.js';
 import type { BattleFinishedPayload, BattleInfoResponse } from '@flagora/shared';
 import {
   getBattleViewerPerspective,

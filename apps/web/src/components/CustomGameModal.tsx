@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Play, Globe, Timer, Flag } from 'lucide-react';
+import { X, Play, Globe, Timer, Flag } from './icons.js';
 import type { Continent } from '@flagora/shared';
 import { CONTINENT_LABELS } from '@flagora/shared';
 import { ContinentMap } from './ContinentMap.js';

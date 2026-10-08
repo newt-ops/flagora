@@ -16,7 +16,7 @@ import {
   MousePointerClick,
   Trophy,
   Flame,
-} from 'lucide-react';
+} from './icons.js';
 import type {
   CosmeticCategory,
   PlayerProfile,

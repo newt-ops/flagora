@@ -11,7 +11,7 @@ import {
   Flame,
   Share2,
   Award,
-} from 'lucide-react';
+} from './icons.js';
 import type { FinishRunResponse } from '@flagora/shared';
 import { getStreakBadgeText } from './streakDisplayHelpers.js';
 import {

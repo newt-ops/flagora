@@ -11,7 +11,7 @@ import {
   type Badge,
   BADGE_CATALOG,
 } from '@flagora/shared';
-import { Award, Zap, Sparkles, Flame, Calendar, Trophy } from 'lucide-react';
+import { Award, Zap, Sparkles, Flame, Calendar, Trophy } from './icons.js';
 
 describe('badgeHelpers', () => {
   describe('getBadgeIcon', () => {

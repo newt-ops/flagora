@@ -7,7 +7,7 @@ import {
   getRatingDeltaDisplay,
   checkTierPromotion,
 } from './rankHelpers.js';
-import { Shield, Medal, Crown, Gem, Sparkles, Flame } from 'lucide-react';
+import { Shield, Medal, Crown, Gem, Sparkles, Flame } from './icons.js';
 
 describe('rankHelpers', () => {
   describe('formatSeasonName', () => {
@@ -71,7 +71,7 @@ describe('rankHelpers', () => {
   });
 
   describe('getTierIcon', () => {
-    it('returns the assigned Lucide icon for each tier', () => {
+    it('returns the assigned Hugeicons icon for each tier', () => {
       assert.equal(getTierIcon('Bronze'), Shield);
       assert.equal(getTierIcon('Silver'), Medal);
       assert.equal(getTierIcon('Gold'), Crown);
