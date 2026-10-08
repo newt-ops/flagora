@@ -1041,21 +1041,18 @@ async function bootstrap() {
     } else if (configuredWebhookUrl) {
       void (async () => {
         try {
-          const currentInfo = await getTelegramWebhookInfo();
           const secretToken = process.env.TELEGRAM_WEBHOOK_SECRET;
-          if (currentInfo?.url !== configuredWebhookUrl) {
-            process.stdout.write(`[Telegram Bot] Syncing webhook to: ${configuredWebhookUrl}\n`);
-            const setRes = await setTelegramWebhook({
-              url: configuredWebhookUrl,
-              secretToken: secretToken || undefined,
-            });
-            if (setRes.ok) {
-              process.stdout.write(`[Telegram Bot] Webhook successfully registered with Telegram!\n`);
-            } else {
-              process.stderr.write(`[Telegram Bot] Warning: Failed to set webhook: ${setRes.description}\n`);
-            }
+          process.stdout.write(
+            `[Telegram Bot] Syncing webhook with Telegram at: ${configuredWebhookUrl} (secret: ${secretToken ? 'configured' : 'none'})\n`,
+          );
+          const setRes = await setTelegramWebhook({
+            url: configuredWebhookUrl,
+            secretToken: secretToken || undefined,
+          });
+          if (setRes.ok) {
+            process.stdout.write(`[Telegram Bot] Webhook successfully registered with Telegram!\n`);
           } else {
-            process.stdout.write(`[Telegram Bot] Webhook verified and active at: ${configuredWebhookUrl}\n`);
+            process.stderr.write(`[Telegram Bot] Warning: Failed to set webhook: ${setRes.description}\n`);
           }
         } catch (webhookErr) {
           process.stderr.write(`[Telegram Bot] Webhook sync error: ${String(webhookErr)}\n`);
@@ -1076,7 +1073,12 @@ async function bootstrap() {
       if (pollingController) {
         await pollingController.stop();
       }
-      await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+      if ('closeIdleConnections' in httpServer && typeof (httpServer as any).closeIdleConnections === 'function') {
+        (httpServer as any).closeIdleConnections();
+      }
+      const closeHttp = new Promise<void>((resolve) => httpServer.close(() => resolve()));
+      const timeout = new Promise<void>((resolve) => setTimeout(resolve, 3000));
+      await Promise.race([closeHttp, timeout]);
       io.close();
       await closeNotificationQueue();
       await closeRedis();
