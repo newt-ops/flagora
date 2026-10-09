@@ -3,6 +3,7 @@ import { Timer, Zap, Award, Check, X, AlertCircle, Sparkles } from './icons.js';
 import {
   calculateComboMultiplier,
   isTier4Flag,
+  getCountryByIsoCode,
   type StartRunResponse,
   type FinishRunResponse,
 } from '@flagora/shared';
@@ -27,8 +28,10 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
     correct: boolean;
     pointsThisFlag: number;
     isTier4?: boolean;
+    correctCountryName?: string;
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [timeLeftMs, setTimeLeftMs] = useState(run.runDurationMs);
   const [timeExpired, setTimeExpired] = useState(false);
 
@@ -73,6 +76,9 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
     }
   }, [comboCount, finishRun, onFinish, run.runDurationMs, run.runId, runningScore, sessionToken]);
 
+  const handleFinishRunRef = useRef(handleFinishRun);
+  handleFinishRunRef.current = handleFinishRun;
+
   useEffect(() => {
     startTimestampRef.current = Date.now();
 
@@ -86,7 +92,7 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
           clearInterval(timerIntervalRef.current);
         }
         setTimeExpired(true);
-        void handleFinishRun();
+        void handleFinishRunRef.current();
       }
     }, 100);
 
@@ -95,7 +101,9 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
         clearInterval(timerIntervalRef.current);
       }
     };
-  }, [handleFinishRun, run.runDurationMs]);
+  }, [run.runId, run.runDurationMs]);
+
+  const currentFlag = run.flags[currentFlagIndex];
 
   const handleSelectChoice = async (choiceText: string) => {
     if (isSubmitting || selectedChoice !== null || timeExpired || hasFinishedRef.current) {
@@ -104,6 +112,10 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
 
     setIsSubmitting(true);
     setSelectedChoice(choiceText);
+    setSubmitError(null);
+
+    const correctCountry = currentFlag ? getCountryByIsoCode(currentFlag.isoCode) : undefined;
+    const correctCountryName = correctCountry?.name;
 
     try {
       const answerResponse = await answerRun({
@@ -124,6 +136,7 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
         correct: answerResponse.correct,
         pointsThisFlag: answerResponse.pointsThisFlag,
         isTier4,
+        correctCountryName,
       });
 
       setTimeout(() => {
@@ -133,7 +146,7 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
 
         const isLastFlag = currentFlagIndex >= run.flags.length - 1;
         if (isLastFlag) {
-          void handleFinishRun();
+          void handleFinishRunRef.current();
         } else {
           setCurrentFlagIndex((prev) => prev + 1);
           setSelectedChoice(null);
@@ -145,15 +158,16 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
       if (error instanceof TimeExpiredApiError) {
         triggerHaptic('warning');
         setTimeExpired(true);
-        void handleFinishRun();
+        void handleFinishRunRef.current();
         return;
       }
       setIsSubmitting(false);
       setSelectedChoice(null);
+      const msg = error instanceof Error ? error.message : 'Network error submitting answer';
+      setSubmitError(msg);
     }
   };
 
-  const currentFlag = run.flags[currentFlagIndex];
   const timerSeconds = Math.ceil(timeLeftMs / 1000);
   const timerPercentage = Math.min(100, Math.max(0, (timeLeftMs / run.runDurationMs) * 100));
   const comboMultiplier = calculateComboMultiplier(comboCount);
@@ -248,25 +262,38 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
               ) : (
                 <span className="flex items-center gap-1 text-tg-destructive">
                   <X className="h-3.5 w-3.5" />
-                  <span>+0 pts</span>
+                  <span>Incorrect</span>
                 </span>
               )}
+            </div>
+          )}
+
+          {submitError && (
+            <div className="flex items-center gap-1.5 text-xs text-tg-destructive bg-tg-destructive/15 px-3 py-1.5 rounded-xl">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              <span>{submitError}</span>
             </div>
           )}
 
           <div className="grid w-full grid-cols-2 gap-2.5">
             {currentFlag.choices.map((choice: string) => {
               const isSelected = selectedChoice === choice;
+              const isCorrectReveal = Boolean(
+                feedback && !feedback.correct && feedback.correctCountryName === choice,
+              );
+
               let buttonStyle = 'bg-tg-section text-tg-text shadow-sm hover:opacity-90';
 
               if (isSelected) {
                 if (feedback) {
                   buttonStyle = feedback.correct
-                    ? 'bg-tg-button text-tg-button-text font-bold ring-2 ring-tg-button'
-                    : 'bg-tg-destructive text-tg-button-text font-bold ring-2 ring-tg-destructive/50';
+                    ? 'bg-tg-button text-tg-button-text font-bold'
+                    : 'bg-tg-destructive text-tg-button-text font-bold';
                 } else {
                   buttonStyle = 'bg-tg-button text-tg-button-text font-bold';
                 }
+              } else if (isCorrectReveal) {
+                buttonStyle = 'bg-tg-button text-tg-button-text font-bold';
               }
 
               return (
@@ -275,7 +302,7 @@ export function GameScreen({ run, sessionToken, onFinish }: GameScreenProps) {
                   type="button"
                   onClick={() => void handleSelectChoice(choice)}
                   disabled={isSubmitting || timeExpired}
-                  className={`flex min-h-14 items-center justify-center rounded-xl p-3 text-center text-sm font-medium transition-opacity duration-150 active:opacity-75 disabled:pointer-events-none ${buttonStyle}`}
+                  className={`flex min-h-14 items-center justify-center rounded-xl p-3 text-center text-sm font-medium transition-colors duration-150 active:opacity-75 disabled:pointer-events-none ${buttonStyle}`}
                 >
                   <span className="line-clamp-2">{choice}</span>
                 </button>

@@ -124,7 +124,7 @@ export async function createRun(
       isoCode: f.isoCode,
       choices: f.choices,
     })),
-    runDurationMs: SCORING_CONFIG.runDurationMs,
+    runDurationMs: runDocument.runDurationMs,
   };
 }
 
@@ -157,7 +157,7 @@ export async function submitAnswer(
   const now = Date.now();
   let scored;
   try {
-    scored = scoreAnswer(run, flagIndex, selectedIsoCode, now);
+    scored = scoreAnswer(run, flagIndex, selectedIsoCode, now, 2000);
   } catch (error) {
     if (error instanceof TimeExpiredError) {
       await collection.updateOne(
@@ -406,6 +406,7 @@ export async function finishRun(
 
   const finalScore: FinishRunResponse = {
     correctCount,
+    totalFlags: run.flags.length,
     timeUsedMs,
     maxCombo: run.maxCombo,
     leftoverBonus,

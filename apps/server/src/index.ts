@@ -364,11 +364,12 @@ async function bootstrap() {
         flagIndex < 0 ||
         flagIndex > 50 ||
         typeof selectedIsoCode !== 'string' ||
-        selectedIsoCode.length !== 2
+        selectedIsoCode.trim().length === 0 ||
+        selectedIsoCode.trim().length > 100
       ) {
         res.status(400).json({
           error: 'Bad request',
-          message: 'flagIndex (integer 0-50) and selectedIsoCode (2-letter string) are required',
+          message: 'flagIndex (integer 0-50) and selectedIsoCode (non-empty string) are required',
         });
         return;
       }

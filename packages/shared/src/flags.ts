@@ -234,6 +234,11 @@ export function getCountriesByContinent(continent?: Continent): CountryFlag[] {
   return COUNTRIES.filter((c) => c.continent === continent);
 }
 
+export function getCountryByIsoCode(isoCode: string): CountryFlag | undefined {
+  const normalized = isoCode.toLowerCase();
+  return COUNTRIES.find((c) => c.isoCode.toLowerCase() === normalized);
+}
+
 export function isTier4Flag(isoCode: string): boolean {
   const normalized = isoCode.toLowerCase();
   const flag = COUNTRIES.find((c) => c.isoCode.toLowerCase() === normalized);

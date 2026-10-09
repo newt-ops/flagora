@@ -65,6 +65,7 @@ export interface AnswerRunResponse {
 
 export interface FinishRunResponse {
   correctCount: number;
+  totalFlags?: number;
   timeUsedMs: number;
   maxCombo: number;
   leftoverBonus: number;

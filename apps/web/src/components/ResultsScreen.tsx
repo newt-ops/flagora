@@ -121,7 +121,9 @@ export function ResultsScreen({
               <CheckCircle2 className="h-3.5 w-3.5 text-tg-button" />
               <span>Correct</span>
             </div>
-            <p className="mt-1 text-lg font-bold text-tg-text">{result.correctCount} / 10</p>
+            <p className="mt-1 text-lg font-bold text-tg-text">
+              {result.correctCount} / {result.totalFlags ?? 10}
+            </p>
           </div>
 
           <div className="flex flex-col items-center rounded-xl bg-tg-secondary-bg p-3">

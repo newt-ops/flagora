@@ -45,7 +45,13 @@ describe('run HTTP endpoints', () => {
           res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
           return;
         }
-        const run = await createRun(telegramUserId, db);
+        const { continent, flagCount, durationSeconds } = req.body ?? {};
+        const run = await createRun(telegramUserId, db, {
+          continent,
+          flagCount,
+          durationSeconds,
+          mode: continent || flagCount || durationSeconds ? 'custom' : 'practice',
+        });
         res.status(200).json(run);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to start run';
@@ -318,5 +324,48 @@ describe('run HTTP endpoints', () => {
       }),
     });
     assert.equal(subsequentAnswer.status, 400);
+  });
+
+  it('accepts country names as answers and respects custom duration', async () => {
+    const userId = 2005;
+    const token = createSessionToken(userId, sessionSecret);
+    const startRes = await fetch(`${baseUrl}/api/runs/start`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        continent: 'europe',
+        flagCount: 15,
+        durationSeconds: 90,
+      }),
+    });
+    assert.equal(startRes.status, 200);
+    const startBody = await startRes.json();
+    assert.equal(startBody.runDurationMs, 90000);
+    assert.equal(startBody.flags.length, 15);
+
+    const runDoc = await db.collection<GameRun>('runs').findOne({ runId: startBody.runId });
+    assert.ok(runDoc);
+    const firstFlagName = runDoc.flags[0].name;
+
+    // Submit using country name (longer than 2 characters)
+    const answerRes = await fetch(`${baseUrl}/api/runs/${startBody.runId}/answer`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        flagIndex: 0,
+        selectedIsoCode: firstFlagName,
+      }),
+    });
+    assert.equal(answerRes.status, 200);
+    const answerBody = await answerRes.json();
+    assert.equal(answerBody.correct, true);
+    assert.equal(typeof answerBody.pointsThisFlag, 'number');
+    assert.ok(answerBody.pointsThisFlag > 0);
   });
 });

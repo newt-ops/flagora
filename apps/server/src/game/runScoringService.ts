@@ -39,13 +39,14 @@ export function scoreAnswer(
   flagIndex: number,
   selectedIsoCode: string,
   serverNowMs: number = Date.now(),
+  gracePeriodMs: number = 0,
 ): ScoredAnswerResult {
   if (flagIndex < 0 || flagIndex >= run.flags.length) {
     throw new InvalidFlagIndexError();
   }
 
   const elapsedMs = serverNowMs - new Date(run.startedAt).getTime();
-  if (elapsedMs > run.runDurationMs) {
+  if (elapsedMs > run.runDurationMs + gracePeriodMs) {
     throw new TimeExpiredError();
   }
 
