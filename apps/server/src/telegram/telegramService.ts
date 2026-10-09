@@ -431,45 +431,6 @@ export async function notifyReferralReward(
   }
 }
 
-export interface PublicRewardNotificationOverrides extends TelegramServiceOverrides {
-  channelId?: string | number;
-}
-
-export async function notifyPublicRewardPayout(
-  rewardType: 'bonus-pins' | 'streak-save',
-  overrides?: PublicRewardNotificationOverrides,
-): Promise<void> {
-  try {
-    const rawChannelId =
-      overrides?.channelId ??
-      process.env.PUBLIC_REWARD_CHANNEL_ID ??
-      process.env.REWARD_CONFIRMATION_CHANNEL_ID;
-    if (!rawChannelId) {
-      return;
-    }
-
-    const channelId = typeof rawChannelId === 'string' ? rawChannelId.trim() : rawChannelId;
-    if (!channelId) {
-      return;
-    }
-
-    const message =
-      rewardType === 'bonus-pins'
-        ? 'A player just earned 50 bonus pins for watching an ad in Flagora.'
-        : 'A player just rescued their daily streak by watching an ad in Flagora.';
-
-    await enqueueTelegramNotification({
-      chatId: channelId,
-      text: message,
-      parseMode: 'HTML',
-      botToken: overrides?.botToken,
-      apiBaseUrl: overrides?.apiBaseUrl,
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    process.stderr.write(`Warning: Failed to enqueue public reward notification: ${message}\n`);
-  }
-}
 
 export async function createInvoiceLink(
   title: string,
