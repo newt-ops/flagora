@@ -20,15 +20,12 @@ import {
   type Challenge,
   type ChallengeWinner,
   type Continent,
-  type PlayerBadgeResponseItem,
-  getBadgeDefinition,
 } from '@flagora/shared';
 import { selectRunFlags, generateChoices } from './flagSelection.js';
 import { getCachedFlags, getCachedFlagsByContinent } from './flagCache.js';
 import { scoreAnswer, finalizeRun } from './runScoringService.js';
 import type { TypedSocketServer } from '../multiplayer/socketTypes.js';
 import { checkAndFinalizeBattle } from '../battle/battleService.js';
-import { evaluateBadges } from '../badge/badgeService.js';
 import { processReferralOnFirstRun } from '../referral/referralService.js';
 import { hasActiveSubscription } from '../subscription/subscriptionService.js';
 import {
@@ -345,61 +342,6 @@ export async function finishRun(
     process.stderr.write(`Warning: Failed to process referral on first run: ${message}\n`);
   }
 
-  const newlyAwardedBadges: PlayerBadgeResponseItem[] = [];
-  try {
-    const runBadges = await evaluateBadges(
-      telegramUserId,
-      {
-        type: 'run_finished',
-        run: claimResult ?? run,
-        finalScore: {
-          totalScore,
-          correctCount,
-          timeUsedMs,
-          maxCombo: run.maxCombo,
-          leftoverBonus,
-          xpEarned,
-          pinsEarned,
-          newXp,
-          newPins,
-          newLevel,
-          leveledUp,
-          currentStreak: streakResult.currentStreak,
-          longestStreak: streakResult.longestStreak,
-          streakChange: streakResult.streakChange,
-          bestScore,
-          isNewBest,
-        },
-      },
-      db,
-      new Date(now),
-    );
-
-    const streakBadges = await evaluateBadges(
-      telegramUserId,
-      {
-        type: 'streak_updated',
-        currentStreak: streakResult.currentStreak,
-        longestStreak: streakResult.longestStreak,
-      },
-      db,
-      new Date(now),
-    );
-
-    const allAwarded = [...runBadges, ...streakBadges];
-    for (const b of allAwarded) {
-      const def = getBadgeDefinition(b.badgeId);
-      newlyAwardedBadges.push({
-        badgeId: b.badgeId,
-        name: def?.name ?? b.badgeId,
-        description: def?.description ?? '',
-        earnedAt: b.earnedAt,
-        season: b.season ?? null,
-      });
-    }
-  } catch {
-    void 0;
-  }
 
   if (isChallenge && run.challengeId) {
     const challengesCollection = db.collection<Challenge>('challenges');
@@ -480,7 +422,6 @@ export async function finishRun(
     longestStreak: streakResult.longestStreak,
     streakChange: streakResult.streakChange,
     doubleXpApplied,
-    ...(newlyAwardedBadges.length > 0 ? { newBadges: newlyAwardedBadges } : {}),
   };
 
   await collection.updateOne(

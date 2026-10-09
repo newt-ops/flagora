@@ -54,7 +54,6 @@ export interface StartRunResponse {
 }
 
 import type { StreakChange } from './streak.js';
-import type { PlayerBadgeResponseItem } from './badge.js';
 
 export interface AnswerRunResponse {
   correct: boolean;
@@ -81,6 +80,5 @@ export interface FinishRunResponse {
   currentStreak: number;
   longestStreak: number;
   streakChange: StreakChange;
-  newBadges?: PlayerBadgeResponseItem[];
   doubleXpApplied?: boolean;
 }

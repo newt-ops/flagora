@@ -42,14 +42,14 @@ describe('getDisplayName', () => {
   });
 });
 
-describe('ProfileCard UI Rendering', () => {
+describe('ProfileCard UI Rendering (Apple Human Interface)', () => {
   const dummyProfile: PlayerProfile = {
     telegramUserId: 12345,
     firstName: 'Tariq',
     lastName: 'Al-Mansoor',
     username: 'tariq_flag',
     pins: 850,
-    xp: 650, // 650 XP -> Level 2, 150/500 in level (30%), 350 to Lvl 3
+    xp: 650, // 650 XP -> Level 2, 150/500 in level (30%)
     level: 2,
     currentStreak: 4,
     longestStreak: 9,
@@ -70,7 +70,6 @@ describe('ProfileCard UI Rendering', () => {
 
     assert.ok(html.includes('Level 2'));
     assert.ok(html.includes('150 / 500 XP'));
-    assert.ok(html.includes('350 to Lvl 3'));
     assert.ok(html.includes('width:30%'));
   });
 
@@ -84,10 +83,9 @@ describe('ProfileCard UI Rendering', () => {
 
     assert.ok(html.includes('Get Verified Badge'));
     assert.ok(html.includes('1 Star'));
-    assert.ok(html.includes('Upgrade →'));
   });
 
-  it('renders Pro Verified pill when user is Pro subscribed', () => {
+  it('renders Pro Verified text when user is Pro subscribed', () => {
     const html = renderToStaticMarkup(
       React.createElement(ProfileCard, {
         profile: dummyProfile,
@@ -118,12 +116,11 @@ describe('ProfileCard UI Rendering', () => {
 
     assert.ok(html.includes('Platinum Tier'));
     assert.ok(html.includes('#18'));
-    assert.ok(html.includes('1,240'));
-    assert.ok(html.includes('Battle Rating'));
+    assert.ok(html.includes('1,240 Rating'));
     assert.ok(html.includes('October 2026'));
   });
 
-  it('renders the 4 metric stats matrix with accurate values', () => {
+  it('renders the 4 metric stats matrix with accurate values and clean labels', () => {
     const html = renderToStaticMarkup(
       React.createElement(ProfileCard, {
         profile: dummyProfile,
@@ -143,10 +140,9 @@ describe('ProfileCard UI Rendering', () => {
       }),
     );
 
-    assert.ok(html.includes('Invite &amp; Earn') || html.includes('Invite & Earn'));
+    assert.ok(html.includes('Invite Friends'));
     assert.ok(html.includes('3 Friends'));
     assert.ok(html.includes('Copy Link'));
     assert.ok(html.includes('Share Link'));
   });
 });
-

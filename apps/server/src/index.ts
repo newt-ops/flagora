@@ -20,7 +20,6 @@ import { seedFlags } from './game/seedFlags.js';
 import { initFlagCache, reloadFlagCache } from './game/flagCache.js';
 
 import { getRankStatus, getRankedLeaderboard } from './rank/rankService.js';
-import { getPlayerBadges, initBadgeCollection } from './badge/badgeService.js';
 import {
   getTopLeaderboard,
   getPlayerLeaderboardRank,
@@ -181,7 +180,6 @@ async function bootstrap() {
     const seedResult = await seedFlags(db);
     process.stdout.write(`Seeded flags collection (${seedResult.total} total flags)\n`);
     await initFlagCache(db);
-    await initBadgeCollection(db);
     await initReferralCollection(db);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown database error';
@@ -800,21 +798,6 @@ async function bootstrap() {
     }
   });
 
-  app.get('/api/badges/me', sessionMiddleware, rateLimit({ endpoint: 'badges_me', limit: 120, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
-    try {
-      const telegramUserId = req.sessionUser?.telegramUserId;
-      if (!telegramUserId) {
-        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
-        return;
-      }
-
-      const badges = await getPlayerBadges(telegramUserId, db);
-      res.status(200).json({ badges });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch badges';
-      res.status(500).json({ error: 'Internal server error', message });
-    }
-  });
 
 
 

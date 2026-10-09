@@ -73,6 +73,5 @@ export * from './challenge.js';
 export * from './battle.js';
 export * from './rewards.js';
 export * from './rank.js';
-export * from './badge.js';
 export * from './referral.js';
 

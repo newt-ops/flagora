@@ -197,9 +197,6 @@ export async function checkAndFinalizeBattle(
         ratingDelta: challengerRankUpdate.ratingDelta,
         newRating: challengerRankUpdate.newRating,
         tier: challengerRankUpdate.tier,
-        ...(challengerRun.finalScore?.newBadges && challengerRun.finalScore.newBadges.length > 0
-          ? { newBadges: challengerRun.finalScore.newBadges }
-          : {}),
       };
 
       const opponentResult: BattleParticipantResult = {
@@ -212,9 +209,6 @@ export async function checkAndFinalizeBattle(
         ratingDelta: opponentRankUpdate.ratingDelta,
         newRating: opponentRankUpdate.newRating,
         tier: opponentRankUpdate.tier,
-        ...(opponentRun.finalScore?.newBadges && opponentRun.finalScore.newBadges.length > 0
-          ? { newBadges: opponentRun.finalScore.newBadges }
-          : {}),
       };
 
       if (io) {

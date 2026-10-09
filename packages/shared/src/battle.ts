@@ -1,5 +1,4 @@
 import type { RankedTier } from './rank.js';
-import type { PlayerBadgeResponseItem } from './badge.js';
 
 export type BattleStatus = 'waiting' | 'ready' | 'in_progress' | 'completed' | 'expired';
 
@@ -40,7 +39,6 @@ export interface BattleParticipantResult {
   ratingDelta?: number;
   newRating?: number;
   tier?: RankedTier;
-  newBadges?: PlayerBadgeResponseItem[];
 }
 
 export interface BattleInfoResponse {

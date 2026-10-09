@@ -15,7 +15,6 @@ import { useDailyChallenge } from './hooks/useDailyChallenge.js';
 import { useStreakStatus } from './hooks/useStreakStatus.js';
 import { useBattleSocket } from './hooks/useBattleSocket.js';
 import { useRank } from './hooks/useRank.js';
-import { useBadges } from './hooks/useBadges.js';
 import { useProStatus } from './hooks/useProStatus.js';
 import {
   createChallenge,
@@ -56,7 +55,6 @@ export function App() {
   const { dailyStatus, startDaily, isStartingDaily } = useDailyChallenge(sessionToken);
   const { streakStatus, refetchStreakStatus } = useStreakStatus(sessionToken);
   const { rankStatus, refetchRank } = useRank(sessionToken);
-  const { badges, isLoadingBadges } = useBadges(sessionToken);
   const { proStatus, isPro, refetchProStatus } = useProStatus(sessionToken);
 
   const [screen, setScreen] = useState<
@@ -118,7 +116,6 @@ export function App() {
       void queryClient.invalidateQueries({ queryKey: ['profile'] });
       void queryClient.invalidateQueries({ queryKey: ['rank', 'status'] });
       void queryClient.invalidateQueries({ queryKey: ['leaderboard', 'ranked'] });
-      void queryClient.invalidateQueries({ queryKey: ['badges', 'me'] });
     },
   });
 
@@ -542,13 +539,10 @@ export function App() {
                 streakStatus={streakStatus}
                 rankStatus={rankStatus}
                 proStatus={proStatus}
-                badges={badges}
-                isLoadingBadges={isLoadingBadges}
                 sessionToken={sessionToken}
                 onRefetchProfile={() => {
                   refetch();
                   refetchRank();
-                  void queryClient.invalidateQueries({ queryKey: ['badges', 'me'] });
                 }}
                 onRefetchStreakStatus={refetchStreakStatus}
                 onRefetchProStatus={refetchProStatus}

@@ -113,8 +113,6 @@ export async function ensureIndexes(db: Db): Promise<void> {
   await safeIndex(() => db.collection('processed_payments').createIndex({ chargeId: 1 }, { unique: true }));
   await safeIndex(() => db.collection('referrals').createIndex({ newPlayerTelegramUserId: 1 }, { unique: true }));
   await safeIndex(() => db.collection('referrals').createIndex({ inviterTelegramUserId: 1, status: 1 }));
-  await safeIndex(() => db.collection('player_badges').createIndex({ telegramUserId: 1, badgeId: 1, season: 1 }, { unique: true }));
-  await safeIndex(() => db.collection('player_badges').createIndex({ telegramUserId: 1, earnedAt: -1 }));
 }
 
 export function getDatabase(): Db {
