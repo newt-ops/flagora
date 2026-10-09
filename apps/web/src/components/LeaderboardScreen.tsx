@@ -285,7 +285,7 @@ export function LeaderboardScreen({
               {mode === 'daily' && !dailyAttempted && onPlayDaily && (
                 <button
                   type="button"
-                  onClick={onPlayDaily}
+                  onClick={() => onPlayDaily?.()}
                   disabled={isStarting}
                   className="mt-1 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
                 >
@@ -296,7 +296,7 @@ export function LeaderboardScreen({
               {mode === 'global' && onPlay && (
                 <button
                   type="button"
-                  onClick={onPlay}
+                  onClick={() => onPlay?.()}
                   disabled={isStarting}
                   className="mt-1 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
                 >
@@ -307,7 +307,10 @@ export function LeaderboardScreen({
               {mode === 'ranked' && (onBattleLive || onPlay) && (
                 <button
                   type="button"
-                  onClick={onBattleLive || onPlay}
+                  onClick={() => {
+                    if (onBattleLive) onBattleLive();
+                    else if (onPlay) onPlay();
+                  }}
                   disabled={isStarting}
                   className="mt-1 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
                 >

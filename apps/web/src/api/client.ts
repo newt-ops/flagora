@@ -113,13 +113,29 @@ export async function startRun(
   sessionToken: string,
   options?: StartRunOptions,
 ): Promise<StartRunResponse> {
+  const isOptionsValid =
+    options &&
+    typeof options === 'object' &&
+    !('nativeEvent' in (options as unknown as Record<string, unknown>)) &&
+    !('target' in (options as unknown as Record<string, unknown>));
+
+  const cleanPayload = isOptionsValid
+    ? {
+        ...(options.continent && typeof options.continent === 'string' ? { continent: options.continent } : {}),
+        ...(typeof options.flagCount === 'number' ? { flagCount: options.flagCount } : {}),
+        ...(typeof options.durationSeconds === 'number' ? { durationSeconds: options.durationSeconds } : {}),
+      }
+    : undefined;
+
+  const hasPayload = cleanPayload && Object.keys(cleanPayload).length > 0;
+
   const response = await fetch(`${API_URL}/api/runs/start`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${sessionToken}`,
     },
-    body: options ? JSON.stringify(options) : undefined,
+    body: hasPayload ? JSON.stringify(cleanPayload) : undefined,
   });
 
   if (!response.ok) {

@@ -1,9 +1,10 @@
 interface ErrorStateProps {
+  title?: string;
   message: string;
   onRetry?: () => void;
 }
 
-export function ErrorState({ message, onRetry }: ErrorStateProps) {
+export function ErrorState({ title = 'Error', message, onRetry }: ErrorStateProps) {
   return (
     <div className="w-full max-w-md mx-auto rounded-2xl bg-tg-section p-6 text-center text-tg-text shadow-sm">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-tg-destructive/10 text-tg-destructive">
@@ -22,7 +23,7 @@ export function ErrorState({ message, onRetry }: ErrorStateProps) {
         </svg>
       </div>
 
-      <h3 className="mt-4 text-base font-semibold text-tg-text">Authentication Error</h3>
+      <h3 className="mt-4 text-base font-semibold text-tg-text">{title}</h3>
       <p className="mt-1 text-xs text-tg-hint">{message}</p>
 
       {onRetry && (

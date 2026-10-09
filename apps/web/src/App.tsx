@@ -251,15 +251,26 @@ export function App() {
     };
   }, [sessionToken, profile]);
 
-  const handleStartPractice = async (options?: {
+  const handleStartPractice = async (rawOptions?: {
     continent?: string;
     flagCount?: number;
     durationSeconds?: number;
-  }) => {
+  } | unknown) => {
     if (!sessionToken) {
       return;
     }
     setStartError(null);
+
+    const isOptionsObject =
+      rawOptions &&
+      typeof rawOptions === 'object' &&
+      !('nativeEvent' in (rawOptions as Record<string, unknown>)) &&
+      !('target' in (rawOptions as Record<string, unknown>));
+
+    const options = isOptionsObject
+      ? (rawOptions as { continent?: string; flagCount?: number; durationSeconds?: number })
+      : undefined;
+
     try {
       const run = await startRun(sessionToken, options);
       setRunMode(
@@ -468,18 +479,21 @@ export function App() {
 
       {!isLoading && isNotInTelegram && <NonTelegramFallback />}
 
-      {!isLoading && !isNotInTelegram && error && <ErrorState message={error} onRetry={refetch} />}
+      {!isLoading && !isNotInTelegram && error && (
+        <ErrorState title="Authentication Error" message={error} onRetry={refetch} />
+      )}
 
       {!isLoading && !error && startError && (
         <div className="mb-4 w-full max-w-md mx-auto">
           <ErrorState
+            title="Unable to Start Game"
             message={startError}
             onRetry={
               runMode === 'daily'
                 ? handleStartDaily
                 : runMode === 'challenge'
                 ? handleStartChallenge
-                : handleStartPractice
+                : () => void handleStartPractice()
             }
           />
         </div>
@@ -494,7 +508,7 @@ export function App() {
               streakStatus={streakStatus}
               rankStatus={rankStatus}
               sessionToken={sessionToken}
-              onPlayPractice={handleStartPractice}
+              onPlayPractice={() => void handleStartPractice()}
               onStartCustomGame={handleStartPractice}
               onStartDaily={handleStartDaily}
               onChallengeFriend={handleStartChallenge}
@@ -641,7 +655,7 @@ export function App() {
         <ResultsScreen
           result={lastResult}
           mode={runMode}
-          onPlayAgain={handleStartPractice}
+          onPlayAgain={() => void handleStartPractice()}
           onBackToProfile={handleBackToProfile}
           onViewLeaderboard={
             runMode === 'daily' ? handleOpenDailyLeaderboard : handleOpenGlobalLeaderboard

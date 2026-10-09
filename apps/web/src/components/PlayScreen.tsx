@@ -269,7 +269,7 @@ export function PlayScreen({
           </div>
           <button
             type="button"
-            onClick={onPlayPractice}
+            onClick={() => onPlayPractice?.()}
             disabled={isStarting}
             className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-tg-button font-bold text-tg-button-text shadow-sm transition-opacity hover:opacity-90 active:opacity-75 disabled:pointer-events-none disabled:opacity-50"
           >
