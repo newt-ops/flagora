@@ -10,10 +10,9 @@ import {
   getLeaderboardTitle,
   getLeaderboardSubtitle,
 } from './dailyChallengeHelpers.js';
-import { getAvatarFrameClass } from './cosmeticHelpers.js';
-import { CosmeticProtectedImage } from './CosmeticProtectedImage.js';
 import { getRankedTier, type LeaderboardEntry } from '@flagora/shared';
 import { TierBadge } from './TierBadge.js';
+import { VerifiedBadge } from './VerifiedBadge.js';
 
 interface LeaderboardScreenProps {
   sessionToken: string;
@@ -26,7 +25,6 @@ interface LeaderboardScreenProps {
   isStarting?: boolean;
   dailyAttempted?: boolean;
   showBackButton?: boolean;
-  userAvatarFrame?: string | null;
 }
 
 export function LeaderboardScreen({
@@ -40,7 +38,6 @@ export function LeaderboardScreen({
   isStarting = false,
   dailyAttempted = false,
   showBackButton = true,
-  userAvatarFrame,
 }: LeaderboardScreenProps) {
   const [mode, setMode] = useState<'global' | 'daily' | 'ranked'>(initialMode);
   const { topEntries, myRank, season, isLoading, error, refetch } = useLeaderboard(sessionToken, mode);
@@ -165,7 +162,6 @@ export function LeaderboardScreen({
               topEntries.map((entry: LeaderboardEntry) => {
                 const isMe = entry.telegramUserId === currentUserId;
                 const initial = entry.displayName.replace(/^@/, '').charAt(0).toUpperCase() || 'P';
-                const frameClass = isMe ? getAvatarFrameClass(userAvatarFrame) : '';
                 const tier = mode === 'ranked' ? getRankedTier(entry.bestScore) : null;
 
                 return (
@@ -191,26 +187,14 @@ export function LeaderboardScreen({
                           <img
                             src={entry.photoUrl}
                             alt={entry.displayName}
-                            className={`h-7 w-7 rounded-full object-cover bg-tg-section ${
-                              !isMe || !userAvatarFrame ? (frameClass ? frameClass : '') : ''
-                            }`}
+                            className="h-7 w-7 rounded-full object-cover bg-tg-section ring-1 ring-tg-button/50"
                           />
                         ) : (
                           <div
-                            className={`flex h-7 w-7 items-center justify-center rounded-full bg-tg-button text-xs font-bold text-tg-button-text ${
-                              !isMe || !userAvatarFrame ? (frameClass ? frameClass : '') : ''
-                            }`}
+                            className="flex h-7 w-7 items-center justify-center rounded-full bg-tg-button text-xs font-bold text-tg-button-text"
                           >
                             {initial}
                           </div>
-                        )}
-                        {isMe && userAvatarFrame && (
-                          <CosmeticProtectedImage
-                            category="avatarFrame"
-                            assetIdOrPath={userAvatarFrame}
-                            alt="Avatar Frame"
-                            className="absolute inset-0"
-                          />
                         )}
                       </div>
 
@@ -219,6 +203,9 @@ export function LeaderboardScreen({
                           <span className="truncate text-sm font-semibold text-tg-text">
                             {entry.displayName}
                           </span>
+                          {entry.isVerified && (
+                            <VerifiedBadge className="h-4 w-4 shrink-0 text-[#2AABEE]" />
+                          )}
                           {tier && <TierBadge tier={tier} size="xs" />}
                           {isMe && (
                             <span className="shrink-0 rounded-full bg-tg-button/15 px-2 py-0.2 text-[10px] font-bold text-tg-button">

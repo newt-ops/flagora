@@ -191,8 +191,6 @@ describe('Phase 11 Prompt 04: Referral Abuse Hardening', () => {
       lastPlayedDate: null,
       referredBy: null,
       referralCount: 0,
-      ownedItemIds: [],
-      equipped: { avatarFrame: null, flagTheme: null, profileBanner: null },
       battleRating: 0,
       currentSeason: null,
       tier4CorrectCount: 0,

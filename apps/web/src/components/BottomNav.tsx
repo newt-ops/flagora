@@ -1,6 +1,6 @@
-import { Gamepad2, Trophy, ShoppingBag, User } from './icons.js';
+import { Gamepad2, Trophy, User } from './icons.js';
 
-export type NavTab = 'play' | 'leaderboard' | 'shop' | 'profile';
+export type NavTab = 'play' | 'leaderboard' | 'profile';
 
 interface BottomNavProps {
   activeTab: NavTab;
@@ -11,7 +11,6 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   const tabs: { id: NavTab; label: string; icon: typeof Gamepad2 }[] = [
     { id: 'play', label: 'Play', icon: Gamepad2 },
     { id: 'leaderboard', label: 'Ranks', icon: Trophy },
-    { id: 'shop', label: 'Shop', icon: ShoppingBag },
     { id: 'profile', label: 'Profile', icon: User },
   ];
 

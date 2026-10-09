@@ -246,14 +246,9 @@ export async function handleTelegramUpdate(
 
           if (!alreadyProcessed) {
             await processSuccessfulPayment(telegramUserId, chargeId, db);
-            const profileCol = db.collection<PlayerProfile>('profiles');
-            await profileCol.updateOne(
-              { telegramUserId },
-              { $inc: { pins: 1000 } }
-            );
             void sendTelegramMessage({
               chatId: telegramUserId,
-              text: '⭐ Welcome to Flagora Pro! Your perks and 1,000 Pins stipend are active.',
+              text: '⭐ Welcome to Flagora Pro! Your verified checkmark is now active next to your name.',
               botToken,
               apiBaseUrl,
             });

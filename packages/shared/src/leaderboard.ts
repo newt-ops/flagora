@@ -4,6 +4,7 @@ export interface LeaderboardEntry {
   displayName: string;
   photoUrl: string | null;
   bestScore: number;
+  isVerified?: boolean;
 }
 
 export interface LeaderboardMeResponse {

@@ -5,16 +5,12 @@ import {
   getPerspectiveHeading,
   getInitials,
 } from './challengeViewHelpers.js';
-import { getAvatarFrameClass } from './cosmeticHelpers.js';
-import { CosmeticProtectedImage } from './CosmeticProtectedImage.js';
-
 interface HeadToHeadResultScreenProps {
   challengeInfo: ChallengeInfoResponse;
   currentUserId: number;
   onRematch: () => void;
   onBackToProfile: () => void;
   isStartingRematch?: boolean;
-  userAvatarFrame?: string | null;
 }
 
 export function HeadToHeadResultScreen({
@@ -23,7 +19,6 @@ export function HeadToHeadResultScreen({
   onRematch,
   onBackToProfile,
   isStartingRematch = false,
-  userAvatarFrame,
 }: HeadToHeadResultScreenProps) {
   const perspective = getChallengeViewerPerspective(challengeInfo, currentUserId);
   const heading = getPerspectiveHeading(perspective, challengeInfo.challengerDisplayName);
@@ -36,10 +31,6 @@ export function HeadToHeadResultScreen({
 
   const challengerInitial = getInitials(challengeInfo.challengerDisplayName);
   const opponentInitial = getInitials(challengeInfo.opponentDisplayName ?? 'Opponent');
-
-  const viewerFrame = getAvatarFrameClass(userAvatarFrame);
-  const challengerFrame = isChallengerViewer ? viewerFrame : '';
-  const opponentFrame = isOpponentViewer ? viewerFrame : '';
 
   return (
     <div className="flex w-full max-w-md mx-auto flex-col items-center gap-4 text-tg-text">
@@ -66,26 +57,14 @@ export function HeadToHeadResultScreen({
                 <img
                   src={challengeInfo.challengerPhotoUrl}
                   alt={challengeInfo.challengerDisplayName}
-                  className={`h-14 w-14 rounded-full object-cover ${
-                    !isChallengerViewer || !userAvatarFrame ? (challengerFrame || 'ring-2 ring-tg-button') : ''
-                  }`}
+                  className="h-14 w-14 rounded-full object-cover ring-2 ring-tg-button"
                 />
               ) : (
                 <div
-                  className={`flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${
-                    !isChallengerViewer || !userAvatarFrame ? challengerFrame : ''
-                  }`}
+                  className="flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text"
                 >
                   {challengerInitial}
                 </div>
-              )}
-              {isChallengerViewer && userAvatarFrame && (
-                <CosmeticProtectedImage
-                  category="avatarFrame"
-                  assetIdOrPath={userAvatarFrame}
-                  alt="Avatar Frame"
-                  className="absolute inset-0"
-                />
               )}
               {challengerWon && (
                 <span className="absolute -bottom-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-tg-button text-tg-button-text ring-2 ring-tg-section">
@@ -127,26 +106,14 @@ export function HeadToHeadResultScreen({
                 <img
                   src={challengeInfo.opponentPhotoUrl}
                   alt={challengeInfo.opponentDisplayName ?? 'Opponent'}
-                  className={`h-14 w-14 rounded-full object-cover ${
-                    !isOpponentViewer || !userAvatarFrame ? (opponentFrame || 'ring-2 ring-tg-button') : ''
-                  }`}
+                  className="h-14 w-14 rounded-full object-cover ring-2 ring-tg-button"
                 />
               ) : (
                 <div
-                  className={`flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${
-                    !isOpponentViewer || !userAvatarFrame ? opponentFrame : ''
-                  }`}
+                  className="flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text"
                 >
                   {opponentInitial}
                 </div>
-              )}
-              {isOpponentViewer && userAvatarFrame && (
-                <CosmeticProtectedImage
-                  category="avatarFrame"
-                  assetIdOrPath={userAvatarFrame}
-                  alt="Avatar Frame"
-                  className="absolute inset-0"
-                />
               )}
               {opponentWon && (
                 <span className="absolute -bottom-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-tg-button text-tg-button-text ring-2 ring-tg-section">

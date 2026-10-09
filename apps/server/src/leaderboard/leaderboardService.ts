@@ -23,6 +23,20 @@ export async function updateLeaderboardScore(
   await redis.zadd(key, bestScore, String(telegramUserId));
 }
 
+async function getVerifiedUserSet(userIds: number[], db: Db): Promise<Set<number>> {
+  if (userIds.length === 0) return new Set();
+  try {
+    const subs = await db.collection('subscriptions').find({
+      telegramUserId: { $in: userIds },
+      status: 'active',
+      currentPeriodEnd: { $gt: new Date() },
+    }).toArray();
+    return new Set(subs.map((s: any) => s.telegramUserId));
+  } catch {
+    return new Set();
+  }
+}
+
 export async function getTopLeaderboard(
   limit: number,
   db: Db,
@@ -59,12 +73,16 @@ export async function getTopLeaderboard(
         .limit(clampedLimit)
         .toArray();
 
+      const userIds = profiles.map((p) => p.telegramUserId);
+      const verifiedSet = await getVerifiedUserSet(userIds, db);
+
       return profiles.map((profile, index) => ({
         rank: index + 1,
         telegramUserId: profile.telegramUserId,
         displayName: getDisplayName(profile),
         photoUrl: profile.photoUrl ?? null,
         bestScore: profile.bestScore,
+        isVerified: verifiedSet.has(profile.telegramUserId) || Boolean(profile.isVerified),
       }));
     }
 
@@ -83,22 +101,26 @@ export async function getTopLeaderboard(
 
       if (runs.length > 0) {
         const userIds = runs.map((r) => r.telegramUserId);
-        const profiles = await db
-          .collection<PlayerProfile>('profiles')
-          .find(
-            { telegramUserId: { $in: userIds } },
-            {
-              projection: {
-                telegramUserId: 1,
-                displayName: 1,
-                username: 1,
-                firstName: 1,
-                lastName: 1,
-                photoUrl: 1,
+        const [profiles, verifiedSet] = await Promise.all([
+          db
+            .collection<PlayerProfile>('profiles')
+            .find(
+              { telegramUserId: { $in: userIds } },
+              {
+                projection: {
+                  telegramUserId: 1,
+                  displayName: 1,
+                  username: 1,
+                  firstName: 1,
+                  lastName: 1,
+                  photoUrl: 1,
+                  isVerified: 1,
+                },
               },
-            },
-          )
-          .toArray();
+            )
+            .toArray(),
+          getVerifiedUserSet(userIds, db),
+        ]);
         const profileMap = new Map(profiles.map((p) => [p.telegramUserId, p]));
 
         return runs.map((run, index) => {
@@ -110,6 +132,7 @@ export async function getTopLeaderboard(
             displayName: profile ? getDisplayName(profile) : `Player ${run.telegramUserId}`,
             photoUrl: profile?.photoUrl ?? null,
             bestScore: score,
+            isVerified: verifiedSet.has(run.telegramUserId) || Boolean(profile?.isVerified),
           };
         });
       }
@@ -125,12 +148,16 @@ export async function getTopLeaderboard(
         .limit(clampedLimit)
         .toArray();
 
+      const userIds = profiles.map((p) => p.telegramUserId);
+      const verifiedSet = await getVerifiedUserSet(userIds, db);
+
       return profiles.map((profile, index) => ({
         rank: index + 1,
         telegramUserId: profile.telegramUserId,
         displayName: getDisplayName(profile),
         photoUrl: profile.photoUrl ?? null,
         bestScore: profile.battleRating ?? 0,
+        isVerified: verifiedSet.has(profile.telegramUserId) || Boolean(profile.isVerified),
       }));
     }
   }
@@ -140,22 +167,26 @@ export async function getTopLeaderboard(
   }
 
   const userIds = parsed.map((item) => item.telegramUserId);
-  const profiles = await db
-    .collection<PlayerProfile>('profiles')
-    .find(
-      { telegramUserId: { $in: userIds } },
-      {
-        projection: {
-          telegramUserId: 1,
-          displayName: 1,
-          username: 1,
-          firstName: 1,
-          lastName: 1,
-          photoUrl: 1,
+  const [profiles, verifiedSet] = await Promise.all([
+    db
+      .collection<PlayerProfile>('profiles')
+      .find(
+        { telegramUserId: { $in: userIds } },
+        {
+          projection: {
+            telegramUserId: 1,
+            displayName: 1,
+            username: 1,
+            firstName: 1,
+            lastName: 1,
+            photoUrl: 1,
+            isVerified: 1,
+          },
         },
-      },
-    )
-    .toArray();
+      )
+      .toArray(),
+    getVerifiedUserSet(userIds, db),
+  ]);
 
   const profileMap = new Map<number, PlayerProfile>(
     profiles.map((profile) => [profile.telegramUserId, profile]),
@@ -172,6 +203,7 @@ export async function getTopLeaderboard(
       displayName,
       photoUrl,
       bestScore: item.score,
+      isVerified: verifiedSet.has(item.telegramUserId) || Boolean(profile?.isVerified),
     };
   });
 }

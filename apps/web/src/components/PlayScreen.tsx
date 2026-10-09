@@ -21,10 +21,9 @@ import { getDisplayName } from '@flagora/shared';
 import { getDailyResultSummary } from './dailyChallengeHelpers.js';
 import { CustomGameModal, type CustomGameConfig } from './CustomGameModal.js';
 import { StreakSaveBanner } from './StreakSaveBanner.js';
-import { getAvatarFrameClass } from './cosmeticHelpers.js';
-import { CosmeticProtectedImage } from './CosmeticProtectedImage.js';
 import { formatSeasonName, getTierIcon } from './rankHelpers.js';
 import { TierBadge } from './TierBadge.js';
+import { VerifiedBadge } from './VerifiedBadge.js';
 
 interface PlayScreenProps {
   profile: PlayerProfile;
@@ -74,7 +73,6 @@ export function PlayScreen({
   const firstName = profile.firstName || displayName;
   const initial = profile.firstName ? profile.firstName.charAt(0).toUpperCase() : 'P';
   const dailySummary = getDailyResultSummary(dailyStatus?.result ?? null);
-  const frameClass = getAvatarFrameClass(profile.equipped?.avatarFrame);
 
   const currentTier = rankStatus?.tier ?? 'Bronze';
   const currentRating = rankStatus?.battleRating ?? 0;
@@ -100,30 +98,23 @@ export function PlayScreen({
               <img
                 src={profile.photoUrl}
                 alt={firstName}
-                className={`h-10 w-10 rounded-full object-cover bg-tg-section ${
-                  !profile.equipped?.avatarFrame ? (frameClass ? frameClass : 'ring-2 ring-tg-button') : ''
-                }`}
+                className="h-10 w-10 rounded-full object-cover bg-tg-section ring-2 ring-tg-button"
               />
             ) : (
               <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${
-                  !profile.equipped?.avatarFrame ? (frameClass ? frameClass : '') : ''
-                }`}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text"
               >
                 {initial}
               </div>
             )}
-            {profile.equipped?.avatarFrame && (
-              <CosmeticProtectedImage
-                category="avatarFrame"
-                assetIdOrPath={profile.equipped.avatarFrame}
-                alt="Avatar Frame"
-                className="absolute inset-0"
-              />
-            )}
           </div>
           <div className="flex flex-col text-left min-w-0">
-            <h1 className="text-base font-bold text-tg-text truncate">{firstName}</h1>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h1 className="text-base font-bold text-tg-text truncate">{firstName}</h1>
+              {(profile.isVerified || isPro) && (
+                <VerifiedBadge className="h-4 w-4 text-[#2AABEE]" />
+              )}
+            </div>
             <div className="flex items-center gap-2 text-xs text-tg-hint flex-wrap">
               <span>Level {profile.level}</span>
               <TierBadge tier={currentTier} size="xs" />

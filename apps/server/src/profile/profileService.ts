@@ -1,6 +1,7 @@
 import type { Db } from 'mongodb';
 import type { TelegramUser } from '../auth/types.js';
 import { playerProfileSchema, type PlayerProfile } from './types.js';
+import { hasActiveSubscription } from '../subscription/subscriptionService.js';
 
 export async function findOrCreatePlayerProfile(
   telegramUser: TelegramUser,
@@ -11,6 +12,7 @@ export async function findOrCreatePlayerProfile(
   const existing = await collection.findOne({ telegramUserId: telegramUser.id });
 
   if (existing) {
+    const isVerified = await hasActiveSubscription(telegramUser.id, db);
     const newUsername =
       telegramUser.username !== undefined ? telegramUser.username : existing.username;
     const newLastName =
@@ -46,13 +48,18 @@ export async function findOrCreatePlayerProfile(
         username: newUsername,
         photoUrl: newPhotoUrl,
         updatedAt,
+        isVerified,
       });
     }
 
-    return playerProfileSchema.parse(existing);
+    return playerProfileSchema.parse({
+      ...existing,
+      isVerified,
+    });
   }
 
   const now = new Date();
+  const isVerified = await hasActiveSubscription(telegramUser.id, db);
   const newProfileData: PlayerProfile = {
     telegramUserId: telegramUser.id,
     username: telegramUser.username,
@@ -69,16 +76,11 @@ export async function findOrCreatePlayerProfile(
     lastPlayedDate: null,
     referredBy: null,
     referralCount: 0,
-    ownedItemIds: [],
-    equipped: {
-      avatarFrame: null,
-      flagTheme: null,
-      profileBanner: null,
-    },
     battleRating: 0,
     currentSeason: null,
     tier4CorrectCount: 0,
     pinnedIsoCodes: [],
+    isVerified,
     createdAt: now,
     updatedAt: now,
   };
@@ -97,7 +99,11 @@ export async function getPlayerProfileByUserId(
   if (!profile) {
     return null;
   }
-  return playerProfileSchema.parse(profile);
+  const isVerified = await hasActiveSubscription(telegramUserId, db);
+  return playerProfileSchema.parse({
+    ...profile,
+    isVerified,
+  });
 }
 
 export async function updatePinnedFlags(
@@ -122,5 +128,9 @@ export async function updatePinnedFlags(
     throw new Error('Profile not found');
   }
 
-  return playerProfileSchema.parse(result);
+  const isVerified = await hasActiveSubscription(telegramUserId, db);
+  return playerProfileSchema.parse({
+    ...result,
+    isVerified,
+  });
 }

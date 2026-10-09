@@ -14,12 +14,11 @@ export interface PlayerProfile {
   lastPlayedDate: string | null;
   referredBy?: number | null;
   referralCount?: number;
-  ownedItemIds?: string[];
-  equipped?: import('./shop.js').EquippedCosmetics;
   battleRating?: number;
   currentSeason?: string | null;
   tier4CorrectCount?: number;
   pinnedIsoCodes?: string[];
+  isVerified?: boolean;
   createdAt: Date | string;
   updatedAt: Date | string;
 }
@@ -73,7 +72,6 @@ export * from './daily.js';
 export * from './challenge.js';
 export * from './battle.js';
 export * from './rewards.js';
-export * from './shop.js';
 export * from './rank.js';
 export * from './badge.js';
 export * from './referral.js';

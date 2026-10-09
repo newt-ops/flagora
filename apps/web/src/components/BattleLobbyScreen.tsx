@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { Swords, Share2, Copy, Check, ArrowLeft, Loader2, User, Zap } from './icons.js';
 import type { BattleInfoResponse, OpponentJoinedPayload } from '@flagora/shared';
 import { shareBattle, copyBattleLink, getInitials } from './battleHelpers.js';
-import { getAvatarFrameClass } from './cosmeticHelpers.js';
-import { CosmeticProtectedImage } from './CosmeticProtectedImage.js';
 
 interface BattleLobbyScreenProps {
   battleId: string;
@@ -18,8 +16,6 @@ interface BattleLobbyScreenProps {
   onBack: () => void;
   isConnecting?: boolean;
   error?: string | null;
-  userAvatarFrame?: string | null;
-  userBattleEntrance?: string | null;
 }
 
 export function BattleLobbyScreen({
@@ -35,8 +31,6 @@ export function BattleLobbyScreen({
   onBack,
   isConnecting = false,
   error = null,
-  userAvatarFrame,
-  userBattleEntrance,
 }: BattleLobbyScreenProps) {
   const [copied, setCopied] = useState(false);
 
@@ -70,9 +64,6 @@ export function BattleLobbyScreen({
   const challengerPhoto = battleInfo?.challengerPhotoUrl || null;
   const challengerInitial = getInitials(challengerName);
   const opponentInitial = getInitials(opponentDisplayName);
-  const challengerFrame = isChallenger ? getAvatarFrameClass(userAvatarFrame) : '';
-  const opponentFrame = !isChallenger ? getAvatarFrameClass(userAvatarFrame) : '';
-
   const totalFlags = battleInfo?.totalFlags ?? 10;
   const durationSeconds = battleInfo?.durationSeconds ?? 60;
 
@@ -88,17 +79,6 @@ export function BattleLobbyScreen({
     <div className="relative flex w-full max-w-md mx-auto flex-col items-center gap-4 text-tg-text">
       {countdown !== null && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-2xl bg-tg-bg/90 backdrop-blur-md overflow-hidden">
-          {userBattleEntrance && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden opacity-80 z-0">
-              <CosmeticProtectedImage
-                category="battleEntrance"
-                assetIdOrPath={userBattleEntrance}
-                alt="Battle Entrance"
-                className="h-64 w-64"
-                animationClass="animate-battle-entrance"
-              />
-            </div>
-          )}
           <p className="relative z-10 text-xs font-bold uppercase tracking-widest text-tg-button">
             Battle Starting In
           </p>
@@ -151,26 +131,14 @@ export function BattleLobbyScreen({
                 <img
                   src={challengerPhoto}
                   alt={challengerName}
-                  className={`h-12 w-12 rounded-full object-cover bg-tg-section ${
-                    !isChallenger || !userAvatarFrame ? (challengerFrame ? challengerFrame : 'ring-2 ring-tg-button') : ''
-                  }`}
+                  className="h-12 w-12 rounded-full object-cover bg-tg-section ring-2 ring-tg-button"
                 />
               ) : (
                 <div
-                  className={`flex h-12 w-12 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${
-                    !isChallenger || !userAvatarFrame ? (challengerFrame ? challengerFrame : '') : ''
-                  }`}
+                  className="flex h-12 w-12 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text"
                 >
                   {challengerInitial}
                 </div>
-              )}
-              {isChallenger && userAvatarFrame && (
-                <CosmeticProtectedImage
-                  category="avatarFrame"
-                  assetIdOrPath={userAvatarFrame}
-                  alt="Avatar Frame"
-                  className="absolute inset-0"
-                />
               )}
             </div>
             <p className="mt-2 max-w-[120px] truncate text-xs font-bold text-tg-text">
@@ -198,26 +166,14 @@ export function BattleLobbyScreen({
                     <img
                       src={opponentPhotoUrl}
                       alt={opponentDisplayName || 'Opponent'}
-                      className={`h-12 w-12 rounded-full object-cover bg-tg-section ${
-                        isChallenger || !userAvatarFrame ? (opponentFrame ? opponentFrame : 'ring-2 ring-tg-button') : ''
-                      }`}
+                      className="h-12 w-12 rounded-full object-cover bg-tg-section ring-2 ring-tg-button"
                     />
                   ) : (
                     <div
-                      className={`flex h-12 w-12 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${
-                        isChallenger || !userAvatarFrame ? (opponentFrame ? opponentFrame : '') : ''
-                      }`}
+                      className="flex h-12 w-12 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text"
                     >
                       {opponentInitial}
                     </div>
-                  )}
-                  {!isChallenger && userAvatarFrame && (
-                    <CosmeticProtectedImage
-                      category="avatarFrame"
-                      assetIdOrPath={userAvatarFrame}
-                      alt="Avatar Frame"
-                      className="absolute inset-0"
-                    />
                   )}
                 </div>
                 <p className="mt-2 max-w-[120px] truncate text-xs font-bold text-tg-text">

@@ -29,11 +29,10 @@ import {
 import { getProfileStreakDisplay } from './streakDisplayHelpers.js';
 import { getDailyResultSummary } from './dailyChallengeHelpers.js';
 import { StreakSaveBanner } from './StreakSaveBanner.js';
-import { getAvatarFrameClass, getProfileBannerClass } from './cosmeticHelpers.js';
 import { formatSeasonName, getTierIcon } from './rankHelpers.js';
 import { BadgeShowcase } from './BadgeShowcase.js';
 import { ProUpgradeModal } from './ProUpgradeModal.js';
-import { CosmeticProtectedImage } from './CosmeticProtectedImage.js';
+import { VerifiedBadge } from './VerifiedBadge.js';
 
 export { getDisplayName };
 
@@ -92,9 +91,6 @@ export function ProfileCard({
   const initial = profile.firstName ? profile.firstName.charAt(0).toUpperCase() : 'P';
   const streakInfo = getProfileStreakDisplay(profile.currentStreak, profile.longestStreak);
   const dailySummary = getDailyResultSummary(dailyStatus?.result ?? null);
-  const frameClass = getAvatarFrameClass(profile.equipped?.avatarFrame);
-  const bannerClass = getProfileBannerClass(profile.equipped?.profileBanner);
-
   const currentTier = rankStatus?.tier ?? 'Bronze';
   const currentRating = rankStatus?.battleRating ?? 0;
   const currentRank = rankStatus?.rank ?? null;
@@ -139,6 +135,8 @@ export function ProfileCard({
     }
   };
 
+  const isVerifiedUser = Boolean(proStatus?.isActive || profile.isVerified);
+
   return (
     <div className="flex w-full max-w-md mx-auto flex-col gap-3 text-tg-text">
       {rankStatus?.newBadges && rankStatus.newBadges.length > 0 && (
@@ -156,55 +154,30 @@ export function ProfileCard({
         </div>
       )}
 
-      <div
-        className={`relative w-full rounded-2xl bg-tg-section text-tg-text shadow-sm overflow-hidden ${
-          bannerClass ? 'pt-0' : 'p-4 sm:p-6'
-        }`}
-      >
-      {profile.equipped?.profileEffect && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden opacity-75 z-0">
-          <CosmeticProtectedImage
-            category="profileEffect"
-            assetIdOrPath={profile.equipped.profileEffect}
-            alt="Profile Effect"
-            className="h-56 w-56"
-            animationClass="animate-profile-effect"
-          />
-        </div>
-      )}
-      {bannerClass && <div className={`h-20 w-full ${bannerClass} opacity-90`} />}
-      <div className={`relative z-10 flex flex-col items-center text-center ${bannerClass ? '-mt-10 px-4 sm:px-6 pb-6' : ''}`}>
-        <div className="relative flex h-20 w-20 items-center justify-center">
-          {profile.photoUrl ? (
-            <img
-              src={profile.photoUrl}
-              alt={displayName}
-              className={`h-16 w-16 rounded-full object-cover bg-tg-section ${
-                !profile.equipped?.avatarFrame ? (frameClass ? frameClass : 'ring-2 ring-tg-button') : ''
-              }`}
-            />
-          ) : (
-            <div
-              className={`flex h-16 w-16 items-center justify-center rounded-full bg-tg-button text-2xl font-semibold text-tg-button-text ${
-                !profile.equipped?.avatarFrame ? (frameClass ? frameClass : '') : ''
-              }`}
-            >
-              {initial}
-            </div>
-          )}
-          {profile.equipped?.avatarFrame && (
-            <CosmeticProtectedImage
-              category="avatarFrame"
-              assetIdOrPath={profile.equipped.avatarFrame}
-              alt="Avatar Frame"
-              className="absolute inset-0"
-            />
-          )}
-        </div>
+      <div className="relative w-full rounded-2xl bg-tg-section text-tg-text shadow-sm p-4 sm:p-6">
+        <div className="relative z-10 flex flex-col items-center text-center">
+          <div className="relative flex h-20 w-20 items-center justify-center">
+            {profile.photoUrl ? (
+              <img
+                src={profile.photoUrl}
+                alt={displayName}
+                className="h-16 w-16 rounded-full object-cover bg-tg-section ring-2 ring-tg-button"
+              />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-tg-button text-2xl font-semibold text-tg-button-text">
+                {initial}
+              </div>
+            )}
+          </div>
 
-        <h2 className="mt-4 text-xl font-bold text-tg-text">
-          {profile.firstName || displayName}
-        </h2>
+          <div className="mt-4 flex items-center justify-center gap-1.5">
+            <h2 className="text-xl font-bold text-tg-text">
+              {profile.firstName || displayName}
+            </h2>
+            {isVerifiedUser && (
+              <VerifiedBadge className="h-5 w-5 text-[#2AABEE]" />
+            )}
+          </div>
         {profile.username && (
           <p className="text-xs font-medium text-tg-hint">
             @{profile.username.replace(/^@/, '')}

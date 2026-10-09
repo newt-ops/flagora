@@ -135,11 +135,6 @@ describe('Phase 1 & Security Hardening Tests', () => {
 
             if (!alreadyProcessed) {
               await processSuccessfulPayment(telegramUserId, chargeId, db);
-              const profileCol = db.collection<PlayerProfile>('profiles');
-              await profileCol.updateOne(
-                { telegramUserId },
-                { $inc: { pins: 1000 } },
-              );
             }
           } catch {
             void 0;
@@ -340,7 +335,7 @@ describe('Phase 1 & Security Hardening Tests', () => {
     assert.equal(firstDelivery.status, 200);
 
     const profileAfterFirst = await db.collection<PlayerProfile>('profiles').findOne({ telegramUserId: testUserId });
-    assert.equal(profileAfterFirst?.pins, 1100);
+    assert.equal(profileAfterFirst?.pins, 100);
 
     const secondDelivery = await fetch(`${baseUrl}/api/telegram/webhook`, {
       method: 'POST',
@@ -353,7 +348,7 @@ describe('Phase 1 & Security Hardening Tests', () => {
     assert.equal(secondDelivery.status, 200);
 
     const profileAfterSecond = await db.collection<PlayerProfile>('profiles').findOne({ telegramUserId: testUserId });
-    assert.equal(profileAfterSecond?.pins, 1100);
+    assert.equal(profileAfterSecond?.pins, 100);
 
     const processedDocs = await db.collection('processed_payments').countDocuments({ chargeId });
     assert.equal(processedDocs, 1);
@@ -409,7 +404,7 @@ describe('Phase 1 & Security Hardening Tests', () => {
     assert.equal(sub, null);
   });
 
-  it('executes complete end-to-end Stars payment lifecycle granting Pro and pins stipend', async () => {
+  it('executes complete end-to-end Stars payment lifecycle granting Pro and verified badge', async () => {
     process.env.TEST_WEBHOOK_SECRET = testWebhookSecret;
     const e2eUserId = 99991;
     const sessionToken = createSessionToken(e2eUserId, sessionSecret);
@@ -498,10 +493,9 @@ describe('Phase 1 & Security Hardening Tests', () => {
     assert.equal(statusData.isActive, true);
     assert.ok(statusData.currentPeriodEnd);
     assert.ok(Array.isArray(statusData.perks));
-    assert.ok(statusData.perks.includes('stipend_1000_pins'));
-    assert.ok(statusData.perks.includes('free_streak_save'));
+    assert.ok(statusData.perks.includes('verified_badge'));
 
     const updatedProfile = await db.collection<PlayerProfile>('profiles').findOne({ telegramUserId: e2eUserId });
-    assert.equal(updatedProfile?.pins, 1050);
+    assert.equal(updatedProfile?.pins, 50);
   });
 });

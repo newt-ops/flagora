@@ -18,7 +18,7 @@ proRouter.post('/create-invoice-link', async (req: AuthenticatedSessionRequest, 
 
     const invoiceLink = await createInvoiceLink(
       'Flagora Pro — 1 month',
-      'Unlock exclusive cosmetics, profile effects, and get a 1000 Pins stipend!',
+      'Get an official verified checkmark badge next to your name!',
       payload,
       'XTR',
       [{ label: 'Flagora Pro — 1 month', amount: priceAmount }]
@@ -49,13 +49,7 @@ proRouter.get('/status', async (req: AuthenticatedSessionRequest, res: Response)
       isActive,
       currentPeriodEnd: sub?.currentPeriodEnd || null,
       perks: [
-        'stipend_1000_pins',
-        'free_streak_save',
-        'double_xp_weekends',
-        'pinned_flags',
-        'extended_history',
-        'pro_cosmetics',
-        'early_access',
+        'verified_badge',
       ],
     });
   } catch (error) {

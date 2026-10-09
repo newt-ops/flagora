@@ -41,7 +41,6 @@ import { BattleResultScreen } from './components/BattleResultScreen.js';
 import { ErrorState } from './components/ErrorState.js';
 import { NonTelegramFallback } from './components/NonTelegramFallback.js';
 import { PlayScreen } from './components/PlayScreen.js';
-import { ShopScreen } from './components/ShopScreen.js';
 import { BottomNav, type NavTab } from './components/BottomNav.js';
 import { PlaySkeleton, CardSkeleton } from './components/Skeletons.js';
 import {
@@ -531,20 +530,6 @@ export function App() {
                 onBattleLive={handleStartBattle}
                 isStarting={isStarting || isStartingDaily}
                 dailyAttempted={Boolean(dailyStatus?.attempted)}
-                userAvatarFrame={profile.equipped?.avatarFrame}
-              />
-            </div>
-          )}
-
-          {activeTab === 'shop' && (
-            <div className="w-full max-w-md mx-auto pb-20">
-              <ShopScreen
-                profile={profile}
-                sessionToken={sessionToken}
-                onRefetchProfile={refetch}
-                isPro={isPro}
-                proStatus={proStatus}
-                onRefetchProStatus={refetchProStatus}
               />
             </div>
           )}
@@ -593,7 +578,6 @@ export function App() {
           onRematch={handleRematch}
           onBackToProfile={handleBackToProfile}
           isStartingRematch={isStartingRematch}
-          userAvatarFrame={profile.equipped?.avatarFrame}
         />
       )}
 
@@ -621,8 +605,6 @@ export function App() {
           onBack={handleBackToProfile}
           isConnecting={isBattleSocketConnecting}
           error={battleSocketError}
-          userAvatarFrame={profile.equipped?.avatarFrame}
-          userBattleEntrance={profile.equipped?.battleEntrance}
         />
       )}
 
@@ -638,9 +620,6 @@ export function App() {
           isReconnecting={isBattleSocketReconnecting}
           onSubmitAnswer={submitBattleAnswer}
           onCheckFinished={checkBattleFinishedFallback}
-          flagTheme={profile.equipped?.flagTheme}
-          comboBadge={profile.equipped?.comboBadge}
-          userBattleEntrance={profile.equipped?.battleEntrance}
         />
       )}
 
@@ -653,7 +632,6 @@ export function App() {
           onBattleAgain={handleBattleAgain}
           onBackToProfile={handleBackToProfile}
           isStartingBattleAgain={isStartingBattle}
-          userAvatarFrame={profile.equipped?.avatarFrame}
         />
       )}
 
@@ -662,8 +640,6 @@ export function App() {
           run={currentRun}
           sessionToken={sessionToken}
           onFinish={handleFinishGame}
-          flagTheme={profile?.equipped?.flagTheme}
-          comboBadge={profile?.equipped?.comboBadge}
         />
       )}
 
@@ -692,7 +668,6 @@ export function App() {
           onBattleLive={handleStartBattle}
           isStarting={isStarting || isStartingDaily}
           dailyAttempted={Boolean(dailyStatus?.attempted)}
-          userAvatarFrame={profile.equipped?.avatarFrame}
         />
       )}
     </main>

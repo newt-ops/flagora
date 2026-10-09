@@ -18,20 +18,7 @@ import { createRun, submitAnswer, finishRun, getRunHistory } from './game/runSer
 import { hasActiveSubscription } from './subscription/subscriptionService.js';
 import { seedFlags } from './game/seedFlags.js';
 import { initFlagCache, reloadFlagCache } from './game/flagCache.js';
-import { initCosmeticCache, reloadCosmeticCache } from './shop/cosmeticCache.js';
-import { seedCosmetics } from './shop/seedCosmetics.js';
-import {
-  getShopCatalog,
-  purchaseCosmeticItem,
-  equipCosmeticItem,
-} from './shop/shopService.js';
-import {
-  CosmeticItemNotFoundError,
-  ItemAlreadyOwnedError,
-  InsufficientPinsError,
-  ItemNotOwnedError,
-  RequiresProSubscriptionError,
-} from './shop/shopTypes.js';
+
 import { getRankStatus, getRankedLeaderboard } from './rank/rankService.js';
 import { getPlayerBadges, initBadgeCollection } from './badge/badgeService.js';
 import {
@@ -194,9 +181,6 @@ async function bootstrap() {
     const seedResult = await seedFlags(db);
     process.stdout.write(`Seeded flags collection (${seedResult.total} total flags)\n`);
     await initFlagCache(db);
-    const cosmeticSeedResult = await seedCosmetics(db);
-    process.stdout.write(`Seeded cosmetics collection (${cosmeticSeedResult.total} total cosmetics)\n`);
-    await initCosmeticCache(db);
     await initBadgeCollection(db);
     await initReferralCollection(db);
   } catch (error) {
@@ -780,98 +764,7 @@ async function bootstrap() {
     }
   });
 
-  app.get('/api/shop/catalog', sessionMiddleware, rateLimit({ endpoint: 'shop_catalog', limit: 120, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
-    try {
-      const telegramUserId = req.sessionUser?.telegramUserId;
-      if (!telegramUserId) {
-        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
-        return;
-      }
 
-      const catalog = await getShopCatalog(telegramUserId, db);
-      res.status(200).json(catalog);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to fetch shop catalog';
-      res.status(500).json({ error: 'Internal server error', message });
-    }
-  });
-
-  app.post('/api/shop/purchase', sessionMiddleware, rateLimit({ endpoint: 'shop_purchase', limit: 30, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
-    try {
-      const telegramUserId = req.sessionUser?.telegramUserId;
-      if (!telegramUserId) {
-        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
-        return;
-      }
-
-      const { itemId } = req.body ?? {};
-      if (!itemId || typeof itemId !== 'string') {
-        res.status(400).json({ error: 'Bad request', message: 'itemId (string) is required' });
-        return;
-      }
-
-      const result = await purchaseCosmeticItem(telegramUserId, itemId, db);
-      res.status(200).json(result);
-    } catch (error) {
-      if (error instanceof CosmeticItemNotFoundError) {
-        res.status(400).json({ error: 'Bad request', message: error.message });
-        return;
-      }
-      if (error instanceof ItemAlreadyOwnedError) {
-        res.status(400).json({ error: 'Already owned', message: error.message });
-        return;
-      }
-      if (error instanceof InsufficientPinsError) {
-        res.status(400).json({
-          error: 'Insufficient pins',
-          message: error.message,
-          required: error.required,
-          available: error.available,
-        });
-        return;
-      }
-      if (error instanceof RequiresProSubscriptionError) {
-        res.status(403).json({ error: 'Requires Pro', message: error.message });
-        return;
-      }
-      const message = error instanceof Error ? error.message : 'Failed to purchase cosmetic item';
-      res.status(500).json({ error: 'Internal server error', message });
-    }
-  });
-
-  app.post('/api/shop/equip', sessionMiddleware, rateLimit({ endpoint: 'shop_equip', limit: 60, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
-    try {
-      const telegramUserId = req.sessionUser?.telegramUserId;
-      if (!telegramUserId) {
-        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
-        return;
-      }
-
-      const { itemId } = req.body ?? {};
-      if (!itemId || typeof itemId !== 'string') {
-        res.status(400).json({ error: 'Bad request', message: 'itemId (string) is required' });
-        return;
-      }
-
-      const result = await equipCosmeticItem(telegramUserId, itemId, db);
-      res.status(200).json(result);
-    } catch (error) {
-      if (error instanceof CosmeticItemNotFoundError) {
-        res.status(400).json({ error: 'Bad request', message: error.message });
-        return;
-      }
-      if (error instanceof ItemNotOwnedError) {
-        res.status(400).json({ error: 'Not owned', message: error.message });
-        return;
-      }
-      if (error instanceof RequiresProSubscriptionError) {
-        res.status(403).json({ error: 'Requires Pro', message: error.message });
-        return;
-      }
-      const message = error instanceof Error ? error.message : 'Failed to equip cosmetic item';
-      res.status(500).json({ error: 'Internal server error', message });
-    }
-  });
 
   app.get('/api/rank/status', sessionMiddleware, rateLimit({ endpoint: 'rank_status', limit: 120, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
     try {
@@ -923,21 +816,7 @@ async function bootstrap() {
     }
   });
 
-  app.post('/api/admin/shop/reload', rateLimit({ endpoint: 'admin_shop_reload', limit: 10, windowSeconds: 60 }), async (req, res) => {
-    try {
-      const adminSecret = process.env.ADMIN_SECRET;
-      const providedSecret = req.headers['x-admin-secret'];
-      if (!adminSecret || typeof providedSecret !== 'string' || !timingSafeEqualStrings(providedSecret, adminSecret)) {
-        res.status(403).json({ error: 'Forbidden', message: 'Invalid admin secret' });
-        return;
-      }
-      const result = await reloadCosmeticCache(db);
-      res.status(200).json({ ok: true, count: result.count });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to reload cosmetic cache';
-      res.status(500).json({ error: 'Internal server error', message });
-    }
-  });
+
 
   app.post(
     '/api/telegram/webhook',

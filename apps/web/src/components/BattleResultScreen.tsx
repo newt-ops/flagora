@@ -5,8 +5,6 @@ import {
   getBattlePerspectiveHeading,
   getInitials,
 } from './battleHelpers.js';
-import { getAvatarFrameClass } from './cosmeticHelpers.js';
-import { CosmeticProtectedImage } from './CosmeticProtectedImage.js';
 import { getRatingDeltaDisplay, checkTierPromotion } from './rankHelpers.js';
 import { TierBadge } from './TierBadge.js';
 
@@ -18,7 +16,6 @@ interface BattleResultScreenProps {
   onBattleAgain: () => void;
   onBackToProfile: () => void;
   isStartingBattleAgain?: boolean;
-  userAvatarFrame?: string | null;
 }
 
 export function BattleResultScreen({
@@ -28,7 +25,6 @@ export function BattleResultScreen({
   onBattleAgain,
   onBackToProfile,
   isStartingBattleAgain = false,
-  userAvatarFrame,
 }: BattleResultScreenProps) {
   const winner = finishedPayload?.winner || battleInfo?.winner || null;
   const challengerUserId =
@@ -123,8 +119,6 @@ export function BattleResultScreen({
 
   const challengerInitial = getInitials(challengerName);
   const opponentInitial = getInitials(opponentName);
-  const challengerFrame = isChallengerViewer ? getAvatarFrameClass(userAvatarFrame) : '';
-  const opponentFrame = isOpponentViewer ? getAvatarFrameClass(userAvatarFrame) : '';
 
   return (
     <div className="flex w-full max-w-md mx-auto flex-col items-center gap-4 text-tg-text">
@@ -194,26 +188,14 @@ export function BattleResultScreen({
                 <img
                   src={challengerPhoto}
                   alt={challengerName}
-                  className={`h-14 w-14 rounded-full object-cover bg-tg-section ${
-                    !isChallengerViewer || !userAvatarFrame ? (challengerFrame ? challengerFrame : 'ring-2 ring-tg-button') : ''
-                  }`}
+                  className="h-14 w-14 rounded-full object-cover bg-tg-section ring-2 ring-tg-button"
                 />
               ) : (
                 <div
-                  className={`flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${
-                    !isChallengerViewer || !userAvatarFrame ? (challengerFrame ? challengerFrame : '') : ''
-                  }`}
+                  className="flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text"
                 >
                   {challengerInitial}
                 </div>
-              )}
-              {isChallengerViewer && userAvatarFrame && (
-                <CosmeticProtectedImage
-                  category="avatarFrame"
-                  assetIdOrPath={userAvatarFrame}
-                  alt="Avatar Frame"
-                  className="absolute inset-0"
-                />
               )}
               {challengerWon && (
                 <span className="absolute -bottom-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-tg-button text-tg-button-text ring-2 ring-tg-section">
@@ -271,26 +253,14 @@ export function BattleResultScreen({
                 <img
                   src={opponentPhoto}
                   alt={opponentName}
-                  className={`h-14 w-14 rounded-full object-cover bg-tg-section ${
-                    !isOpponentViewer || !userAvatarFrame ? (opponentFrame ? opponentFrame : 'ring-2 ring-tg-button') : ''
-                  }`}
+                  className="h-14 w-14 rounded-full object-cover bg-tg-section ring-2 ring-tg-button"
                 />
               ) : (
                 <div
-                  className={`flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text ${
-                    !isOpponentViewer || !userAvatarFrame ? (opponentFrame ? opponentFrame : '') : ''
-                  }`}
+                  className="flex h-14 w-14 items-center justify-center rounded-full bg-tg-button text-xl font-bold text-tg-button-text"
                 >
                   {opponentInitial}
                 </div>
-              )}
-              {isOpponentViewer && userAvatarFrame && (
-                <CosmeticProtectedImage
-                  category="avatarFrame"
-                  assetIdOrPath={userAvatarFrame}
-                  alt="Avatar Frame"
-                  className="absolute inset-0"
-                />
               )}
               {opponentWon && (
                 <span className="absolute -bottom-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-tg-button text-tg-button-text ring-2 ring-tg-section">

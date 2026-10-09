@@ -1,18 +1,12 @@
 import { useState } from 'react';
 import {
   Crown,
-  Sparkles,
-  Zap,
-  History,
-  Pin,
-  Rocket,
-  Coins as Pins,
-  ShieldCheck,
   X,
   Loader2,
   CheckCircle2,
   AlertCircle,
 } from './icons.js';
+import { VerifiedBadge } from './VerifiedBadge.js';
 import { createProInvoiceLink } from '../api/client.js';
 import { openTelegramInvoice } from '../telegram/telegramWebApp.js';
 
@@ -60,7 +54,7 @@ export function ProUpgradeModal({
         if (status === 'paid') {
           setStatusMessage({
             type: 'success',
-            text: 'Welcome to Flagora Pro! Your perks and 1,000 Pins stipend are active.',
+            text: 'Welcome to Flagora Pro! Your verified checkmark badge is now active.',
           });
           onSuccess?.();
         } else if (status === 'cancelled') {
@@ -85,44 +79,6 @@ export function ProUpgradeModal({
     }
   };
 
-  const perks = [
-    {
-      icon: Pins,
-      title: '1,000 Monthly Pins Stipend',
-      desc: 'Instant balance bonus with every renewal',
-    },
-    {
-      icon: ShieldCheck,
-      title: 'Free Streak-Saves',
-      desc: 'Protect broken daily streaks for 0 Pins (normally 50)',
-    },
-    {
-      icon: Sparkles,
-      title: 'Exclusive Pro Cosmetics',
-      desc: 'Unique animated frames, themes, and badges',
-    },
-    {
-      icon: Zap,
-      title: '2× XP Weekends',
-      desc: 'Double XP automatically applied Fri–Sun UTC',
-    },
-    {
-      icon: History,
-      title: 'Extended Run History',
-      desc: 'Full paginated breakdown of all your past games',
-    },
-    {
-      icon: Pin,
-      title: 'Practice Flag Pinning',
-      desc: 'Prioritize specific flags in practice runs',
-    },
-    {
-      icon: Rocket,
-      title: 'Early Access',
-      desc: 'First look at new game modes and features',
-    },
-  ];
-
   return (
     <div
       data-testid="pro-upgrade-modal-backdrop"
@@ -142,12 +98,12 @@ export function ProUpgradeModal({
         </button>
 
         <div className="flex flex-col items-center text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-tg-button/15 text-tg-button">
-            <Crown className="h-7 w-7 fill-current" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#2AABEE]/15 text-[#2AABEE]">
+            <VerifiedBadge className="h-8 w-8 text-[#2AABEE]" />
           </div>
 
           <h2 className="mt-3 text-lg font-extrabold text-tg-text">Flagora Pro</h2>
-          <p className="mt-0.5 text-xs text-tg-hint">Premium Perks & Exclusive Catalog</p>
+          <p className="mt-0.5 text-xs text-tg-hint">Official Telegram Verification</p>
 
           <div className="mt-3 flex items-baseline gap-1 rounded-2xl bg-tg-secondary-bg px-4 py-2 border border-tg-separator/40">
             <span className="text-2xl font-black text-tg-text">1</span>
@@ -155,24 +111,21 @@ export function ProUpgradeModal({
           </div>
         </div>
 
-        <div className="mt-5 flex flex-col gap-2.5 max-h-64 overflow-y-auto pr-1">
-          {perks.map((perk, idx) => {
-            const Icon = perk.icon;
-            return (
-              <div
-                key={idx}
-                className="flex items-start gap-3 rounded-2xl bg-tg-secondary-bg/80 p-2.5 text-left"
-              >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-tg-button/15 text-tg-button mt-0.5">
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <p className="text-xs font-bold text-tg-text">{perk.title}</p>
-                  <p className="text-[11px] text-tg-hint">{perk.desc}</p>
-                </div>
-              </div>
-            );
-          })}
+        <div className="mt-5 flex flex-col gap-2.5">
+          <div className="flex items-start gap-3 rounded-2xl bg-tg-secondary-bg/80 p-3.5 text-left border border-tg-separator/30">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#2AABEE]/15 mt-0.5">
+              <VerifiedBadge className="h-5 w-5 text-[#2AABEE]" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <p className="text-sm font-bold text-tg-text flex items-center gap-1.5">
+                <span>Verified Checkmark</span>
+                <VerifiedBadge className="h-3.5 w-3.5 text-[#2AABEE]" />
+              </p>
+              <p className="text-xs text-tg-hint mt-0.5 leading-relaxed">
+                Stand out with an official blue checkmark badge next to your name across your Profile, Live 1v1 Battles, and Leaderboards.
+              </p>
+            </div>
+          </div>
         </div>
 
         {statusMessage && (
@@ -217,7 +170,7 @@ export function ProUpgradeModal({
               ) : (
                 <Crown className="h-4 w-4 fill-current text-tg-button-text" />
               )}
-              <span>Subscribe with Telegram Stars</span>
+              <span>Subscribe for 1 Star</span>
             </button>
           )}
 
