@@ -40,7 +40,7 @@ export function TierBadge({
 
   return (
     <span
-      className={`inline-flex items-center rounded-full font-bold border transition-colors ${styles.badge} ${sizeClasses.badge} ${className}`}
+      className={`inline-flex items-center rounded-full font-bold transition-colors ${styles.badge} ${sizeClasses.badge} ${className}`}
     >
       {showIcon && <Icon className={`${sizeClasses.icon} shrink-0 fill-current`} />}
       {showLabel && <span>{tier}</span>}

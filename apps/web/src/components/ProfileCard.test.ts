@@ -128,9 +128,13 @@ describe('ProfileCard UI Rendering (Apple Human Interface)', () => {
     );
 
     assert.ok(html.includes('850')); // Pins
+    assert.ok(html.includes('Pins'));
     assert.ok(html.includes('650')); // Total XP
+    assert.ok(html.includes('Total XP'));
     assert.ok(html.includes('1,120')); // Best Score
+    assert.ok(html.includes('Best Score'));
     assert.ok(html.includes('25')); // Games Played
+    assert.ok(html.includes('Games'));
   });
 
   it('renders social referral section with friends count and actions', () => {

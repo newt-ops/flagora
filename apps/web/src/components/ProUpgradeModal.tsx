@@ -86,7 +86,7 @@ export function ProUpgradeModal({
     >
       <div
         data-testid="pro-upgrade-modal"
-        className="relative flex w-full max-w-sm flex-col rounded-3xl bg-tg-section p-6 shadow-2xl border border-tg-separator/40 text-tg-text"
+        className="relative flex w-full max-w-sm flex-col rounded-3xl bg-tg-section p-6 shadow-2xl text-tg-text"
       >
         <button
           type="button"
@@ -105,14 +105,14 @@ export function ProUpgradeModal({
           <h2 className="mt-3 text-lg font-extrabold text-tg-text">Flagora Pro</h2>
           <p className="mt-0.5 text-xs text-tg-hint">Official Telegram Verification</p>
 
-          <div className="mt-3 flex items-baseline gap-1 rounded-2xl bg-tg-secondary-bg px-4 py-2 border border-tg-separator/40">
+          <div className="mt-3 flex items-baseline gap-1 rounded-2xl bg-tg-secondary-bg px-4 py-2">
             <span className="text-2xl font-black text-tg-text">1</span>
             <span className="text-xs font-bold text-tg-hint">Star / month</span>
           </div>
         </div>
 
         <div className="mt-5 flex flex-col gap-2.5">
-          <div className="flex items-start gap-3 rounded-2xl bg-tg-secondary-bg/80 p-3.5 text-left border border-tg-separator/30">
+          <div className="flex items-start gap-3 rounded-2xl bg-tg-secondary-bg p-3.5 text-left">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#2AABEE]/15 mt-0.5">
               <VerifiedBadge className="h-5 w-5 text-[#2AABEE]" />
             </div>

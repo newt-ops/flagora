@@ -46,35 +46,35 @@ export function getTierBadgeColors(tier: RankedTier): TierStyleConfig {
         text: 'text-tg-button-text',
         bg: 'bg-tg-button',
         border: 'border-tg-button',
-        badge: 'bg-tg-button text-tg-button-text border-tg-button font-bold',
+        badge: 'bg-tg-button text-tg-button-text font-bold',
       };
     case 'Diamond':
       return {
         text: 'text-tg-button',
         bg: 'bg-tg-button/20',
         border: 'border-tg-button/40',
-        badge: 'bg-tg-button/20 text-tg-button border-tg-button/40 font-bold',
+        badge: 'bg-tg-button/20 text-tg-button font-bold',
       };
     case 'Platinum':
       return {
         text: 'text-tg-button',
         bg: 'bg-tg-button/15',
         border: 'border-tg-button/30',
-        badge: 'bg-tg-button/15 text-tg-button border-tg-button/30 font-semibold',
+        badge: 'bg-tg-button/15 text-tg-button font-semibold',
       };
     case 'Gold':
       return {
         text: 'text-tg-button',
         bg: 'bg-tg-button/10',
         border: 'border-tg-button/20',
-        badge: 'bg-tg-button/10 text-tg-button border-tg-button/20 font-semibold',
+        badge: 'bg-tg-button/10 text-tg-button font-semibold',
       };
     case 'Silver':
       return {
         text: 'text-tg-text',
         bg: 'bg-tg-secondary-bg',
         border: 'border-tg-separator/40',
-        badge: 'bg-tg-secondary-bg text-tg-text border-tg-separator/40 font-medium',
+        badge: 'bg-tg-secondary-bg text-tg-text font-medium',
       };
     case 'Bronze':
     default:
@@ -82,7 +82,7 @@ export function getTierBadgeColors(tier: RankedTier): TierStyleConfig {
         text: 'text-tg-hint',
         bg: 'bg-tg-secondary-bg',
         border: 'border-tg-separator/30',
-        badge: 'bg-tg-secondary-bg text-tg-hint border-tg-separator/30 font-normal',
+        badge: 'bg-tg-secondary-bg text-tg-hint font-normal',
       };
   }
 }

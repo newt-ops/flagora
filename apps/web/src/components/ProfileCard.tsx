@@ -13,6 +13,8 @@ import {
   Copy,
   Check,
   Crown,
+  Pins,
+  Gamepad2,
 } from './icons.js';
 import {
   type PlayerProfile,
@@ -257,22 +259,34 @@ export function ProfileCard({
       {/* 3. Performance Matrix (4 Metric Cells) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div className="flex flex-col items-center rounded-2xl bg-tg-section p-3 text-center shadow-none">
-          <span className="text-[11px] font-medium text-tg-hint uppercase tracking-wider">Pins</span>
+          <div className="flex items-center gap-1.5 text-tg-hint">
+            <Pins className="h-3.5 w-3.5 text-tg-button" />
+            <span className="text-[11px] font-medium uppercase tracking-wider">Pins</span>
+          </div>
           <p className="mt-1 text-lg font-bold text-tg-text">{profile.pins.toLocaleString()}</p>
         </div>
 
         <div className="flex flex-col items-center rounded-2xl bg-tg-section p-3 text-center shadow-none">
-          <span className="text-[11px] font-medium text-tg-hint uppercase tracking-wider">Total XP</span>
+          <div className="flex items-center gap-1.5 text-tg-hint">
+            <Zap className="h-3.5 w-3.5 text-tg-button" />
+            <span className="text-[11px] font-medium uppercase tracking-wider">Total XP</span>
+          </div>
           <p className="mt-1 text-lg font-bold text-tg-text">{profile.xp.toLocaleString()}</p>
         </div>
 
         <div className="flex flex-col items-center rounded-2xl bg-tg-section p-3 text-center shadow-none">
-          <span className="text-[11px] font-medium text-tg-hint uppercase tracking-wider">Best Score</span>
+          <div className="flex items-center gap-1.5 text-tg-hint">
+            <Trophy className="h-3.5 w-3.5 text-tg-button" />
+            <span className="text-[11px] font-medium uppercase tracking-wider">Best Score</span>
+          </div>
           <p className="mt-1 text-lg font-bold text-tg-text">{profile.bestScore.toLocaleString()}</p>
         </div>
 
         <div className="flex flex-col items-center rounded-2xl bg-tg-section p-3 text-center shadow-none">
-          <span className="text-[11px] font-medium text-tg-hint uppercase tracking-wider">Games</span>
+          <div className="flex items-center gap-1.5 text-tg-hint">
+            <Gamepad2 className="h-3.5 w-3.5 text-tg-button" />
+            <span className="text-[11px] font-medium uppercase tracking-wider">Games</span>
+          </div>
           <p className="mt-1 text-lg font-bold text-tg-text">{profile.gamesPlayed.toLocaleString()}</p>
         </div>
       </div>

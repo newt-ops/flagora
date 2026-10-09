@@ -90,7 +90,7 @@ export function PlayScreen({
             onNavigateToProfile();
           }
         }}
-        className="flex cursor-pointer items-center justify-between flex-wrap gap-2.5 rounded-2xl bg-tg-section p-4 shadow-sm transition-opacity hover:opacity-95 active:scale-[0.99]"
+        className="flex cursor-pointer items-center justify-between flex-wrap gap-2.5 rounded-2xl bg-tg-section p-4 shadow-none transition-opacity hover:opacity-95 active:scale-[0.99]"
       >
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative flex h-12 w-12 shrink-0 items-center justify-center">
@@ -98,7 +98,7 @@ export function PlayScreen({
               <img
                 src={profile.photoUrl}
                 alt={firstName}
-                className="h-10 w-10 rounded-full object-cover bg-tg-section ring-2 ring-tg-button"
+                className="h-10 w-10 rounded-full object-cover bg-tg-section"
               />
             ) : (
               <div
@@ -148,7 +148,7 @@ export function PlayScreen({
           }
         }}
         data-testid="play-rank-tier-banner"
-        className="flex cursor-pointer items-center justify-between flex-wrap gap-2 rounded-2xl bg-tg-section px-4 py-2.5 shadow-sm transition-all hover:opacity-95 active:scale-[0.99]"
+        className="flex cursor-pointer items-center justify-between flex-wrap gap-2 rounded-2xl bg-tg-section px-4 py-2.5 shadow-none transition-all hover:opacity-95 active:scale-[0.99]"
       >
         <div className="flex items-center gap-2.5 min-w-0">
           <div
