@@ -39,3 +39,38 @@ export class BattleNotInProgressError extends Error {
     this.name = 'BattleNotInProgressError';
   }
 }
+
+export class LobbyFullError extends Error {
+  constructor(message = 'Battle lobby is full') {
+    super(message);
+    this.name = 'LobbyFullError';
+  }
+}
+
+export class BattleHostRequiredError extends Error {
+  constructor(message = 'Only the battle host can perform this action') {
+    super(message);
+    this.name = 'BattleHostRequiredError';
+  }
+}
+
+export class InsufficientPlayersError extends Error {
+  constructor(message = 'At least 2 players are required to start a battle') {
+    super(message);
+    this.name = 'InsufficientPlayersError';
+  }
+}
+
+export class GroupLobbyConflictError extends Error {
+  constructor(message = 'An active battle lobby already exists in this group') {
+    super(message);
+    this.name = 'GroupLobbyConflictError';
+  }
+}
+
+export class BattleAlreadyStartedError extends Error {
+  constructor(message = 'Battle has already started') {
+    super(message);
+    this.name = 'BattleAlreadyStartedError';
+  }
+}

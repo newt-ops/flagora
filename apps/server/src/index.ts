@@ -60,10 +60,21 @@ import {
   joinBattle,
 } from './battle/battleService.js';
 import {
+  createGroupLobby,
+  joinGroupLobby,
+  leaveGroupLobby,
+  cancelGroupLobby,
+  startGroupBattle,
+} from './battle/groupBattleService.js';
+import {
   BattleNotFoundError,
   BattleExpiredError,
   SelfBattleNotAllowedError,
   BattleAlreadyJoinedError,
+  LobbyFullError,
+  BattleHostRequiredError,
+  InsufficientPlayersError,
+  BattleAlreadyStartedError,
 } from './battle/battleTypes.js';
 import {
   sendTelegramMessage,
@@ -680,6 +691,114 @@ async function bootstrap() {
         return;
       }
       const message = error instanceof Error ? error.message : 'Failed to join battle';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.post('/api/battles/:id/group-join', sessionMiddleware, rateLimit({ endpoint: 'group_battle_join', limit: 30, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const id = String(req.params.id);
+      const profile = await db.collection('profiles').findOne({ telegramUserId });
+      const displayName = profile?.displayName || profile?.username || 'Player';
+      const photoUrl = profile?.photoUrl || null;
+
+      const result = await joinGroupLobby(
+        {
+          battleId: id,
+          userId: telegramUserId,
+          telegramUserId,
+          displayName,
+          photoUrl,
+        },
+        db,
+      );
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof BattleNotFoundError) {
+        res.status(404).json({ error: 'Not found', message: error.message });
+        return;
+      }
+      if (error instanceof BattleExpiredError) {
+        res.status(400).json({ error: 'Battle expired', message: error.message });
+        return;
+      }
+      if (error instanceof BattleAlreadyStartedError) {
+        res.status(400).json({ error: 'Battle already started', message: error.message });
+        return;
+      }
+      if (error instanceof BattleAlreadyJoinedError) {
+        res.status(400).json({ error: 'Already joined', message: error.message });
+        return;
+      }
+      if (error instanceof LobbyFullError) {
+        res.status(400).json({ error: 'Lobby full', message: error.message });
+        return;
+      }
+      const message = error instanceof Error ? error.message : 'Failed to join group battle';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.post('/api/battles/:id/group-leave', sessionMiddleware, rateLimit({ endpoint: 'group_battle_leave', limit: 30, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const id = String(req.params.id);
+      const result = await leaveGroupLobby(id, telegramUserId, db);
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof BattleNotFoundError) {
+        res.status(404).json({ error: 'Not found', message: error.message });
+        return;
+      }
+      if (error instanceof BattleAlreadyStartedError) {
+        res.status(400).json({ error: 'Battle already started', message: error.message });
+        return;
+      }
+      const message = error instanceof Error ? error.message : 'Failed to leave group battle';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
+  app.post('/api/battles/:id/group-start', sessionMiddleware, rateLimit({ endpoint: 'group_battle_start', limit: 30, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const id = String(req.params.id);
+      const result = await startGroupBattle(id, telegramUserId, db, redis, io);
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof BattleNotFoundError) {
+        res.status(404).json({ error: 'Not found', message: error.message });
+        return;
+      }
+      if (error instanceof BattleHostRequiredError) {
+        res.status(403).json({ error: 'Forbidden', message: error.message });
+        return;
+      }
+      if (error instanceof InsufficientPlayersError) {
+        res.status(400).json({ error: 'Insufficient players', message: error.message });
+        return;
+      }
+      if (error instanceof BattleAlreadyStartedError) {
+        res.status(400).json({ error: 'Already started', message: error.message });
+        return;
+      }
+      const message = error instanceof Error ? error.message : 'Failed to start group battle';
       res.status(500).json({ error: 'Internal server error', message });
     }
   });

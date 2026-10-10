@@ -76,6 +76,8 @@ export async function ensureIndexes(db: Db): Promise<void> {
   await safeIndex(() => db.collection('battles').createIndex({ battleId: 1 }, { unique: true }));
   await safeIndex(() => db.collection('battles').createIndex({ challengerUserId: 1 }));
   await safeIndex(() => db.collection('battles').createIndex({ opponentUserId: 1 }));
+  await safeIndex(() => db.collection('battles').createIndex({ chatId: 1, status: 1 }));
+  await safeIndex(() => db.collection('battles').createIndex({ 'participants.userId': 1 }));
 
   try {
     const existingBattleIndexes = await db.collection('battles').indexes();

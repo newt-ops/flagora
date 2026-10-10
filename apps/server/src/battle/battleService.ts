@@ -44,6 +44,7 @@ import {
 import { scoreAnswer } from '../game/runScoringService.js';
 import { notifyBattleCompletion } from '../telegram/telegramService.js';
 import { processBattleRatingUpdate } from '../rank/rankService.js';
+import { finalizeGroupBattle, getGroupBattleInfo } from './groupBattleService.js';
 
 export async function createBattle(
   challengerUserId: number,
@@ -88,7 +89,13 @@ export async function checkAndFinalizeBattle(
   io?: TypedSocketServer,
 ): Promise<BattleSession | null> {
   const battle = await db.collection<BattleSession>('battles').findOne({ battleId });
-  if (!battle || battle.status !== 'in_progress' || !battle.challengerRunId || !battle.opponentRunId) {
+  if (!battle) {
+    return null;
+  }
+  if (battle.isGroupBattle) {
+    return finalizeGroupBattle(battleId, db, redis, io);
+  }
+  if (battle.status !== 'in_progress' || !battle.challengerRunId || !battle.opponentRunId) {
     return battle;
   }
 
@@ -241,6 +248,13 @@ export async function getBattleInfo(
   let battle = await db.collection<BattleSession>('battles').findOne({ battleId });
   if (!battle) {
     throw new BattleNotFoundError();
+  }
+
+  if (battle.isGroupBattle) {
+    if (battle.status === 'in_progress') {
+      await finalizeGroupBattle(battleId, db);
+    }
+    return getGroupBattleInfo(battleId, requestingUserId, db);
   }
 
   if (battle.status === 'in_progress') {

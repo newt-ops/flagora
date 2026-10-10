@@ -19,6 +19,10 @@ import type {
   OpponentProgressPayload,
   SubmitAnswerResponse,
   BattleFinishedPayload,
+  GroupProgressPayload,
+  GroupBattleFinishedPayload,
+  GroupRankingItem,
+  GroupPodiumItem,
   BattleClientToServerEvents,
   BattleServerToClientEvents,
 } from '@flagora/shared';
@@ -43,6 +47,10 @@ export type {
   OpponentProgressPayload,
   SubmitAnswerResponse,
   BattleFinishedPayload,
+  GroupProgressPayload,
+  GroupBattleFinishedPayload,
+  GroupRankingItem,
+  GroupPodiumItem,
   BattleClientToServerEvents,
   BattleServerToClientEvents,
 };

@@ -4,12 +4,32 @@ export type BattleStatus = 'waiting' | 'ready' | 'in_progress' | 'completed' | '
 
 export type BattleWinner = 'challenger' | 'opponent' | 'tie';
 
+export interface BattleParticipant {
+  userId: number;
+  telegramUserId: number;
+  displayName: string;
+  photoUrl?: string | null;
+  runId?: string | null;
+  score?: number | null;
+  correctCount: number;
+  totalFlags: number;
+  completedAt?: Date | string | null;
+  ready: boolean;
+  rank?: number;
+  pinsEarned?: number;
+}
+
 export interface BattleSession {
   battleId: string;
+  chatId?: number | null;
+  isGroupBattle?: boolean;
+  maxPlayers?: number;
+  hostUserId?: number;
   challengerUserId: number;
   challengerTelegramUserId?: number;
   opponentUserId: number | null;
   opponentTelegramUserId?: number | null;
+  participants?: BattleParticipant[];
   status: BattleStatus;
   challengerRunId?: string | null;
   opponentRunId?: string | null;
@@ -17,6 +37,9 @@ export interface BattleSession {
   winner?: BattleWinner | null;
   challengerScore?: number | null;
   opponentScore?: number | null;
+  rewardsDistributed?: boolean;
+  finalizedAt?: Date | string | null;
+  podium?: Array<BattleParticipantResult & { rank: number; pinsEarned: number }>;
   completedAt?: Date | string | null;
   createdAt: Date | string;
   expiresAt: Date | string;
@@ -67,6 +90,13 @@ export interface BattleInfoResponse {
   durationSeconds?: number;
   challengerReady?: boolean;
   opponentReady?: boolean;
+  isGroupBattle?: boolean;
+  chatId?: number | null;
+  maxPlayers?: number;
+  hostUserId?: number;
+  isHost?: boolean;
+  participants?: BattleParticipant[];
+  podium?: Array<BattleParticipantResult & { rank: number; pinsEarned: number }>;
 }
 
 export interface JoinBattleResponse {
@@ -211,6 +241,37 @@ export interface BattleFinishedPayload {
   opponentResult: BattleParticipantResult;
 }
 
+export interface GroupRankingItem {
+  userId: number;
+  displayName: string;
+  score: number;
+  rank: number;
+  correctCount?: number;
+  photoUrl?: string | null;
+}
+
+export interface GroupProgressPayload {
+  battleId: string;
+  userId: number;
+  displayName: string;
+  photoUrl?: string | null;
+  flagIndex: number;
+  correct: boolean;
+  runningTotal: number;
+  rankings: GroupRankingItem[];
+}
+
+export interface GroupPodiumItem extends BattleParticipantResult {
+  rank: number;
+  pinsEarned: number;
+}
+
+export interface GroupBattleFinishedPayload {
+  battleId: string;
+  completedAt: string;
+  podium: GroupPodiumItem[];
+}
+
 export interface BattleClientToServerEvents {
   ping: (callback?: (response: PingResponse) => void) => void;
   joinBattleRoom: (
@@ -238,4 +299,6 @@ export interface BattleServerToClientEvents {
   answerResult: (payload: AnswerResultPayload) => void;
   opponentProgress: (payload: OpponentProgressPayload) => void;
   battleFinished: (payload: BattleFinishedPayload) => void;
+  groupPlayerProgress?: (payload: GroupProgressPayload) => void;
+  groupBattleFinished?: (payload: GroupBattleFinishedPayload) => void;
 }

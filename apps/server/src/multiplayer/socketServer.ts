@@ -122,7 +122,8 @@ export function initSocketServer(
 
       const isParticipant =
         battle.challengerUserId === userId ||
-        (battle.opponentUserId !== null && battle.opponentUserId === userId);
+        (battle.opponentUserId !== null && battle.opponentUserId === userId) ||
+        Boolean(battle.participants?.some((p) => p.userId === userId));
 
       if (!isParticipant) {
         const message = 'Forbidden: You are not a participant in this battle';
@@ -283,6 +284,33 @@ export function initSocketServer(
 
         const roomName = `battle:${battleId}`;
         socket.to(roomName).emit('opponentProgress', result.opponentProgress);
+
+        const currentBattle = await db.collection<BattleSession>('battles').findOne({ battleId });
+        if (currentBattle?.isGroupBattle) {
+          const participants = currentBattle.participants ?? [];
+          const rankings = participants
+            .map((p) => ({
+              userId: p.userId,
+              displayName: p.displayName,
+              score: p.userId === userId ? result.answerResult.runningTotal : (p.score ?? 0),
+              photoUrl: p.photoUrl,
+              rank: 1,
+            }))
+            .sort((a, b) => b.score - a.score)
+            .map((item, idx) => ({ ...item, rank: idx + 1 }));
+
+          const groupProgressPayload = {
+            battleId,
+            userId,
+            displayName: participants.find((p) => p.userId === userId)?.displayName ?? 'Player',
+            photoUrl: participants.find((p) => p.userId === userId)?.photoUrl ?? null,
+            flagIndex,
+            correct: result.answerResult.correct,
+            runningTotal: result.answerResult.runningTotal,
+            rankings,
+          };
+          io.to(roomName).emit('groupPlayerProgress', groupProgressPayload);
+        }
       } catch (error) {
         if (error instanceof TimeExpiredError) {
           socket.emit('battleError', {

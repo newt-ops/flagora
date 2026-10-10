@@ -1,5 +1,5 @@
 import type { Db } from 'mongodb';
-import { getDisplayName, type PlayerProfile } from '@flagora/shared';
+import { getDisplayName, type PlayerProfile, type BattleSession } from '@flagora/shared';
 import {
   sendTelegramMessage,
   editTelegramMessage,
@@ -9,6 +9,56 @@ import {
 } from './telegramService.js';
 import { registerReferralSignup } from '../referral/referralService.js';
 import { processSuccessfulPayment } from '../subscription/subscriptionService.js';
+import {
+  createGroupLobby,
+  joinGroupLobby,
+  leaveGroupLobby,
+  cancelGroupLobby,
+  startGroupBattle,
+} from '../battle/groupBattleService.js';
+import {
+  LobbyFullError,
+  BattleAlreadyJoinedError,
+  BattleAlreadyStartedError,
+} from '../battle/battleTypes.js';
+
+export function formatGroupLobbyMessage(battle: BattleSession): {
+  text: string;
+  inlineKeyboard: InlineKeyboardButton[][];
+} {
+  const participants = battle.participants ?? [];
+  const maxPlayers = battle.maxPlayers ?? 5;
+  const isFull = participants.length >= maxPlayers;
+  const host = participants.find((p) => p.userId === battle.hostUserId) || participants[0];
+  const hostName = host?.displayName ?? 'Host';
+
+  let text = `⚔️ <b>FLAGORA GROUP BATTLE</b> 🚩\n\n`;
+  text += `👑 <b>Host:</b> ${hostName}\n`;
+  text += `🎯 <b>Capacity:</b> ${participants.length}/${maxPlayers} Players ${isFull ? '<i>(FULL)</i>' : ''}\n`;
+  text += `⏳ <b>Status:</b> Waiting for players (10m TTL)\n\n`;
+  text += `👥 <b>Roster (${participants.length}):</b>\n`;
+  participants.forEach((p, index) => {
+    const isCrown = p.userId === battle.hostUserId ? ' 👑' : '';
+    text += `${index + 1}. <b>${p.displayName}</b>${isCrown}\n`;
+  });
+  text += `\n<i>${isFull ? 'Lobby is full! Host can launch anytime.' : 'Tap Join to enter the battle lobby!'}</i>`;
+
+  const inlineKeyboard: InlineKeyboardButton[][] = [
+    [
+      {
+        text: `🚩 Join (${participants.length}/${maxPlayers})`,
+        callback_data: `gb_join:${battle.battleId}`,
+      },
+      { text: '🚪 Leave', callback_data: `gb_leave:${battle.battleId}` },
+    ],
+    [
+      { text: '🚀 Launch Battle ⚔️', callback_data: `gb_start:${battle.battleId}` },
+      { text: '❌ Cancel', callback_data: `gb_cancel:${battle.battleId}` },
+    ],
+  ];
+
+  return { text, inlineKeyboard };
+}
 
 export interface HandleUpdateOptions {
   rawUsername?: string;
@@ -193,6 +243,195 @@ export async function handleTelegramUpdate(
           botToken,
           apiBaseUrl,
         });
+      } else if (data && typeof data === 'string' && data.startsWith('gb_preset:')) {
+        const parts = data.split(':');
+        const limit = parseInt(parts[1], 10) || 5;
+        const hostUserId = Number(fromUser?.id ?? 0);
+        const hostName = fromUser?.first_name || fromUser?.username || 'Host';
+
+        if (hostUserId) {
+          const lobby = await createGroupLobby(
+            {
+              chatId: Number(chatId),
+              hostUserId,
+              hostDisplayName: hostName,
+              hostPhotoUrl: null,
+              maxPlayers: limit,
+            },
+            db,
+          );
+          const { text, inlineKeyboard } = formatGroupLobbyMessage(lobby);
+          await editTelegramMessage({
+            chatId,
+            messageId,
+            text,
+            parseMode: 'HTML',
+            inlineKeyboard,
+            botToken,
+            apiBaseUrl,
+          });
+        }
+      } else if (data && typeof data === 'string' && data.startsWith('gb_join:')) {
+        const battleId = data.replace('gb_join:', '');
+        const userId = Number(fromUser?.id ?? 0);
+        const userName = fromUser?.first_name || fromUser?.username || 'Player';
+
+        if (userId) {
+          try {
+            const updated = await joinGroupLobby(
+              {
+                battleId,
+                userId,
+                telegramUserId: userId,
+                displayName: userName,
+                photoUrl: null,
+              },
+              db,
+            );
+            const { text, inlineKeyboard } = formatGroupLobbyMessage(updated);
+            await editTelegramMessage({
+              chatId,
+              messageId,
+              text,
+              parseMode: 'HTML',
+              inlineKeyboard,
+              botToken,
+              apiBaseUrl,
+            });
+            if (callbackQuery.id) {
+              await answerCallbackQuery(callbackQuery.id, '✅ You joined the battle!', false, botToken, apiBaseUrl);
+            }
+          } catch (err: unknown) {
+            let alertMsg = '⚠️ Could not join battle';
+            if (err instanceof LobbyFullError) {
+              alertMsg = '⚠️ Sorry, this battle lobby is full!';
+            } else if (err instanceof BattleAlreadyJoinedError) {
+              alertMsg = 'ℹ️ You are already in this battle!';
+            } else if (err instanceof BattleAlreadyStartedError) {
+              alertMsg = '⚠️ Battle has already started!';
+            }
+            if (callbackQuery.id) {
+              await answerCallbackQuery(callbackQuery.id, alertMsg, true, botToken, apiBaseUrl);
+            }
+          }
+        }
+      } else if (data && typeof data === 'string' && data.startsWith('gb_leave:')) {
+        const battleId = data.replace('gb_leave:', '');
+        const userId = Number(fromUser?.id ?? 0);
+
+        if (userId) {
+          try {
+            const updated = await leaveGroupLobby(battleId, userId, db);
+            if (updated && updated.status !== 'expired') {
+              const { text, inlineKeyboard } = formatGroupLobbyMessage(updated);
+              await editTelegramMessage({
+                chatId,
+                messageId,
+                text,
+                parseMode: 'HTML',
+                inlineKeyboard,
+                botToken,
+                apiBaseUrl,
+              });
+            } else {
+              await editTelegramMessage({
+                chatId,
+                messageId,
+                text: '❌ <b>Battle lobby canceled because the host left.</b>',
+                parseMode: 'HTML',
+                botToken,
+                apiBaseUrl,
+              });
+            }
+            if (callbackQuery.id) {
+              await answerCallbackQuery(callbackQuery.id, 'You left the battle lobby.', false, botToken, apiBaseUrl);
+            }
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Could not leave lobby';
+            if (callbackQuery.id) {
+              await answerCallbackQuery(callbackQuery.id, msg, true, botToken, apiBaseUrl);
+            }
+          }
+        }
+      } else if (data && typeof data === 'string' && data.startsWith('gb_start:')) {
+        const battleId = data.replace('gb_start:', '');
+        const userId = Number(fromUser?.id ?? 0);
+
+        if (userId) {
+          const battle = await db.collection<BattleSession>('battles').findOne({ battleId });
+          if (!battle) {
+            if (callbackQuery.id) {
+              await answerCallbackQuery(callbackQuery.id, '⚠️ Battle not found', true, botToken, apiBaseUrl);
+            }
+          } else if (battle.hostUserId !== userId) {
+            if (callbackQuery.id) {
+              await answerCallbackQuery(callbackQuery.id, '⚠️ Only the host can launch the battle!', true, botToken, apiBaseUrl);
+            }
+          } else if ((battle.participants?.length ?? 0) < 2) {
+            if (callbackQuery.id) {
+              await answerCallbackQuery(callbackQuery.id, '⚠️ Need at least 2 players to start!', true, botToken, apiBaseUrl);
+            }
+          } else {
+            try {
+              await startGroupBattle(battleId, userId, db);
+              const launchText = `⚔️ <b>BATTLE LAUNCHED!</b> 🚀\n\nAll joined players, enter the battle arena now!\n⏱️ <b>Time Limit:</b> 60 seconds\n\n<i>Tap below to play:</i>`;
+              const launchKeyboard: InlineKeyboardButton[][] = [
+                [
+                  {
+                    text: '🎮 ENTER BATTLE NOW 🚩',
+                    web_app: { url: `${frontendUrl}?startapp=battle_${battleId}` },
+                  },
+                ],
+              ];
+              await editTelegramMessage({
+                chatId,
+                messageId,
+                text: launchText,
+                parseMode: 'HTML',
+                inlineKeyboard: launchKeyboard,
+                botToken,
+                apiBaseUrl,
+              });
+              if (callbackQuery.id) {
+                await answerCallbackQuery(callbackQuery.id, '🚀 Battle launched!', false, botToken, apiBaseUrl);
+              }
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : 'Could not launch battle';
+              if (callbackQuery.id) {
+                await answerCallbackQuery(callbackQuery.id, msg, true, botToken, apiBaseUrl);
+              }
+            }
+          }
+        }
+      } else if (data && typeof data === 'string' && data.startsWith('gb_cancel:')) {
+        const battleId = data.replace('gb_cancel:', '');
+        const userId = Number(fromUser?.id ?? 0);
+
+        if (userId) {
+          const battle = await db.collection<BattleSession>('battles').findOne({ battleId });
+          if (!battle) {
+            if (callbackQuery.id) {
+              await answerCallbackQuery(callbackQuery.id, '⚠️ Battle not found', true, botToken, apiBaseUrl);
+            }
+          } else if (battle.hostUserId !== userId) {
+            if (callbackQuery.id) {
+              await answerCallbackQuery(callbackQuery.id, '⚠️ Only the host can cancel the lobby!', true, botToken, apiBaseUrl);
+            }
+          } else {
+            await cancelGroupLobby(battleId, userId, db);
+            await editTelegramMessage({
+              chatId,
+              messageId,
+              text: '❌ <b>Battle lobby canceled by host.</b>',
+              parseMode: 'HTML',
+              botToken,
+              apiBaseUrl,
+            });
+            if (callbackQuery.id) {
+              await answerCallbackQuery(callbackQuery.id, 'Battle lobby canceled.', false, botToken, apiBaseUrl);
+            }
+          }
+        }
       }
 
       return { handled: true, action: `callback_query_${data}` };
@@ -410,6 +649,76 @@ export async function handleTelegramUpdate(
           apiBaseUrl,
         });
         return { handled: true, action: 'command_invite' };
+      }
+
+      if (command === '/battle') {
+        const chatType = message.chat?.type;
+        const fromUserId = Number(message.from?.id ?? 0);
+        const fromName = message.from?.first_name || message.from?.username || 'Host';
+
+        if (chatType === 'private') {
+          const infoText = `⚔️ <b>Flagora Group Battles!</b> 🚩\n\nTo play live multiplayer battles with friends:\n1. Add @${cleanUsername} to your Telegram group\n2. Type <code>/battle</code> in the group\n3. Choose your battle limit & duel in real time!\n\nOr launch a 1v1 battle below:`;
+          await sendTelegramMessage({
+            chatId,
+            text: infoText,
+            parseMode: 'HTML',
+            inlineKeyboard: [
+              [{ text: '🚀 Play 1v1 Battle', web_app: { url: frontendUrl } }],
+              [{ text: '« Main Menu', callback_data: 'menu_main' }],
+            ],
+            botToken,
+            apiBaseUrl,
+          });
+          return { handled: true, action: 'command_battle_private' };
+        }
+
+        // Group or supergroup chat
+        const parsedLimit = parseInt(parts[1], 10);
+        if (!isNaN(parsedLimit) && parsedLimit >= 2 && parsedLimit <= 20) {
+          const lobby = await createGroupLobby(
+            {
+              chatId,
+              hostUserId: fromUserId,
+              hostDisplayName: fromName,
+              hostPhotoUrl: null,
+              maxPlayers: parsedLimit,
+            },
+            db,
+          );
+          const { text: lobbyText, inlineKeyboard } = formatGroupLobbyMessage(lobby);
+          await sendTelegramMessage({
+            chatId,
+            text: lobbyText,
+            parseMode: 'HTML',
+            inlineKeyboard,
+            botToken,
+            apiBaseUrl,
+          });
+          return { handled: true, action: 'command_battle_group_created' };
+        }
+
+        // Send preset limit selector
+        const presetText = `⚔️ <b>Flagora Group Battle</b> 🚩\n\nChoose player capacity for this battle:`;
+        const presetKeyboard: InlineKeyboardButton[][] = [
+          [
+            { text: '👥 2 Players (Duel)', callback_data: 'gb_preset:2' },
+            { text: '⚔️ 5 Players (Squad)', callback_data: 'gb_preset:5' },
+          ],
+          [
+            { text: '🏆 10 Players (Party)', callback_data: 'gb_preset:10' },
+            { text: '🎲 15 Players (Large)', callback_data: 'gb_preset:15' },
+          ],
+        ];
+
+        await sendTelegramMessage({
+          chatId,
+          text: presetText,
+          parseMode: 'HTML',
+          inlineKeyboard: presetKeyboard,
+          botToken,
+          apiBaseUrl,
+        });
+        return { handled: true, action: 'command_battle_preset_picker' };
       }
 
       return { handled: false, action: 'unknown_command' };
