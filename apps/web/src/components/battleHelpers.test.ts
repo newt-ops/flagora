@@ -265,4 +265,43 @@ describe('battleHelpers', () => {
       assert.equal(getInitials(null), 'P');
     });
   });
+
+  describe('Group Battle Helpers', () => {
+    it('formats group victory share text with medals and scores', async () => {
+      const { formatGroupVictoryShareText } = await import('./battleHelpers.js');
+      const text = formatGroupVictoryShareText(
+        [
+          { rank: 1, displayName: 'Alice', score: 1200, pinsEarned: 150 },
+          { rank: 2, displayName: 'Bob', score: 950, pinsEarned: 75 },
+          { rank: 3, displayName: 'Charlie', score: 700, pinsEarned: 40 },
+        ],
+        'Alice',
+      );
+
+      assert.ok(text.includes('FLAGORA GROUP BATTLE RESULTS!'));
+      assert.ok(text.includes('🥇 Alice (You) — 1200 pts'));
+      assert.ok(text.includes('🥈 Bob — 950 pts'));
+      assert.ok(text.includes('🥉 Charlie — 700 pts'));
+    });
+
+    it('returns correct rank badges for podium and runners up', async () => {
+      const { getRankBadge } = await import('./battleHelpers.js');
+      const rank1 = getRankBadge(1);
+      assert.equal(rank1.medal, '🥇');
+      assert.equal(rank1.label, '1st Place');
+      assert.equal(rank1.stepHeightClass, 'h-36');
+
+      const rank2 = getRankBadge(2);
+      assert.equal(rank2.medal, '🥈');
+      assert.equal(rank2.stepHeightClass, 'h-28');
+
+      const rank3 = getRankBadge(3);
+      assert.equal(rank3.medal, '🥉');
+      assert.equal(rank3.stepHeightClass, 'h-20');
+
+      const rank4 = getRankBadge(4);
+      assert.equal(rank4.medal, '#4');
+    });
+  });
 });
+

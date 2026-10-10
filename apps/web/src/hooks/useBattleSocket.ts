@@ -12,6 +12,11 @@ import type {
   OpponentProgressPayload,
   BattleFinishedPayload,
   SubmitAnswerResponse,
+  GroupProgressPayload,
+  GroupBattleFinishedPayload,
+  GroupRankingItem,
+  GroupPodiumItem,
+  BattleParticipant,
 } from '@flagora/shared';
 
 const API_URL =
@@ -24,6 +29,7 @@ interface UseBattleSocketOptions {
   battleId: string | null;
   onBattleStart?: (payload: BattleStartPayload) => void;
   onBattleFinished?: (payload: BattleFinishedPayload) => void;
+  onGroupBattleFinished?: (payload: GroupBattleFinishedPayload) => void;
 }
 
 export interface UseBattleSocketReturn {
@@ -38,9 +44,14 @@ export interface UseBattleSocketReturn {
   startPayload: BattleStartPayload | null;
   opponentProgress: OpponentProgressPayload | null;
   finishedPayload: BattleFinishedPayload | null;
+  groupRankings: GroupRankingItem[];
+  groupPodium: GroupPodiumItem[] | null;
+  groupParticipants: BattleParticipant[];
   error: string | null;
   sendReady: () => Promise<boolean>;
   submitAnswer: (flagIndex: number, selectedIsoCode: string) => Promise<SubmitAnswerResponse>;
+  startGroupBattle: () => Promise<boolean>;
+  leaveGroupLobby: () => Promise<boolean>;
 }
 
 export function useBattleSocket({
@@ -48,6 +59,7 @@ export function useBattleSocket({
   battleId,
   onBattleStart,
   onBattleFinished,
+  onGroupBattleFinished,
 }: UseBattleSocketOptions): UseBattleSocketReturn {
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -60,16 +72,21 @@ export function useBattleSocket({
   const [startPayload, setStartPayload] = useState<BattleStartPayload | null>(null);
   const [opponentProgress, setOpponentProgress] = useState<OpponentProgressPayload | null>(null);
   const [finishedPayload, setFinishedPayload] = useState<BattleFinishedPayload | null>(null);
+  const [groupRankings, setGroupRankings] = useState<GroupRankingItem[]>([]);
+  const [groupPodium, setGroupPodium] = useState<GroupPodiumItem[] | null>(null);
+  const [groupParticipants] = useState<BattleParticipant[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const socketRef = useRef<TypedClientSocket | null>(null);
   const onBattleStartRef = useRef(onBattleStart);
   const onBattleFinishedRef = useRef(onBattleFinished);
+  const onGroupBattleFinishedRef = useRef(onGroupBattleFinished);
 
   useEffect(() => {
     onBattleStartRef.current = onBattleStart;
     onBattleFinishedRef.current = onBattleFinished;
-  }, [onBattleStart, onBattleFinished]);
+    onGroupBattleFinishedRef.current = onGroupBattleFinished;
+  }, [onBattleStart, onBattleFinished, onGroupBattleFinished]);
 
   useEffect(() => {
     if (!sessionToken || !battleId) {
@@ -142,6 +159,19 @@ export function useBattleSocket({
       setOpponentProgress(payload);
     });
 
+    socket.on('groupPlayerProgress', (payload: GroupProgressPayload) => {
+      if (payload.rankings) {
+        setGroupRankings(payload.rankings);
+      }
+    });
+
+    socket.on('groupBattleFinished', (payload: GroupBattleFinishedPayload) => {
+      setGroupPodium(payload.podium);
+      if (onGroupBattleFinishedRef.current) {
+        onGroupBattleFinishedRef.current(payload);
+      }
+    });
+
     socket.on('battleFinished', (payload: BattleFinishedPayload) => {
       setFinishedPayload(payload);
       if (onBattleFinishedRef.current) {
@@ -211,6 +241,38 @@ export function useBattleSocket({
     [battleId],
   );
 
+  const startGroupBattle = useCallback(async (): Promise<boolean> => {
+    if (!battleId || !sessionToken) return false;
+    try {
+      const res = await fetch(`${API_URL}/api/battles/${battleId}/group-start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionToken}`,
+        },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, [battleId, sessionToken]);
+
+  const leaveGroupLobby = useCallback(async (): Promise<boolean> => {
+    if (!battleId || !sessionToken) return false;
+    try {
+      const res = await fetch(`${API_URL}/api/battles/${battleId}/group-leave`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionToken}`,
+        },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, [battleId, sessionToken]);
+
   return {
     isConnected,
     isConnecting,
@@ -223,8 +285,13 @@ export function useBattleSocket({
     startPayload,
     opponentProgress,
     finishedPayload,
+    groupRankings,
+    groupPodium,
+    groupParticipants,
     error,
     sendReady,
     submitAnswer,
+    startGroupBattle,
+    leaveGroupLobby,
   };
 }

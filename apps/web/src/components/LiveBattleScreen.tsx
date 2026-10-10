@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { Timer, Zap, Check, X, WifiOff, Loader2, Sparkles } from './icons.js';
+import { Timer, Zap, Check, X, WifiOff, Loader2, Sparkles, Trophy } from './icons.js';
 import {
   calculateComboMultiplier,
   isTier4Flag,
   type BattleStartPayload,
   type OpponentProgressPayload,
   type SubmitAnswerResponse,
+  type GroupRankingItem,
 } from '@flagora/shared';
 import { triggerHaptic } from '../telegram/haptics.js';
 
@@ -16,6 +17,9 @@ interface LiveBattleScreenProps {
   isReconnecting: boolean;
   onSubmitAnswer: (flagIndex: number, selectedIsoCode: string) => Promise<SubmitAnswerResponse>;
   onCheckFinished?: () => void;
+  isGroupBattle?: boolean;
+  groupRankings?: GroupRankingItem[];
+  currentUserId?: number;
 }
 
 export function LiveBattleScreen({
@@ -25,6 +29,9 @@ export function LiveBattleScreen({
   isReconnecting,
   onSubmitAnswer,
   onCheckFinished,
+  isGroupBattle = false,
+  groupRankings = [],
+  currentUserId,
 }: LiveBattleScreenProps) {
   const [currentFlagIndex, setCurrentFlagIndex] = useState(0);
   const [runningScore, setRunningScore] = useState(0);
@@ -120,6 +127,12 @@ export function LiveBattleScreen({
   );
   const comboMultiplier = calculateComboMultiplier(comboCount);
 
+  // Group rankings calculations
+  const myRankItem = currentUserId
+    ? groupRankings.find((r) => r.userId === currentUserId)
+    : null;
+  const myCurrentRank = myRankItem?.rank ?? 1;
+
   return (
     <div className="relative flex w-full max-w-md mx-auto flex-col items-center gap-4 text-tg-text">
       {isReconnecting && (
@@ -131,52 +144,109 @@ export function LiveBattleScreen({
         </div>
       )}
 
+      {/* Score Header */}
       <div className="flex w-full flex-col gap-2 rounded-2xl bg-tg-section p-3.5 shadow-sm">
-        <div className="grid grid-cols-2 gap-2 border-b border-tg-separator/30 pb-2.5">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1 text-[11px] font-semibold text-tg-hint">
-              <span>You</span>
-              <span className="text-tg-text">
-                ({currentFlagIndex + 1}/{battleStart.flags.length})
-              </span>
-            </div>
-            <div className="mt-1 flex items-center gap-1.5">
-              <span className="text-lg font-black text-tg-text">{runningScore}</span>
-              {comboCount > 0 && (
-                <span className="flex items-center gap-1 rounded bg-tg-button/20 px-1.5 py-0.5 text-[10px] font-extrabold text-tg-button">
-                  <Zap className="h-2.5 w-2.5" />
-                  {comboMultiplier}x
+        {isGroupBattle ? (
+          /* Group Battle Scoreboard */
+          <div className="flex flex-col gap-2 border-b border-tg-separator/30 pb-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-tg-hint">
+                  <span>You</span>
+                  <span className="text-tg-text">
+                    ({Math.min(currentFlagIndex + 1, battleStart.flags.length)}/{battleStart.flags.length})
+                  </span>
+                  <span className="rounded-full bg-tg-button/15 px-2 py-0.5 text-[10px] font-bold text-tg-button">
+                    Rank #{myCurrentRank}
+                  </span>
+                </div>
+                <div className="mt-1 flex items-center gap-1.5">
+                  <span className="text-xl font-black text-tg-text">{runningScore}</span>
+                  {comboCount > 0 && (
+                    <span className="flex items-center gap-1 rounded bg-tg-button/20 px-1.5 py-0.5 text-[10px] font-extrabold text-tg-button">
+                      <Zap className="h-2.5 w-2.5" />
+                      {comboMultiplier}x
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Group Mini Leaderboard */}
+              <div className="flex flex-col items-end">
+                <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-tg-hint">
+                  <Trophy className="h-3 w-3 text-amber-400" />
+                  Live Leaders
                 </span>
-              )}
+                <div className="mt-1 flex items-center gap-2">
+                  {groupRankings.slice(0, 3).map((r, i) => {
+                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉';
+                    const isMe = r.userId === currentUserId;
+                    return (
+                      <div
+                        key={r.userId}
+                        className={`flex items-center gap-1 rounded-lg px-1.5 py-0.5 text-[11px] ${
+                          isMe ? 'bg-tg-button/15 font-bold text-tg-button' : 'bg-tg-secondary-bg text-tg-hint'
+                        }`}
+                      >
+                        <span>{medal}</span>
+                        <span className="max-w-[50px] truncate">{r.displayName}</span>
+                        <span className="font-bold text-tg-text">{r.score}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
-
-          <div className="flex flex-col items-end text-right">
-            <div className="flex items-center gap-1 text-[11px] font-semibold text-tg-hint">
-              <span className="max-w-[90px] truncate">{opponentDisplayName || 'Opponent'}</span>
-              <span className="text-tg-text">
-                ({opponentProgress ? opponentProgress.flagIndex + 1 : 0}/{battleStart.flags.length})
-              </span>
-            </div>
-            <div className="mt-1 flex items-center gap-1.5">
-              {opponentProgress && (
-                <span
-                  className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-black ${
-                    opponentProgress.correct
-                      ? 'bg-tg-button/20 text-tg-button'
-                      : 'bg-tg-destructive/15 text-tg-destructive'
-                  }`}
-                >
-                  {opponentProgress.correct ? '+' : 'x'}
+        ) : (
+          /* 1v1 Battle Scoreboard */
+          <div className="grid grid-cols-2 gap-2 border-b border-tg-separator/30 pb-2.5">
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1 text-[11px] font-semibold text-tg-hint">
+                <span>You</span>
+                <span className="text-tg-text">
+                  ({Math.min(currentFlagIndex + 1, battleStart.flags.length)}/{battleStart.flags.length})
                 </span>
-              )}
-              <span className="text-lg font-black text-tg-text">
-                {opponentProgress?.runningTotal ?? 0}
-              </span>
+              </div>
+              <div className="mt-1 flex items-center gap-1.5">
+                <span className="text-lg font-black text-tg-text">{runningScore}</span>
+                {comboCount > 0 && (
+                  <span className="flex items-center gap-1 rounded bg-tg-button/20 px-1.5 py-0.5 text-[10px] font-extrabold text-tg-button">
+                    <Zap className="h-2.5 w-2.5" />
+                    {comboMultiplier}x
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-end text-right">
+              <div className="flex items-center gap-1 text-[11px] font-semibold text-tg-hint">
+                <span className="max-w-[90px] truncate">{opponentDisplayName || 'Opponent'}</span>
+                <span className="text-tg-text">
+                  ({opponentProgress ? opponentProgress.flagIndex + 1 : 0}/{battleStart.flags.length})
+                </span>
+              </div>
+              <div className="mt-1 flex items-center gap-1.5">
+                {opponentProgress && (
+                  <span
+                    className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-black ${
+                      opponentProgress.correct
+                        ? 'bg-tg-button/20 text-tg-button'
+                        : 'bg-tg-destructive/15 text-tg-destructive'
+                    }`}
+                  >
+                    {opponentProgress.correct ? '+' : 'x'}
+                  </span>
+                )}
+                <span className="text-lg font-black text-tg-text">
+                  {opponentProgress?.runningTotal ?? 0}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
+        {/* Battle Timer Bar */}
         <div>
           <div className="flex items-center justify-between text-[11px] font-medium text-tg-hint">
             <span className="flex items-center gap-1">
@@ -196,9 +266,7 @@ export function LiveBattleScreen({
               height="100%"
               rx="3"
               className={`transition-all duration-100 ease-linear ${
-                timerSeconds <= 10
-                  ? 'fill-tg-destructive'
-                  : 'fill-tg-button'
+                timerSeconds <= 10 ? 'fill-tg-destructive' : 'fill-tg-button'
               }`}
             />
           </svg>
@@ -224,7 +292,11 @@ export function LiveBattleScreen({
         <div className="flex w-full flex-col items-center justify-center gap-3 rounded-2xl bg-tg-section p-6 text-center shadow-sm">
           <Check className="h-8 w-8 text-tg-button" />
           <p className="text-sm font-bold text-tg-text">All flags completed!</p>
-          <p className="text-xs text-tg-hint">Waiting for opponent or battle tally...</p>
+          <p className="text-xs text-tg-hint">
+            {isGroupBattle
+              ? 'Waiting for all players to finish or timer to expire...'
+              : 'Waiting for opponent or battle tally...'}
+          </p>
           {onCheckFinished && (
             <button
               type="button"
@@ -279,8 +351,8 @@ export function LiveBattleScreen({
                 if (isSelected) {
                   if (feedback) {
                     buttonStyle = feedback.correct
-                      ? 'bg-tg-button text-tg-button-text font-bold ring-2 ring-tg-button'
-                      : 'bg-tg-destructive text-tg-button-text font-bold ring-2 ring-tg-destructive/50';
+                      ? 'bg-tg-button text-tg-button-text font-bold'
+                      : 'bg-tg-destructive text-tg-button-text font-bold';
                   } else {
                     buttonStyle = 'bg-tg-button text-tg-button-text font-bold';
                   }

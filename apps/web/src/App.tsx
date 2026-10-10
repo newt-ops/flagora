@@ -100,9 +100,14 @@ export function App() {
     startPayload: battleStartPayload,
     opponentProgress: battleOpponentProgress,
     finishedPayload: battleFinishedPayload,
+    groupRankings: battleGroupRankings,
+    groupPodium: battleGroupPodium,
+    groupParticipants: battleGroupParticipants,
     error: battleSocketError,
     sendReady: sendBattleReady,
     submitAnswer: submitBattleAnswer,
+    startGroupBattle,
+    leaveGroupLobby,
   } = useBattleSocket({
     sessionToken,
     battleId: activeBattleId,
@@ -112,6 +117,12 @@ export function App() {
     },
     onBattleFinished: (payload) => {
       setActiveBattleFinished(payload);
+      setScreen('battle_result');
+      void queryClient.invalidateQueries({ queryKey: ['profile'] });
+      void queryClient.invalidateQueries({ queryKey: ['rank', 'status'] });
+      void queryClient.invalidateQueries({ queryKey: ['leaderboard', 'ranked'] });
+    },
+    onGroupBattleFinished: () => {
       setScreen('battle_result');
       void queryClient.invalidateQueries({ queryKey: ['profile'] });
       void queryClient.invalidateQueries({ queryKey: ['rank', 'status'] });
@@ -613,6 +624,17 @@ export function App() {
           onBack={handleBackToProfile}
           isConnecting={isBattleSocketConnecting}
           error={battleSocketError}
+          isGroupBattle={Boolean(activeBattleInfo?.isGroupBattle)}
+          groupParticipants={
+            battleGroupParticipants.length > 0
+              ? battleGroupParticipants
+              : (activeBattleInfo?.participants ?? [])
+          }
+          onStartGroupBattle={startGroupBattle}
+          onLeaveGroupLobby={async () => {
+            await leaveGroupLobby();
+            handleBackToProfile();
+          }}
         />
       )}
 
@@ -628,6 +650,9 @@ export function App() {
           isReconnecting={isBattleSocketReconnecting}
           onSubmitAnswer={submitBattleAnswer}
           onCheckFinished={checkBattleFinishedFallback}
+          isGroupBattle={Boolean(activeBattleInfo?.isGroupBattle)}
+          groupRankings={battleGroupRankings}
+          currentUserId={profile.telegramUserId}
         />
       )}
 
@@ -640,6 +665,7 @@ export function App() {
           onBattleAgain={handleBattleAgain}
           onBackToProfile={handleBackToProfile}
           isStartingBattleAgain={isStartingBattle}
+          groupPodium={battleGroupPodium || activeBattleInfo?.podium}
         />
       )}
 

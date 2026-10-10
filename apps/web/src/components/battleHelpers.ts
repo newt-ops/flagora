@@ -204,3 +204,63 @@ export function getInitials(name?: string | null): string {
   const clean = name.replace(/^@/, '').trim();
   return clean.length > 0 ? clean.charAt(0).toUpperCase() : 'P';
 }
+
+export interface RankBadgeInfo {
+  medal: string;
+  label: string;
+  bgClass: string;
+  textClass: string;
+  stepHeightClass: string;
+}
+
+export function getRankBadge(rank: number): RankBadgeInfo {
+  switch (rank) {
+    case 1:
+      return {
+        medal: '🥇',
+        label: '1st Place',
+        bgClass: 'bg-amber-400/20',
+        textClass: 'text-amber-300',
+        stepHeightClass: 'h-36',
+      };
+    case 2:
+      return {
+        medal: '🥈',
+        label: '2nd Place',
+        bgClass: 'bg-slate-300/20',
+        textClass: 'text-slate-200',
+        stepHeightClass: 'h-28',
+      };
+    case 3:
+      return {
+        medal: '🥉',
+        label: '3rd Place',
+        bgClass: 'bg-amber-700/20',
+        textClass: 'text-amber-500',
+        stepHeightClass: 'h-20',
+      };
+    default:
+      return {
+        medal: `#${rank}`,
+        label: `${rank}th Place`,
+        bgClass: 'bg-tg-secondary-bg',
+        textClass: 'text-tg-hint',
+        stepHeightClass: 'h-16',
+      };
+  }
+}
+
+export function formatGroupVictoryShareText(
+  podium: Array<{ rank: number; displayName: string; score: number; pinsEarned?: number }>,
+  currentUserName?: string,
+): string {
+  let text = `🏆 FLAGORA GROUP BATTLE RESULTS! 🚩\n\n`;
+  podium.slice(0, 5).forEach((p) => {
+    const medal = p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : `#${p.rank}`;
+    const meMarker = currentUserName && p.displayName === currentUserName ? ' (You)' : '';
+    text += `${medal} ${p.displayName}${meMarker} — ${p.score} pts\n`;
+  });
+  text += `\nThink you can beat me? Join the next battle! ⚔️`;
+  return text;
+}
+
