@@ -32,6 +32,7 @@ interface BattleLobbyScreenProps {
   groupParticipants?: BattleParticipant[];
   onStartGroupBattle?: () => void;
   onLeaveGroupLobby?: () => void;
+  onCancelGroupLobby?: () => void;
 }
 
 export function BattleLobbyScreen({
@@ -51,6 +52,7 @@ export function BattleLobbyScreen({
   groupParticipants = [],
   onStartGroupBattle,
   onLeaveGroupLobby,
+  onCancelGroupLobby,
 }: BattleLobbyScreenProps) {
   const [copied, setCopied] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -248,10 +250,19 @@ export function BattleLobbyScreen({
                   )}
                   <span>
                     {participants.length < 2
-                      ? 'Need at least 2 players to start'
+                      ? 'Waiting for 2nd player to join...'
                       : `Launch Battle (${participants.length} Players) ⚔️`}
                   </span>
                 </button>
+                {onCancelGroupLobby && (
+                  <button
+                    type="button"
+                    onClick={onCancelGroupLobby}
+                    className="flex h-10 w-full items-center justify-center rounded-xl bg-tg-secondary-bg text-xs font-bold text-tg-destructive hover:opacity-80 transition-opacity"
+                  >
+                    Cancel Lobby
+                  </button>
+                )}
               </>
             ) : (
               <div className="flex flex-col items-center gap-2">

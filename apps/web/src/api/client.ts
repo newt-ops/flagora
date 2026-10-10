@@ -15,6 +15,7 @@ import type {
   CreateBattleResponse,
   BattleInfoResponse,
   JoinBattleResponse,
+  BattleSession,
   StreakStatusResponse,
   StreakSaveSuccessResponse,
   RankStatusResponse,
@@ -540,6 +541,61 @@ export async function joinBattle(
 
   return response.json();
 }
+
+export async function joinGroupBattle(
+  sessionToken: string,
+  battleId: string,
+): Promise<BattleSession> {
+  const response = await fetch(`${API_URL}/api/battles/${encodeURIComponent(battleId)}/group-join`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to join group battle: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
+export async function cancelGroupBattle(
+  sessionToken: string,
+  battleId: string,
+): Promise<BattleSession> {
+  const response = await fetch(`${API_URL}/api/battles/${encodeURIComponent(battleId)}/group-cancel`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${sessionToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    let message = `Failed to cancel group battle: status ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data?.message) {
+        message = data.message;
+      }
+    } catch {
+      void 0;
+    }
+    throw new Error(message);
+  }
+
+  return response.json();
+}
+
 
 interface RewardErrorPayload {
   error?: string;

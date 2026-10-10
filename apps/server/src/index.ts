@@ -84,6 +84,7 @@ import {
   getTelegramBotMe,
   getTelegramWebhookInfo,
   setTelegramWebhook,
+  setTelegramBotCommands,
   type InlineKeyboardButton,
 } from './telegram/telegramService.js';
 import { handleTelegramUpdate } from './telegram/botUpdateHandler.js';
@@ -803,6 +804,35 @@ async function bootstrap() {
     }
   });
 
+  app.post('/api/battles/:id/group-cancel', sessionMiddleware, rateLimit({ endpoint: 'group_battle_cancel', limit: 30, windowSeconds: 60 }), async (req: AuthenticatedSessionRequest, res) => {
+    try {
+      const telegramUserId = req.sessionUser?.telegramUserId;
+      if (!telegramUserId) {
+        res.status(401).json({ error: 'Unauthorized', message: 'Missing session user' });
+        return;
+      }
+
+      const id = String(req.params.id);
+      const result = await cancelGroupLobby(id, telegramUserId, db);
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof BattleNotFoundError) {
+        res.status(404).json({ error: 'Not found', message: error.message });
+        return;
+      }
+      if (error instanceof BattleHostRequiredError) {
+        res.status(403).json({ error: 'Forbidden', message: error.message });
+        return;
+      }
+      if (error instanceof BattleAlreadyStartedError) {
+        res.status(400).json({ error: 'Battle already started', message: error.message });
+        return;
+      }
+      const message = error instanceof Error ? error.message : 'Failed to cancel group battle';
+      res.status(500).json({ error: 'Internal server error', message });
+    }
+  });
+
 
   app.get(
     '/api/streak/status',
@@ -953,6 +983,8 @@ async function bootstrap() {
           rawUsername,
           frontendUrl,
           botToken,
+          io,
+          redis,
         });
 
         if (!res.headersSent) {
@@ -1009,6 +1041,13 @@ async function bootstrap() {
   httpServer.listen(port, () => {
     process.stdout.write(`Server listening on port ${port}\n`);
 
+    // Register Telegram Bot Command Scopes (default and all_group_chats)
+    void setTelegramBotCommands().then((ok) => {
+      if (ok) {
+        process.stdout.write('[Telegram Bot] Bot command list registered with Telegram!\n');
+      }
+    });
+
     // Telegram Bot Setup: Webhook sync or Polling
     const usePolling = process.env.TELEGRAM_USE_POLLING === 'true';
     const configuredWebhookUrl =
@@ -1019,6 +1058,8 @@ async function bootstrap() {
       pollingController = startTelegramPolling(db, {
         rawUsername: process.env.TELEGRAM_BOT_USERNAME,
         frontendUrl: process.env.CLIENT_URL || process.env.FRONTEND_URL,
+        io,
+        redis,
       });
     } else if (configuredWebhookUrl) {
       void (async () => {

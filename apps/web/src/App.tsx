@@ -24,6 +24,8 @@ import {
   createBattle,
   getBattleInfo,
   joinBattle,
+  joinGroupBattle,
+  cancelGroupBattle,
 } from './api/client.js';
 import { shareChallenge } from './components/challengeShareHelpers.js';
 import { getChallengeStartParam } from './components/challengeViewHelpers.js';
@@ -192,15 +194,24 @@ export function App() {
           if (info.status === 'completed') {
             setScreen('battle_result');
           } else {
-            if (info.isJoinable && !info.isChallenger) {
+            const isGroup = Boolean(info.isGroupBattle);
+            const isParticipant = isGroup
+              ? Boolean(info.participants?.some((p) => p.userId === profile?.telegramUserId))
+              : Boolean(info.isChallenger || info.opponentUserId === profile?.telegramUserId);
+
+            if (info.isJoinable && !isParticipant) {
               try {
-                await joinBattle(sessionToken, info.battleId);
+                if (isGroup) {
+                  await joinGroupBattle(sessionToken, info.battleId);
+                } else {
+                  await joinBattle(sessionToken, info.battleId);
+                }
                 const refreshed = await getBattleInfo(sessionToken, info.battleId);
                 if (isMounted) {
                   setActiveBattleInfo(refreshed);
                 }
-              } catch {
-                void 0;
+              } catch (joinErr) {
+                console.error('Failed to auto-join battle:', joinErr);
               }
             }
             setScreen('battle_lobby');
@@ -633,6 +644,16 @@ export function App() {
           onStartGroupBattle={startGroupBattle}
           onLeaveGroupLobby={async () => {
             await leaveGroupLobby();
+            handleBackToProfile();
+          }}
+          onCancelGroupLobby={async () => {
+            if (activeBattleId && sessionToken) {
+              try {
+                await cancelGroupBattle(sessionToken, activeBattleId);
+              } catch {
+                void 0;
+              }
+            }
             handleBackToProfile();
           }}
         />

@@ -153,8 +153,13 @@ export async function editTelegramMessage(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => '');
+      process.stderr.write(`[Telegram Bot] editMessageText error (${res.status}): ${errBody}\n`);
+    }
     return res.ok;
-  } catch {
+  } catch (err) {
+    process.stderr.write(`[Telegram Bot] editMessageText network error: ${String(err)}\n`);
     return false;
   }
 }
@@ -678,3 +683,63 @@ export async function getTelegramUpdates(options?: {
     return [];
   }
 }
+
+export async function setTelegramBotCommands(
+  overrides?: TelegramServiceOverrides,
+): Promise<boolean> {
+  const token = overrides?.botToken ?? process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return false;
+  const base = overrides?.apiBaseUrl ?? process.env.TELEGRAM_API_BASE_URL ?? 'https://api.telegram.org';
+
+  const defaultCommands = [
+    { command: 'start', description: 'Open Flagora & main menu' },
+    { command: 'play', description: 'Play Flagora Solo & Modes' },
+    { command: 'battle', description: 'Real-time flag battles' },
+    { command: 'stats', description: 'View your profile & rank' },
+    { command: 'leaderboard', description: 'Top global players' },
+    { command: 'help', description: 'How to play Flagora' },
+    { command: 'invite', description: 'Invite friends (+100 pins)' },
+  ];
+
+  const groupCommands = [
+    { command: 'battle', description: 'Start a group multiplayer battle' },
+    { command: 'help', description: 'How to play in groups' },
+    { command: 'play', description: 'Open Flagora Mini App' },
+    { command: 'leaderboard', description: 'View top players' },
+  ];
+
+  try {
+    const resDefault = await fetch(`${base}/bot${token}/setMyCommands`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        commands: defaultCommands,
+        scope: { type: 'default' },
+      }),
+    });
+    if (!resDefault.ok) {
+      const errText = await resDefault.text().catch(() => '');
+      process.stderr.write(`[Telegram Bot] setMyCommands (default) failed: ${errText}\n`);
+    }
+
+    const resGroup = await fetch(`${base}/bot${token}/setMyCommands`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        commands: groupCommands,
+        scope: { type: 'all_group_chats' },
+      }),
+    });
+    if (!resGroup.ok) {
+      const errText = await resGroup.text().catch(() => '');
+      process.stderr.write(`[Telegram Bot] setMyCommands (group) failed: ${errText}\n`);
+    }
+
+    return resDefault.ok && resGroup.ok;
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`[Telegram Bot] Warning: Failed to set bot commands: ${msg}\n`);
+    return false;
+  }
+}
+
